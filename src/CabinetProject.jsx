@@ -1439,8 +1439,13 @@ export default function CabinetProject() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      console.log("Auth user:", user);
+      
       if (user) {
         const { data: prof, error } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+        console.log("Profile data:", prof);
+        console.log("Profile error:", error);
+        
         if (error) {
           console.error("Profile fetch error:", error);
           setAuthLoading(false);
@@ -1448,6 +1453,7 @@ export default function CabinetProject() {
         }
         
         const isAdmin = prof?.is_admin || false;
+        console.log("Setting auth state - approved:", prof?.approved, "isAdmin:", isAdmin);
         setAuthState({ user, approved: prof?.approved || false, isAdmin });
 
         if (isAdmin) {
