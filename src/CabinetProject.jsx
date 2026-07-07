@@ -1303,24 +1303,39 @@ export default function CabinetProject() {
       setAuthError("Supabase not loaded yet");
       return;
     }
+    console.log("Starting login with email:", loginEmail);
     setAuthError("");
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
+      console.log("Login response:", { data, error });
+      
       if (error) {
         setAuthError(error.message || "Login failed");
         return;
       }
+      
       const user = data.user;
-      const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+      console.log("Logged in user:", user);
+      
+      const { data: prof, error: profError } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+      console.log("Profile response:", { prof, profError });
+      
       const isAdmin = prof?.is_admin || false;
+      console.log("Admin check result:", { is_admin: prof?.is_admin, isAdmin });
+      
       setAuthState({ user, approved: prof?.approved || false, isAdmin });
+      console.log("Auth state set to:", { approved: prof?.approved, isAdmin });
+      
       if (isAdmin) {
+        console.log("User is admin, fetching pending users");
         const { data: pending } = await supabase.from("profiles").select("*").eq("approved", false);
         setPendingUsers(pending || []);
       }
+      
       setLoginEmail("");
       setLoginPassword("");
     } catch (e) {
+      console.error("Login error:", e);
       setAuthError(e.message);
     }
   };
@@ -1338,12 +1353,12 @@ export default function CabinetProject() {
         setAuthError(error.message || "Signup failed");
         return;
       }
-      const user = data.user;
+      
       const isAdmin = loginEmail === ADMIN_EMAIL;
       
       // Create profile row
       const { error: profileError } = await supabase.from("profiles").insert({
-        id: user.id,
+        id: data.user.id,
         email: loginEmail,
         approved: isAdmin,
         is_admin: isAdmin,
@@ -1354,25 +1369,15 @@ export default function CabinetProject() {
         return;
       }
       
-      // Auto-login after signup to establish session
-      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ 
-        email: loginEmail, 
-        password: loginPassword 
-      });
-      
-      if (loginError) {
-        // If auto-login fails, still show pending screen
-        setAuthState({ user, approved: isAdmin, isAdmin });
-      } else {
-        // Auto-login succeeded
-        const prof = loginData.user;
-        setAuthState({ user: prof, approved: isAdmin, isAdmin });
-      }
-      
+      // Show message to log in
+      setAuthError("");
       setLoginEmail("");
       setLoginPassword("");
       setSignupMode(false);
+      // Show login screen - user must manually log in
+      setAuthError("Account created! Now log in with your credentials.");
     } catch (e) {
+      console.error("Signup error:", e);
       setAuthError(e.message);
     }
   };
