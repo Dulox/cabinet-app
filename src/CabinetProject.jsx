@@ -1595,6 +1595,15 @@ export default function CabinetProject() {
     return () => clearTimeout(timer);
   }, [cabs, currentProjectName]);
 
+  // Update userProjects when currentProjectName changes
+  useEffect(() => {
+    setUserProjects((projects) =>
+      projects.map((p) =>
+        p.id === currentProjectId ? { ...p, name: currentProjectName } : p
+      )
+    );
+  }, [currentProjectName, currentProjectId]);
+
   const t = (key) => translations[lang][key] || translations["en"][key] || key;
   const btn = (bg, col, brd) => ({ padding: "8px 14px", borderRadius: 8, cursor: "pointer",
     border: brd, background: bg, color: col, fontWeight: 700, fontSize: 13 });
