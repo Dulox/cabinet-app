@@ -927,7 +927,22 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
     arr[i] = v === "" ? 0 : Math.max(0, Number(v) || 0);
     onChange({ drawerHeights: arr });
   };
-  const heights = cab.drawerHeights || splitHeights(p.doorH, cab.drawerCount || 3, p.doorGap);
+  const buildUp = cab.type === "wall" ? 0 : (p.baseBuildUp ?? 0);
+  const effectiveDoorH = p.doorH - buildUp;
+  const heights = cab.drawerHeights || splitHeights(effectiveDoorH, cab.drawerCount || 3, p.doorGap);
+
+  // Sync drawerHeights whenever effective door height changes (e.g., when baseBuildUp changes)
+  useEffect(() => {
+    if (cab.type === "drawers" && cab.drawerHeights) {
+      const recalc = splitHeights(effectiveDoorH, cab.drawerCount || 3, p.doorGap);
+      // Compare sums to see if total has changed significantly
+      const oldSum = cab.drawerHeights.reduce((a, b) => a + b, 0);
+      const newSum = recalc.reduce((a, b) => a + b, 0);
+      if (Math.abs(oldSum - newSum) > 0.5) {
+        onChange({ drawerHeights: recalc });
+      }
+    }
+  }, [effectiveDoorH, cab.type, cab.drawerHeights, cab.drawerCount, onChange]);
 
   return (
     <div className="cab-card" style={{ background: C.card, border: `1px solid ${C.hair}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
