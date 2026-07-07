@@ -409,7 +409,7 @@ const translations = {
 
 const splitHeights = (total, n, gap) => {
   const each = (total - gap * (n - 1)) / n;
-  return Array.from({ length: n }, () => round1(each));
+  return Array.from({ length: n }, () => Math.floor(each));
 };
 
 // Shelf pin hole positions (32mm spacing, DIN 1142)
@@ -1176,7 +1176,138 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
   );
 }
 
-/* -------------------------------- app ----------------------------- */
+/* -------------------------------- auth screens ----------------------------- */
+
+function LoginScreen({ signupMode, setSignupMode, loginEmail, setLoginEmail, loginPassword, setLoginPassword, authError, setAuthError, handleLogin, handleSignup, loading }) {
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (signupMode) handleSignup();
+    else handleLogin();
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: C.paper, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'Archivo', sans-serif" }}>
+      <div style={{ width: "100%", maxWidth: 420, background: C.card, border: `1px solid ${C.hair}`, borderRadius: 18, padding: 36, boxShadow: "0 18px 50px rgba(0,0,0,0.1)" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: C.rust, textAlign: "center" }}>
+          Private · Invite only
+        </div>
+        <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.5px", textAlign: "center", marginTop: 3, color: C.ink }}>
+          {signupMode ? "Create account" : "Welcome back"}
+        </div>
+        <div style={{ fontSize: 13, color: C.mut, textAlign: "center", marginTop: 8, marginBottom: 26 }}>
+          {signupMode ? "Sign up for cabinet access" : "Log in to open your projects"}
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: C.mut, marginBottom: 5 }}>Email</label>
+            <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} placeholder="you@email.com"
+              style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${C.hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: C.ink, background: "#fff" }} />
+          </div>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: C.mut, marginBottom: 5 }}>Password</label>
+            <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} placeholder="••••••••"
+              style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${C.hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: C.ink, background: "#fff" }} />
+          </div>
+
+          {authError && <div style={{ fontSize: 13, color: C.rust, marginBottom: 14, textAlign: "center" }}>{authError}</div>}
+
+          <button type="submit" disabled={loading} style={{ width: "100%", padding: 12, background: C.rust, color: "#fff", border: "none", borderRadius: 9, fontSize: 14, fontWeight: 800, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1 }}>
+            {loading ? "Please wait..." : (signupMode ? "Sign up" : "Log in")}
+          </button>
+        </form>
+
+        <div style={{ textAlign: "center", color: C.mut, fontSize: 13, marginTop: 20 }}>
+          {signupMode ? (
+            <>
+              Already have an account? <button onClick={() => { setSignupMode(false); setAuthError(""); }} style={{ background: "none", border: "none", color: C.rust, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Log in</button>
+            </>
+          ) : (
+            <>
+              No account? <button onClick={() => { setSignupMode(true); setAuthError(""); }} style={{ background: "none", border: "none", color: C.rust, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Request access</button>
+            </>
+          )}
+        </div>
+
+        {!signupMode && (
+          <div style={{ marginTop: 20, background: "#FCE7DE", border: `1px solid ${C.hair}`, borderRadius: 10, padding: "11px 13px", fontSize: 12, color: C.mut, textAlign: "center", lineHeight: 1.5 }}>
+            New accounts are <strong>reviewed by the owner</strong> before access is granted.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PendingScreen({ authState, handleLogout }) {
+  return (
+    <div style={{ minHeight: "100vh", background: C.paper, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'Archivo', sans-serif" }}>
+      <div style={{ width: "100%", maxWidth: 470, background: C.card, border: `1px solid ${C.hair}`, borderRadius: 18, padding: 40, textAlign: "center", boxShadow: "0 18px 50px rgba(0,0,0,0.1)" }}>
+        <div style={{ width: 66, height: 66, borderRadius: "50%", background: "#FCE7DE", margin: "0 auto 20px", lineHeight: "66px", fontSize: 30 }}>⏱</div>
+        <div style={{ display: "inline-block", background: "#FCE7DE", color: C.rust, borderRadius: 20, padding: "6px 14px", fontSize: 12, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 26 }}>
+          Pending approval
+        </div>
+        <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 12, color: C.ink }}>
+          You're on the list
+        </div>
+        <div style={{ color: C.mut, fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
+          Thanks for signing up. Your account is waiting for the owner to approve access — you'll be able to log in as soon as it's approved.
+        </div>
+        <div style={{ display: "inline-block", background: "#F2F2EF", border: `1px solid ${C.hair}`, borderRadius: 8, padding: "7px 12px", fontSize: 13, fontWeight: 700, fontFamily: "'Courier New', monospace", marginBottom: 24 }}>
+          {authState?.user?.email}
+        </div><br />
+        <button onClick={() => { const sess = supabase.auth.getSession(); if (sess) { supabase.db.getProfile(sess.access_token, authState.user.id).then((prof) => { if (prof?.approved) window.location.reload(); }); } }} style={{ padding: "8px 16px", border: `1.5px solid ${C.ink}`, background: "transparent", color: C.ink, borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer", marginRight: 8 }}>
+          Check again
+        </button>
+        <button onClick={handleLogout} style={{ padding: "8px 16px", border: "none", background: "transparent", color: C.mut, borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+          Log out
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout }) {
+  return (
+    <div style={{ minHeight: "100vh", background: C.paper, padding: "20px", fontFamily: "'Archivo', sans-serif" }}>
+      <div style={{ maxWidth: 1240, margin: "0 auto" }}>
+        <div style={{ marginBottom: 24, paddingBottom: 16, borderBottom: `2px solid ${C.ink}` }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.22em", color: C.rust, textTransform: "uppercase" }}>Admin panel</div>
+          <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.01em", marginTop: 2, color: C.ink }}>Pending signups</div>
+          <div style={{ fontSize: 13, color: C.mut, marginTop: 8 }}>{authState?.user?.email}</div>
+        </div>
+
+        {pendingUsers.length === 0 ? (
+          <div style={{ textAlign: "center", color: C.mut, padding: "40px 20px", fontSize: 14 }}>
+            No pending approvals. All users are approved! ✓
+          </div>
+        ) : (
+          <div>
+            {pendingUsers.map((user) => (
+              <div key={user.id} style={{ background: C.card, border: `1px solid ${C.hair}`, borderRadius: 12, padding: 16, marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>{user.email}</div>
+                  <div style={{ fontSize: 12, color: C.mut, marginTop: 4, fontFamily: "'Courier New', monospace" }}>{user.id}</div>
+                </div>
+                <button onClick={() => handleApprove(user.id)} style={{ padding: "8px 16px", background: C.rust, color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  Approve
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{ marginTop: 40, textAlign: "center" }}>
+          <button onClick={handleLogout} style={{ padding: "8px 16px", background: "transparent", border: `1.5px solid ${C.mut}`, color: C.mut, borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+            Log out
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------- main app ----------------------------- */
 let SEQ = 2;
 const newCab = (n) => ({ id: ++SEQ, name: `Cabinet ${n}`, type: "base", width: "600",
   doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null, hingeType: "concealed",
@@ -1205,7 +1336,6 @@ export default function CabinetProject() {
     { id: 1, name: "Cabinet 1", type: "base", width: "600", doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null, params: { ...DEFAULTS } },
   ]);
   const [selectedId, setSelectedId] = useState(1);
-  const [loginOpen, setLoginOpen] = useState(false);
   
   // Login handler
   const handleLogin = async () => {
@@ -1510,8 +1640,27 @@ export default function CabinetProject() {
     }
   };
 
-  const btn = (bg, col, brd) => ({ padding: "8px 14px", borderRadius: 8, cursor: "pointer",
-    border: brd, background: bg, color: col, fontWeight: 700, fontSize: 13 });
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: "100vh", background: C.paper, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Archivo', sans-serif" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: C.ink }}>Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authState) {
+    return <LoginScreen signupMode={signupMode} setSignupMode={setSignupMode} loginEmail={loginEmail} setLoginEmail={setLoginEmail} loginPassword={loginPassword} setLoginPassword={setLoginPassword} authError={authError} setAuthError={setAuthError} handleLogin={handleLogin} handleSignup={handleSignup} loading={authLoading} />;
+  }
+
+  if (!authState.approved) {
+    return <PendingScreen authState={authState} handleLogout={handleLogout} />;
+  }
+
+  if (authState.isAdmin) {
+    return <AdminPanel pendingUsers={pendingUsers} handleApprove={handleApprove} authState={authState} handleLogout={handleLogout} />;
+  }
 
   return (
     <div className="cab-root" style={{ background: C.paper, color: C.ink, minHeight: "100%",
@@ -1567,16 +1716,9 @@ export default function CabinetProject() {
                 color: C.ink, cursor: "pointer", fontSize: 12, fontWeight: 700, letterSpacing: "0.04em" }}>
               {lang === "en" ? "ES" : "EN"}
             </button>
-            <button className="cab-btn" onClick={() => setLoginOpen((v) => !v)} style={btn(C.ink, C.card, `1.5px solid ${C.ink}`)}>{t("Log in")}</button>
+            <button className="cab-btn" onClick={handleLogout} style={btn(C.ink, C.card, `1.5px solid ${C.ink}`)}>Log out</button>
           </div>
         </div>
-        {loginOpen && (
-          <div className="cab-noprint" style={{ marginBottom: 16, background: C.card, border: `1px solid ${C.hair}`,
-            borderRadius: 12, padding: "14px 16px", fontSize: 13, color: C.ink, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <span>🔒 {t("Private access is coming soon — sign-in with owner approval. For now the app is open.")}</span>
-            <button onClick={() => setLoginOpen(false)} style={btn("transparent", C.mut, `1px solid ${C.hair}`)}>{t("Close")}</button>
-          </div>
-        )}
         {copyBox && (
           <div className="cab-noprint" style={{ marginTop: -8, marginBottom: 16 }}>
             <div style={{ fontSize: 12, color: C.mut, marginBottom: 6 }}>
