@@ -1347,35 +1347,44 @@ export default function CabinetProject() {
       setAuthError("Supabase not loaded yet");
       return;
     }
+    console.log("Starting signup with email:", loginEmail);
     setAuthError("");
     try {
       const { data, error } = await supabase.auth.signUp({ email: loginEmail, password: loginPassword });
+      console.log("Signup response:", { data, error });
+      
       if (error) {
         setAuthError(error.message || "Signup failed");
         return;
       }
       
+      const user = data.user;
+      console.log("New user created:", user);
       const isAdmin = loginEmail === ADMIN_EMAIL;
       
       // Create profile row
-      const { error: profileError } = await supabase.from("profiles").insert({
-        id: data.user.id,
+      console.log("Attempting to create profile with:", { id: user.id, email: loginEmail, approved: isAdmin, is_admin: isAdmin });
+      const { error: profileError, data: profileData } = await supabase.from("profiles").insert({
+        id: user.id,
         email: loginEmail,
         approved: isAdmin,
         is_admin: isAdmin,
       });
       
+      console.log("Profile insert response:", { profileData, profileError });
+      
       if (profileError) {
+        console.error("Profile creation failed:", profileError);
         setAuthError(profileError.message || "Failed to create profile");
         return;
       }
       
+      console.log("Profile created successfully");
+      
       // Show message to log in
-      setAuthError("");
       setLoginEmail("");
       setLoginPassword("");
       setSignupMode(false);
-      // Show login screen - user must manually log in
       setAuthError("Account created! Now log in with your credentials.");
     } catch (e) {
       console.error("Signup error:", e);
