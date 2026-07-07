@@ -1317,7 +1317,8 @@ export default function CabinetProject() {
       const user = data.user;
       console.log("Logged in user:", user);
       
-      const { data: prof, error: profError } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+      const { data: profiles, error: profError } = await supabase.from("profiles").select("*").eq("id", user.id);
+      const prof = profiles?.[0];
       console.log("Profile response:", { prof, profError });
       
       const isAdmin = prof?.is_admin || false;
@@ -1447,7 +1448,8 @@ export default function CabinetProject() {
       console.log("Auth user:", user);
       
       if (user) {
-        const { data: prof, error } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+        const { data: profiles, error } = await supabase.from("profiles").select("*").eq("id", user.id);
+        const prof = profiles?.[0];
         console.log("Profile data:", prof);
         console.log("Profile error:", error);
         
