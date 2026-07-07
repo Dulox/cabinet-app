@@ -1296,6 +1296,9 @@ export default function CabinetProject() {
     { id: 1, name: "Cabinet 1", type: "base", width: "600", doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null, params: { ...DEFAULTS } },
   ]);
   const [selectedId, setSelectedId] = useState(1);
+  const [currentProjectId, setCurrentProjectId] = useState(null);
+  const [currentProjectName, setCurrentProjectName] = useState("My Project");
+  const [saveStatus, setSaveStatus] = useState(""); // "saving", "saved", "error"
   
   // Login handler
   const handleLogin = async () => {
@@ -1413,6 +1416,70 @@ export default function CabinetProject() {
     setPendingUsers([]);
   };
 
+  // Save project to Supabase
+  const saveProject = async (projectId, name, cabinets) => {
+    if (!supabase || !authState?.user?.id) return;
+    
+    try {
+      setSaveStatus("saving");
+      const { error } = await supabase.from("cabinet_projects").upsert({
+        id: projectId,
+        user_id: authState.user.id,
+        name: name,
+        cabs: cabinets,
+        updated_at: new Date().toISOString(),
+      });
+      
+      if (error) {
+        console.error("Save error:", error);
+        setSaveStatus("error");
+      } else {
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus(""), 2000);
+      }
+    } catch (e) {
+      console.error("Save failed:", e);
+      setSaveStatus("error");
+    }
+  };
+
+  // Load user's projects from Supabase
+  const loadUserProjects = async () => {
+    if (!supabase || !authState?.user?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("cabinet_projects")
+        .select("*")
+        .eq("user_id", authState.user.id)
+        .order("updated_at", { ascending: false });
+      
+      if (error) {
+        console.error("Load error:", error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        // Load the most recent project
+        const project = data[0];
+        setCurrentProjectId(project.id);
+        setCurrentProjectName(project.name);
+        setCabs(project.cabs || []);
+        if (project.cabs?.length > 0) {
+          setSelectedId(project.cabs[0].id);
+        }
+      } else {
+        // Create a new default project
+        const newProjectId = crypto.randomUUID();
+        setCurrentProjectId(newProjectId);
+        setCurrentProjectName("My Project");
+        await saveProject(newProjectId, "My Project", cabs);
+      }
+    } catch (e) {
+      console.error("Load failed:", e);
+    }
+  };
+
   // Load Supabase library from CDN on mount
   useEffect(() => {
     const loadSupabase = async () => {
@@ -1483,6 +1550,24 @@ export default function CabinetProject() {
       setAuthLoading(false);
     }
   };
+
+  // Load projects when user logs in
+  useEffect(() => {
+    if (authState?.user?.id && currentProjectId === null) {
+      loadUserProjects();
+    }
+  }, [authState?.user?.id]);
+
+  // Auto-save projects when cabinets change (debounced)
+  useEffect(() => {
+    if (!currentProjectId || !authState?.user?.id || cabs.length === 0) return;
+    
+    const timer = setTimeout(() => {
+      saveProject(currentProjectId, currentProjectName, cabs);
+    }, 1000); // Save 1 second after last change
+    
+    return () => clearTimeout(timer);
+  }, [cabs, currentProjectName]);
 
   const t = (key) => translations[lang][key] || translations["en"][key] || key;
   const btn = (bg, col, brd) => ({ padding: "8px 14px", borderRadius: 8, cursor: "pointer",
@@ -1760,8 +1845,8 @@ export default function CabinetProject() {
         <div style={{ borderBottom: `2px solid ${C.ink}`, paddingBottom: 12, marginBottom: 18,
           display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, letterSpacing: "0.22em", color: C.rust, fontWeight: 700, textTransform: "uppercase" }}>{t("Shop drawing · mm")}</div>
-            <input value={projectName} onChange={(e) => setProjectName(e.target.value)} className="cab-name"
+            <div style={{ fontSize: 11, letterSpacing: "0.22em", color: C.rust, fontWeight: 700, textTransform: "uppercase" }}>{t("Shop drawing · mm")} {saveStatus && <span style={{ fontSize: 10, color: saveStatus === "error" ? "#e74c3c" : "#27ae60" }}>{saveStatus === "saving" ? "Saving..." : "Saved ✓"}</span>}</div>
+            <input value={currentProjectName} onChange={(e) => setCurrentProjectName(e.target.value)} className="cab-name"
               style={{ margin: "2px 0 0", fontSize: 27, fontWeight: 800, letterSpacing: "-0.01em", border: "none",
                 background: "transparent", color: C.ink, outline: "none", fontFamily: "'Archivo', sans-serif", maxWidth: "100%" }} />
           </div>
