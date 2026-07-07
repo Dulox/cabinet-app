@@ -1485,6 +1485,8 @@ export default function CabinetProject() {
   };
 
   const t = (key) => translations[lang][key] || translations["en"][key] || key;
+  const btn = (bg, col, brd) => ({ padding: "8px 14px", borderRadius: 8, cursor: "pointer",
+    border: brd, background: bg, color: col, fontWeight: 700, fontSize: 13 });
 
   const updateCab = (id, patch) => setCabs((cs) => cs.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   const addCab = () => { const nc = newCab(cabs.length + 1); setCabs((cs) => [...cs, nc]); setSelectedId(nc.id); };
