@@ -1312,7 +1312,7 @@ export default function CabinetProject() {
       }
       const user = data.user;
       const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-      const isAdmin = loginEmail === ADMIN_EMAIL;
+      const isAdmin = prof?.is_admin || false;
       setAuthState({ user, approved: prof?.approved || false, isAdmin });
       if (isAdmin) {
         const { data: pending } = await supabase.from("profiles").select("*").eq("approved", false);
@@ -1440,8 +1440,14 @@ export default function CabinetProject() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-        const isAdmin = user.email === ADMIN_EMAIL;
+        const { data: prof, error } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+        if (error) {
+          console.error("Profile fetch error:", error);
+          setAuthLoading(false);
+          return;
+        }
+        
+        const isAdmin = prof?.is_admin || false;
         setAuthState({ user, approved: prof?.approved || false, isAdmin });
 
         if (isAdmin) {
