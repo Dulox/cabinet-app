@@ -1,4 +1,61 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+
+// Supabase client for auth + cabinet projects
+const SUPABASE_URL = "https://sgcsvwxzppbldwatmzzq.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_tn6dBkwNzm-H99OAcurSJw_f4lB2o-G";
+const ADMIN_EMAIL = "mario@gmail.com"; // Your admin email — approve signups here
+
+// Simple Supabase client (no @supabase/js dependency, pure fetch-based)
+const createSupabaseClient = () => ({
+  auth: {
+    signUp: async (email, password) => {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
+        body: JSON.stringify({ email, password }),
+      });
+      return res.json();
+    },
+    signIn: async (email, password) => {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
+        body: JSON.stringify({ email, password }),
+      });
+      return res.json();
+    },
+    signOut: () => localStorage.removeItem("cabinet_session"),
+    getSession: () => {
+      const s = localStorage.getItem("cabinet_session");
+      return s ? JSON.parse(s) : null;
+    },
+  },
+  db: {
+    getProfile: async (token, userId) => {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+        headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY },
+      });
+      const data = await res.json();
+      return data[0] || null;
+    },
+    updateProfile: async (token, userId, approved) => {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ approved }),
+      });
+      return res.json();
+    },
+    getPendingProfiles: async (token) => {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?approved=eq.false`, {
+        headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY },
+      });
+      return res.json();
+    },
+  },
+});
+
+const supabase = createSupabaseClient();
 
 /* ------------------------------------------------------------------ *
  * Base Cabinet Cut List — shop-drawing style calculator (mm)
@@ -8,21 +65,21 @@ import React, { useState, useMemo } from "react";
  * ------------------------------------------------------------------ */
 
 const C = {
-  paper: "#E7E8E1", card: "#F5F5F0", ink: "#15170F", mut: "#5C5E52",
-  hair: "rgba(21,23,15,0.12)", amber: "#E0A11A", rust: "#C24628",
-  mat: "#1E2A23", matLine: "rgba(224,161,26,0.16)",
-  panel: "#D8D0BD", panelEdge: "#B6AC92",
+  paper: "#EAEAE7", card: "#FBFBF9", ink: "#20232A", mut: "#6B6F76",
+  hair: "rgba(32,35,42,0.13)", amber: "#E4572E", rust: "#E4572E",
+  mat: "#24272E", matLine: "rgba(228,87,46,0.13)",
+  panel: "#DEDEDA", panelEdge: "#B7B7B1",
 };
 
 const DEFAULTS = {
   t: 19, sideH: 786, sideD: 610,
-  railH: 100, railQty: 2,
+  railH: 100, railQty: 2, frontRailH: 50,
   doorReveal: 2, doorGap: 3, doorH: 786,
   shelfSetback: 40, shelfClearance: 2, falseFrontH: 0,
   backBetween: true, backOnBottom: false,
   backType: "melamine", thinBackT: 3, grooveDepthOffset: 2,
   boardW: 2800, boardH: 2070, kerf: 4, allowRotate: true,
-  cornerDoorW: 400, cornerStileW: 100, cornerBlindW: 200,
+  cornerDoorW: 400, cornerStileW: 100, cornerBlindW: 200, baseBuildUp: 2,
   drawerBoxes: true, drawerSideClear: 13, drawerBoxDepth: 500, drawerBoxHReduce: 20,
 };
 
@@ -289,8 +346,10 @@ const translations = {
     "32mm spacing · drill 5mm diameter holes": "Espaciado 32mm · perforar agujeros de 5mm de diámetro",
     "Shared specifications & assumptions": "Especificaciones y supuestos comunes",
     "Shop drawing · mm": "Plano de taller · mm",
+    "Cabinets": "Armarios", "Log in": "Iniciar sesión",
+    "Private access is coming soon — sign-in with owner approval. For now the app is open.": "El acceso privado llegará pronto — inicio de sesión con aprobación del propietario. Por ahora la app es abierta.",
     "Side": "Lado", "Bottom": "Fondo", "Top": "Tapa", "Back": "Espalda",
-    "Rail / Support": "Riel / Soporte", "Shelf": "Estante", "Separator (fixed)": "Separador (fijo)",
+    "Rail / Support": "Riel / Soporte", "Rail / Support (front)": "Riel / Soporte (frontal)", "Rail / Support (back)": "Riel / Soporte (trasero)", "Shelf": "Estante", "Separator (fixed)": "Separador (fijo)",
     "Door": "Puerta", "Door (pair)": "Puertas (par)", "Door (flap, stacked)": "Puerta (abatible, apilada)",
     "Blind / filler panel": "Panel ciego / relleno", "False drawer front": "Frente de gaveta falso",
     "Drawer front": "Frente de gaveta", "Drawer box side": "Lado de caja de gaveta",
@@ -304,12 +363,14 @@ const translations = {
     "Melamine (full)": "Melamina (completo)", "Thin hardboard": "Hardboard delgado",
     "Back thickness": "Espesor del trasero", "Groove depth +": "Prof. de ranura +",
     "Side height": "Alto del lado", "Side depth": "Prof. del lado", "Rail height": "Alto del riel",
+    "Back rail height": "Alto riel trasero", "Front rail height": "Alto riel frontal",
     "Rail qty": "Cant. de rieles", "Shelf setback": "Retroceso del estante", "Shelf clearance": "Holgura del estante",
     "Door height": "Alto de puerta", "Door reveal": "Huelgo de puerta", "Door gap (pair)": "Separación entre puertas",
     "False front H": "Alto frente falso", "Corner door W": "Ancho puerta esquinera",
     "Door side": "Lado de la puerta", "Left": "Izquierda", "Right": "Derecha",
     "Blind panel W": "Ancho panel ciego", "Corner stile W": "Ancho montante esquina",
     "Corner blind W (default)": "Ancho panel ciego (predet.)", "Hinge stile / rail": "Montante de bisagras",
+    "Base build-up (top)": "Refuerzo superior base",
     "Slide clear/side": "Holgura corredera/lado", "Drawer box depth": "Prof. caja de gaveta",
     "Box H = front −": "Alto caja = frente −", "Include drawer boxes": "Incluir cajas de gaveta",
     "Board width": "Ancho del tablero", "Board height": "Alto del tablero", "Saw kerf": "Ancho de corte",
@@ -376,8 +437,10 @@ function buildCutList(W, p, cab) {
       note: "Fixed size" },
     { part: "Bottom", qty: 1, a: carcassW, b: bottomDepth, aLabel: "width", bLabel: "depth",
       note: `width = ${W} − ${2 * t} · depth = ${p.sideD} − ${backThick} (back)` },
-    { part: "Rail / Support", qty: p.railQty, a: carcassW, b: p.railH, aLabel: "length", bLabel: "height",
-      note: `length = ${W} − ${2 * t}` },
+    { part: "Rail / Support (front)", qty: 1, a: carcassW, b: (p.frontRailH != null ? p.frontRailH : p.railH), aLabel: "length", bLabel: "height",
+      note: `length = ${W} − ${2 * t} · front rail` },
+    ...(p.railQty > 1 ? [{ part: "Rail / Support (back)", qty: p.railQty - 1, a: carcassW, b: p.railH, aLabel: "length", bLabel: "height",
+      note: `length = ${W} − ${2 * t} · back rail` }] : []),
     { part: thinBack ? `Back — ${backThick} mm hardboard` : "Back", qty: 1, a: thinBack ? W : backW, b: backH,
       aLabel: "width", bLabel: "height", material: thinBack ? "hardboard" : "melamine",
       note: `${thinBack ? `full width ${W} (sits in grooves on sides)` : (p.backBetween ? `width = ${W} − ${2 * t}` : "full width")} · ${
@@ -392,28 +455,33 @@ function buildCutList(W, p, cab) {
   }
 
   const faces = []; // {x,y,w,h,split,kind} in mm relative to cabinet front (y down from top)
-  // Wall cabinets: full height. Base cabinets: full height minus 2mm clearance for granite
+  // Base cabinets get a build-up strip along the top front edge (for strength /
+  // countertop fixing). Doors and drawer fronts must drop below it so they open
+  // without friction. buildUp is the height removed from the top of every front.
   const isWallLiftUp = (cab.type === "wall" && cab.hingeType === "lift-up");
-  const doorH_calc = (cab.type === "wall") ? p.doorH : (p.doorH - 2); // base = full height - 2mm granite clearance
+  const buildUp = (cab.type === "wall") ? 0 : (p.baseBuildUp != null ? p.baseBuildUp : 0);
+  const frontH = round1(p.doorH - buildUp);
+  const buildNote = buildUp ? ` · −${buildUp} base build-up` : "";
+  const doorH_calc = frontH;
   const door = (n) => parts.push(n === 1
     ? { part: "Door", qty: 1, a: doorTotal, b: doorH_calc, aLabel: "width", bLabel: "height",
-        note: `width = ${W} − ${p.doorReveal}` }
+        note: `width = ${W} − ${p.doorReveal}${buildNote}` }
     : { part: "Door (pair)", qty: 2, a: round1((doorTotal - p.doorGap) / 2), b: doorH_calc, aLabel: "width", bLabel: "height",
-        note: `each = (${W} − ${p.doorReveal} − ${p.doorGap} gap) ÷ 2` });
+        note: `each = (${W} − ${p.doorReveal} − ${p.doorGap} gap) ÷ 2${buildNote}` });
 
   if (cab.type === "drawers") {
     const heights = (cab.drawerHeights && cab.drawerHeights.length) ? cab.drawerHeights
-      : splitHeights(p.doorH, cab.drawerCount || 3, p.doorGap);
+      : splitHeights(frontH, cab.drawerCount || 3, p.doorGap);
     const boxW = carcassW - 2 * p.drawerSideClear; // outer box width (opening − slide clearance)
     const fbW = boxW - 2 * t;                       // front/back fit between the box sides
-    let y = 0;
+    let y = buildUp;
     const dmap = new Map();
     const add = (part, a, b, aL, bL, note, q = 1) => {
       const key = `${part}|${a}|${b}`; const e = dmap.get(key);
       if (e) e.qty += q; else dmap.set(key, { part, qty: q, a, b, aLabel: aL, bLabel: bL, note });
     };
     heights.forEach((h) => {
-      add("Drawer front", doorTotal, h, "width", "height", `width = ${W} − ${p.doorReveal}`);
+      add("Drawer front", doorTotal, h, "width", "height", `width = ${W} − ${p.doorReveal}${buildNote}`);
       faces.push({ x: rev, y, w: doorTotal, h, split: 1, kind: "drawer" });
       y += h + p.doorGap;
       if (p.drawerBoxes) {
@@ -429,36 +497,36 @@ function buildCutList(W, p, cab) {
     [...dmap.values()].forEach((x) => parts.push(x));
   } else if (cab.type === "stove") {
     const drawerH = cab.falseFront ? p.falseFrontH : 0;
-    const lowerH = p.doorH - drawerH;
+    const lowerH = round1(frontH - drawerH);
     if (cab.falseFront) {
       parts.push({ part: "False drawer front", qty: 1, a: doorTotal, b: p.falseFrontH, aLabel: "width", bLabel: "height",
         note: `top dummy drawer face · width = ${W} − ${p.doorReveal}` });
-      faces.push({ x: rev, y: 0, w: doorTotal, h: p.falseFrontH, split: 1, kind: "drawer" });
+      faces.push({ x: rev, y: buildUp, w: doorTotal, h: p.falseFrontH, split: 1, kind: "drawer" });
     }
     if ((cab.front || "doors") === "doors") {
       parts.push({ part: "Door (pair)", qty: 2, a: round1((doorTotal - p.doorGap) / 2), b: lowerH, aLabel: "width", bLabel: "height",
-        note: `each = (${W} − ${p.doorReveal} − ${p.doorGap} gap) ÷ 2${drawerH ? ` · height = ${p.doorH} − ${drawerH}` : ""}` });
+        note: `each = (${W} − ${p.doorReveal} − ${p.doorGap} gap) ÷ 2 · height = ${frontH} − ${drawerH}${buildNote}` });
       const eachDoorW = round1((doorTotal - p.doorGap) / 2);
-      faces.push({ x: rev, y: drawerH, w: eachDoorW, h: lowerH, split: 1, kind: "door" });
-      faces.push({ x: rev + eachDoorW + p.doorGap, y: drawerH, w: eachDoorW, h: lowerH, split: 1, kind: "door" });
+      faces.push({ x: rev, y: drawerH + buildUp, w: eachDoorW, h: lowerH, split: 1, kind: "door" });
+      faces.push({ x: rev + eachDoorW + p.doorGap, y: drawerH + buildUp, w: eachDoorW, h: lowerH, split: 1, kind: "door" });
     } else {
       parts.push({ part: "False front", qty: 1, a: doorTotal, b: lowerH, aLabel: "width", bLabel: "height",
-        note: `full lower panel${drawerH ? ` · height = ${p.doorH} − ${drawerH}` : ""}` });
-      faces.push({ x: rev, y: drawerH, w: doorTotal, h: lowerH, split: 1, kind: "false" });
+        note: `full lower panel · height = ${frontH} − ${drawerH}${buildNote}` });
+      faces.push({ x: rev, y: drawerH + buildUp, w: doorTotal, h: lowerH, split: 1, kind: "false" });
     }
   } else if (cab.type === "sink") {
     if (cab.falseFront) {
       parts.push({ part: "False drawer front", qty: 1, a: doorTotal, b: p.falseFrontH, aLabel: "width", bLabel: "height",
         note: `top dummy drawer face (no working drawer over basin) · width = ${W} − ${p.doorReveal}` });
-      faces.push({ x: rev, y: 0, w: doorTotal, h: p.falseFrontH, split: 1, kind: "drawer" });
+      faces.push({ x: rev, y: buildUp, w: doorTotal, h: p.falseFrontH, split: 1, kind: "drawer" });
     }
     const lowerY = cab.falseFront ? p.falseFrontH : 0;
-    const lowerH = p.doorH - lowerY;
+    const lowerH = round1(frontH - lowerY);
     parts.push({ part: "Door (pair)", qty: 2, a: round1((doorTotal - p.doorGap) / 2), b: lowerH, aLabel: "width", bLabel: "height",
-      note: `each = (${W} − ${p.doorReveal} − ${p.doorGap} gap) ÷ 2${lowerY ? ` · height = ${p.doorH} − ${lowerY}` : ""}` });
+      note: `each = (${W} − ${p.doorReveal} − ${p.doorGap} gap) ÷ 2 · height = ${frontH} − ${lowerY}${buildNote}` });
     const eachDoorW = round1((doorTotal - p.doorGap) / 2);
-    faces.push({ x: rev, y: lowerY, w: eachDoorW, h: lowerH, split: 1, kind: "door" });
-    faces.push({ x: rev + eachDoorW + p.doorGap, y: lowerY, w: eachDoorW, h: lowerH, split: 1, kind: "door" });
+    faces.push({ x: rev, y: lowerY + buildUp, w: eachDoorW, h: lowerH, split: 1, kind: "door" });
+    faces.push({ x: rev + eachDoorW + p.doorGap, y: lowerY + buildUp, w: eachDoorW, h: lowerH, split: 1, kind: "door" });
   } else if (cab.type === "corner") {
     const doorOnLeft = (cab.cornerSide || "left") === "left";
     const stileW = p.cornerStileW || 100;
@@ -467,18 +535,18 @@ function buildCutList(W, p, cab) {
     const req = (cab.blindW != null && cab.blindW !== "") ? Number(cab.blindW) : (p.cornerBlindW || 200);
     const blindW = round1(Math.max(40, Math.min(req, Math.max(40, maxBlind))));
     const dW = round1(doorTotal - blindW - p.doorGap);
-    parts.push({ part: "Door", qty: 1, a: dW, b: p.doorH, aLabel: "width", bLabel: "height",
-      note: `corner door (${doorOnLeft ? "left side" : "right side"}) · width = ${doorTotal} − ${blindW} blind − ${p.doorGap} gap` });
-    parts.push({ part: "Blind / filler panel", qty: 1, a: blindW, b: p.doorH, aLabel: "width", bLabel: "height",
-      note: `covers the dead corner (${doorOnLeft ? "right side" : "left side"}) · width set to ${blindW}` });
+    parts.push({ part: "Door", qty: 1, a: dW, b: frontH, aLabel: "width", bLabel: "height",
+      note: `corner door (${doorOnLeft ? "left side" : "right side"}) · width = ${doorTotal} − ${blindW} blind − ${p.doorGap} gap${buildNote}` });
+    parts.push({ part: "Blind / filler panel", qty: 1, a: blindW, b: frontH, aLabel: "width", bLabel: "height",
+      note: `covers the dead corner (${doorOnLeft ? "right side" : "left side"}) · width set to ${blindW}${buildNote}` });
     parts.push({ part: "Hinge stile / rail", qty: 1, a: stileW, b: round1(p.sideH - 2 * t), aLabel: "depth", bLabel: "height",
       note: `vertical, fixed 90° · between bottom and top rail · height = ${p.sideH} − ${2 * t} · door hinges screw to it` });
     if (doorOnLeft) {
-      faces.push({ x: rev, y: 0, w: dW, h: p.doorH, split: 1, kind: "door", hinge: "right" });
-      faces.push({ x: rev + dW + p.doorGap, y: 0, w: blindW, h: p.doorH, split: 1, kind: "blind" });
+      faces.push({ x: rev, y: buildUp, w: dW, h: frontH, split: 1, kind: "door", hinge: "right" });
+      faces.push({ x: rev + dW + p.doorGap, y: buildUp, w: blindW, h: frontH, split: 1, kind: "blind" });
     } else {
-      faces.push({ x: rev, y: 0, w: blindW, h: p.doorH, split: 1, kind: "blind" });
-      faces.push({ x: rev + blindW + p.doorGap, y: 0, w: dW, h: p.doorH, split: 1, kind: "door", hinge: "left" });
+      faces.push({ x: rev, y: buildUp, w: blindW, h: frontH, split: 1, kind: "blind" });
+      faces.push({ x: rev + blindW + p.doorGap, y: buildUp, w: dW, h: frontH, split: 1, kind: "door", hinge: "left" });
     }
   } else if (cab.type === "wall") {
     // wall cabinet - 305mm depth, top + bottom, 1 rail at top for wall mounting
@@ -543,12 +611,12 @@ function buildCutList(W, p, cab) {
     }
   } else {
     // base
-    if (cab.doorCount === 1) { door(1); faces.push({ x: rev, y: 0, w: doorTotal, h: doorH_calc, split: 1, kind: "door" }); }
+    if (cab.doorCount === 1) { door(1); faces.push({ x: rev, y: buildUp, w: doorTotal, h: doorH_calc, split: 1, kind: "door" }); }
     else if (cab.doorCount === 2) { 
       door(2);
       const eachDoorW = round1((doorTotal - p.doorGap) / 2);
-      faces.push({ x: rev, y: 0, w: eachDoorW, h: doorH_calc, split: 1, kind: "door" }); 
-      faces.push({ x: rev + eachDoorW + p.doorGap, y: 0, w: eachDoorW, h: doorH_calc, split: 1, kind: "door" }); 
+      faces.push({ x: rev, y: buildUp, w: eachDoorW, h: doorH_calc, split: 1, kind: "door" }); 
+      faces.push({ x: rev + eachDoorW + p.doorGap, y: buildUp, w: eachDoorW, h: doorH_calc, split: 1, kind: "door" }); 
     }
   }
 
@@ -785,6 +853,9 @@ function tName(name, t) {
 /* Phrase-level translator for the freeform part notes. Leaves numbers and
    symbols intact; only swaps the recurring English vocabulary. */
 const NOTE_ES = [
+  ["front rail", "riel frontal"],
+  ["back rail", "riel trasero"],
+  ["base build-up", "refuerzo base"],
   ["vertical, fixed 90°", "vertical, fija a 90°"],
   ["between bottom and top rail", "entre el fondo y el riel superior"],
   ["door hinges screw to it", "las bisagras de la puerta se atornillan a él"],
@@ -1095,8 +1166,16 @@ const newCab = (n) => ({ id: ++SEQ, name: `Cabinet ${n}`, type: "base", width: "
   doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null, hingeType: "concealed" });
 
 export default function CabinetProject() {
+  // Auth state
+  const [authState, setAuthState] = useState(null); // { user, approved, isAdmin } or null if logged out
+  const [authLoading, setAuthLoading] = useState(true);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [signupMode, setSignupMode] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [pendingUsers, setPendingUsers] = useState([]);
+  
   const [lang, setLang] = useState("en");
-  const t = (key) => translations[lang][key] || translations["en"][key] || key;
   const [projectName, setProjectName] = useState("Cabinet project");
   const [p, setP] = useState(DEFAULTS);
   const [showSpec, setShowSpec] = useState(false);
@@ -1109,11 +1188,107 @@ export default function CabinetProject() {
   const [cabs, setCabs] = useState([
     { id: 1, name: "Cabinet 1", type: "base", width: "600", doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null },
   ]);
+  const [selectedId, setSelectedId] = useState(1);
+  const [loginOpen, setLoginOpen] = useState(false);
+  
+  // Login handler
+  const handleLogin = async () => {
+    setAuthError("");
+    try {
+      const res = await supabase.auth.signIn(loginEmail, loginPassword);
+      if (res.error) {
+        setAuthError(res.error.message || "Login failed");
+        return;
+      }
+      localStorage.setItem("cabinet_session", JSON.stringify(res));
+      const user = res.user || { id: "", email: loginEmail };
+      const prof = await supabase.db.getProfile(res.access_token, user.id);
+      const isAdmin = loginEmail === ADMIN_EMAIL;
+      setAuthState({ user, approved: prof?.approved || false, isAdmin });
+      if (isAdmin) {
+        supabase.db.getPendingProfiles(res.access_token).then(setPendingUsers);
+      }
+      setLoginEmail("");
+      setLoginPassword("");
+    } catch (e) {
+      setAuthError(e.message);
+    }
+  };
+
+  // Signup handler
+  const handleSignup = async () => {
+    setAuthError("");
+    try {
+      const res = await supabase.auth.signUp(loginEmail, loginPassword);
+      if (res.error) {
+        setAuthError(res.error.message || "Signup failed");
+        return;
+      }
+      const user = res.user || { id: "", email: loginEmail };
+      // Create profile row with approved=false
+      const sess = supabase.auth.getSession();
+      if (sess) {
+        await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${sess.access_token}`, apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({ id: user.id, email: loginEmail, approved: false }),
+        });
+      }
+      setAuthState({ user, approved: false, isAdmin: false });
+      setLoginEmail("");
+      setLoginPassword("");
+      setSignupMode(false);
+    } catch (e) {
+      setAuthError(e.message);
+    }
+  };
+
+  // Approve user handler (admin only)
+  const handleApprove = async (userId) => {
+    try {
+      const sess = supabase.auth.getSession();
+      if (sess) {
+        await supabase.db.updateProfile(sess.access_token, userId, true);
+        setPendingUsers((u) => u.filter((p) => p.id !== userId));
+      }
+    } catch (e) {
+      console.error("Approve failed:", e);
+    }
+  };
+
+  const handleLogout = () => {
+    supabase.auth.signOut();
+    setAuthState(null);
+    setPendingUsers([]);
+  };
+
+  // Check auth on mount
+  useEffect(() => {
+    const sess = supabase.auth.getSession();
+    if (sess && sess.access_token) {
+      const user = sess.user || { id: "", email: "" };
+      supabase.db.getProfile(sess.access_token, user.id).then((prof) => {
+        const isAdmin = user.email === ADMIN_EMAIL;
+        setAuthState({ user, approved: prof?.approved || false, isAdmin });
+        if (isAdmin) {
+          supabase.db.getPendingProfiles(sess.access_token).then(setPendingUsers);
+        }
+        setAuthLoading(false);
+      });
+    } else {
+      setAuthLoading(false);
+    }
+  }, []);
+
+  const t = (key) => translations[lang][key] || translations["en"][key] || key;
 
   const set = (k) => (v) => setP((s) => ({ ...s, [k]: v === "" ? "" : Number(v) }));
   const updateCab = (id, patch) => setCabs((cs) => cs.map((c) => (c.id === id ? { ...c, ...patch } : c)));
-  const addCab = () => setCabs((cs) => [...cs, newCab(cs.length + 1)]);
-  const removeCab = (id) => setCabs((cs) => cs.filter((c) => c.id !== id));
+  const addCab = () => { const nc = newCab(cabs.length + 1); setCabs((cs) => [...cs, nc]); setSelectedId(nc.id); };
+  const removeCab = (id) => {
+    setCabs((cs) => cs.filter((c) => c.id !== id));
+    if (id === selectedId) { const rest = cabs.filter((c) => c.id !== id); setSelectedId(rest.length ? rest[0].id : null); }
+  };
 
   const summary = useMemo(() => {
     let area = 0, pieces = 0, n = 0, hbArea = 0, hbPieces = 0;
@@ -1138,6 +1313,8 @@ export default function CabinetProject() {
   }, [cabs, p]);
 
   const today = new Date().toLocaleDateString();
+  const selectedCab = cabs.find((c) => c.id === selectedId) || cabs[0];
+  const selectedIndex = cabs.indexOf(selectedCab);
 
   const copyAll = async () => {
     const blocks = cabs.map((c, i) => {
@@ -1318,15 +1495,20 @@ export default function CabinetProject() {
         .cab-root *{box-sizing:border-box}
         .cab-root input[type=number]{-moz-appearance:textfield}
         .cab-root input::-webkit-outer-spin-button,.cab-root input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-        .cab-root input:focus,.cab-root select:focus{border-color:${C.amber}!important;box-shadow:0 0 0 3px rgba(224,161,26,.18)}
-        .cab-name:hover{background:rgba(224,161,26,.08)!important;border-radius:6px}
+        .cab-root input:focus,.cab-root select:focus{border-color:${C.amber}!important;box-shadow:0 0 0 3px rgba(228,87,46,.18)}
+        .cab-name:hover{background:rgba(228,87,46,.08)!important;border-radius:6px}
         .cab-btn{transition:background .15s,color .15s}
         .cab-panels rect{transition:x .35s ease,width .35s ease}
         .cab-row{transition:background .15s}
-        .cab-row:hover{background:rgba(224,161,26,.06)}
+        .cab-row:hover{background:rgba(228,87,46,.06)}
         .cab-printonly{display:none}
         @media (prefers-reduced-motion: reduce){.cab-panels rect,.cab-btn,.cab-row{transition:none}}
         @media (min-width:760px){.cab-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}.cab-card{margin-bottom:0}}
+        .cab-wb{display:flex;gap:22px;align-items:flex-start}
+        .cab-side{width:340px;flex-shrink:0}
+        .cab-main{flex:1;min-width:0}
+        .cab-nav{transition:background .15s,border-color .15s}
+        @media (max-width:900px){.cab-wb{flex-direction:column}.cab-side{width:100%}}
         @media print{
           @page{margin:14mm}
           .cab-root{background:#fff!important;padding:0!important}
@@ -1339,32 +1521,36 @@ export default function CabinetProject() {
         }
       `}</style>
 
-      <div style={{ maxWidth: 900, margin: "0 auto" }}>
-        <div style={{ borderBottom: `2px solid ${C.ink}`, paddingBottom: 10, marginBottom: 16,
-          display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12, flexWrap: "wrap" }}>
+      <div style={{ maxWidth: 1240, margin: "0 auto" }}>
+        <div style={{ borderBottom: `2px solid ${C.ink}`, paddingBottom: 12, marginBottom: 18,
+          display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 11, letterSpacing: "0.22em", color: C.rust, fontWeight: 700, textTransform: "uppercase" }}>{t("Shop drawing · mm")}</div>
             <input value={projectName} onChange={(e) => setProjectName(e.target.value)} className="cab-name"
-              style={{ margin: "2px 0 0", fontSize: 25, fontWeight: 800, letterSpacing: "-0.01em", border: "none",
+              style={{ margin: "2px 0 0", fontSize: 27, fontWeight: 800, letterSpacing: "-0.01em", border: "none",
                 background: "transparent", color: C.ink, outline: "none", fontFamily: "'Archivo', sans-serif", maxWidth: "100%" }} />
           </div>
-          <div style={{ textAlign: "right", fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.mut, lineHeight: 1.5 }}>
-            <div>{today}</div><div>{p.t}mm {t("melamine")}</div>
-            <button className="cab-noprint" onClick={() => setLang(lang === "en" ? "es" : "en")}
-              style={{ marginTop: 8, padding: "4px 8px", borderRadius: 5, border: `1px solid ${C.mut}`, background: "transparent",
-                color: C.mut, cursor: "pointer", fontSize: 11, fontWeight: 700, letterSpacing: "0.04em" }}>
+          <div className="cab-noprint" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <button onClick={downloadPDF} className="cab-btn" style={btn("transparent", C.ink, `1.5px solid ${C.ink}`)}>{t("Download PDF")}</button>
+            <button onClick={downloadShopPDF} className="cab-btn" style={btn(C.rust, "#fff", `1.5px solid ${C.rust}`)}>{t("Shop drawing PDF")}</button>
+            <button onClick={copyAll} className="cab-btn" style={btn(copied ? C.ink : "transparent", copied ? C.card : C.mut, `1px solid ${C.hair}`)}>
+              {copied ? t("Copied ✓") : t("Copy text")}</button>
+            <span style={{ width: 1, height: 22, background: C.hair, margin: "0 2px" }} />
+            <button className="cab-btn" onClick={() => setLang(lang === "en" ? "es" : "en")}
+              style={{ padding: "7px 11px", borderRadius: 8, border: `1.5px solid ${C.ink}`, background: "transparent",
+                color: C.ink, cursor: "pointer", fontSize: 12, fontWeight: 700, letterSpacing: "0.04em" }}>
               {lang === "en" ? "ES" : "EN"}
             </button>
+            <button className="cab-btn" onClick={() => setLoginOpen((v) => !v)} style={btn(C.ink, C.card, `1.5px solid ${C.ink}`)}>{t("Log in")}</button>
           </div>
         </div>
-
-        <div className="cab-noprint" style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-          <button onClick={addCab} className="cab-btn" style={btn(C.ink, C.card, `1.5px solid ${C.ink}`)}>{t("+ Add cabinet")}</button>
-          <button onClick={downloadPDF} className="cab-btn" style={btn("transparent", C.ink, `1.5px solid ${C.ink}`)}>{t("Download PDF")}</button>
-          <button onClick={downloadShopPDF} className="cab-btn" style={btn(C.rust, "#fff", `1.5px solid ${C.rust}`)}>{t("Shop drawing PDF")}</button>
-          <button onClick={copyAll} className="cab-btn" style={btn(copied ? C.ink : "transparent", copied ? C.card : C.mut, `1px solid ${C.hair}`)}>
-            {copied ? t("Copied ✓") : t("Copy text")}</button>
-        </div>
+        {loginOpen && (
+          <div className="cab-noprint" style={{ marginBottom: 16, background: C.card, border: `1px solid ${C.hair}`,
+            borderRadius: 12, padding: "14px 16px", fontSize: 13, color: C.ink, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <span>🔒 {t("Private access is coming soon — sign-in with owner approval. For now the app is open.")}</span>
+            <button onClick={() => setLoginOpen(false)} style={btn("transparent", C.mut, `1px solid ${C.hair}`)}>{t("Close")}</button>
+          </div>
+        )}
         {copyBox && (
           <div className="cab-noprint" style={{ marginTop: -8, marginBottom: 16 }}>
             <div style={{ fontSize: 12, color: C.mut, marginBottom: 6 }}>
@@ -1394,13 +1580,36 @@ export default function CabinetProject() {
           </div>
         )}
 
-        <div className="cab-cards">
-          {cabs.map((c, i) => (
-            <CabinetCard key={c.id} index={i} cab={c} p={p} t={t} lang={lang} canRemove={cabs.length > 1}
-              onChange={(patch) => updateCab(c.id, patch)} onRemove={() => removeCab(c.id)} />
-          ))}
-        </div>
+        <div className="cab-wb">
+          {/* LEFT: cabinet list */}
+          <aside className="cab-side cab-noprint">
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.mut, marginBottom: 8 }}>
+              {t("Cabinets")}
+            </div>
+            {cabs.map((c, i) => {
+              const on = c.id === selectedCab?.id;
+              return (
+                <button key={c.id} className="cab-nav" onClick={() => setSelectedId(c.id)}
+                  style={{ display: "block", width: "100%", textAlign: "left", cursor: "pointer",
+                    padding: "11px 13px", borderRadius: 10, marginBottom: 7, fontSize: 14, fontWeight: 700,
+                    border: `1px solid ${on ? C.ink : C.hair}`, background: on ? C.ink : C.card, color: on ? C.card : C.ink }}>
+                  {cabLabel(c, i, t)}
+                </button>
+              );
+            })}
+            <button onClick={addCab} className="cab-nav" style={{ display: "block", width: "100%", textAlign: "center", cursor: "pointer",
+              padding: "11px 13px", borderRadius: 10, fontSize: 14, fontWeight: 700, color: C.mut,
+              border: `1.5px dashed ${C.hair}`, background: "transparent" }}>
+              {t("+ Add cabinet")}
+            </button>
+          </aside>
 
+          {/* RIGHT: selected cabinet + totals */}
+          <div className="cab-main">
+            {selectedCab && (
+              <CabinetCard key={selectedCab.id} index={selectedIndex} cab={selectedCab} p={p} t={t} lang={lang} canRemove={cabs.length > 1}
+                onChange={(patch) => updateCab(selectedCab.id, patch)} onRemove={() => removeCab(selectedCab.id)} />
+            )}
         {/* totals + boards */}
         <div style={{ background: C.ink, color: C.card, borderRadius: 12, padding: "16px", marginTop: 4 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
@@ -1445,8 +1654,10 @@ export default function CabinetProject() {
             </div>
           )}
         </div>
+          </div>
+        </div>
 
-        <div className="cab-noprint" style={{ marginTop: 18 }}>
+        <div className="cab-noprint" style={{ marginTop: 20 }}>
           <button onClick={() => setShowSpec((s) => !s)} style={{ width: "100%", textAlign: "left",
             background: "transparent", cursor: "pointer", border: `1px dashed ${C.mut}`, borderRadius: 10,
             padding: "11px 14px", color: C.ink, fontWeight: 700, fontSize: 13, letterSpacing: "0.04em",
@@ -1484,7 +1695,8 @@ export default function CabinetProject() {
               )}
               <NumField label={t("Side height")} value={p.sideH} onChange={set("sideH")} />
               <NumField label={t("Side depth")} value={p.sideD} onChange={set("sideD")} />
-              <NumField label={t("Rail height")} value={p.railH} onChange={set("railH")} />
+              <NumField label={t("Back rail height")} value={p.railH} onChange={set("railH")} />
+              <NumField label={t("Front rail height")} value={p.frontRailH} onChange={set("frontRailH")} />
               <NumField label={t("Rail qty")} value={p.railQty} onChange={set("railQty")} suffix="" w={60} />
               <NumField label={t("Shelf setback")} value={p.shelfSetback} onChange={set("shelfSetback")} />
               <NumField label={t("Shelf clearance")} value={p.shelfClearance} onChange={set("shelfClearance")} />
@@ -1494,6 +1706,7 @@ export default function CabinetProject() {
               <NumField label={t("False front H")} value={p.falseFrontH} onChange={set("falseFrontH")} />
               <NumField label={t("Corner stile W")} value={p.cornerStileW} onChange={set("cornerStileW")} />
               <NumField label={t("Corner blind W (default)")} value={p.cornerBlindW} onChange={set("cornerBlindW")} />
+              <NumField label={t("Base build-up (top)")} value={p.baseBuildUp} onChange={set("baseBuildUp")} />
               <NumField label={t("Slide clear/side")} value={p.drawerSideClear} onChange={set("drawerSideClear")} />
               <NumField label={t("Drawer box depth")} value={p.drawerBoxDepth} onChange={set("drawerBoxDepth")} />
               <NumField label={t("Box H = front −")} value={p.drawerBoxHReduce} onChange={set("drawerBoxHReduce")} />
