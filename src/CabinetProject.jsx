@@ -1384,50 +1384,63 @@ export default function CabinetProject() {
     setPendingUsers([]);
   };
 
-  // Check auth on mount
+  // Load Supabase library from CDN on mount
   useEffect(() => {
-    // Load Supabase library from CDN if not already loaded
-    if (!window.supabase) {
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0";
-      script.async = true;
-      script.onload = () => {
-        if (window.supabase) {
-          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        }
-      };
-      document.head.appendChild(script);
-    } else {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    }
+    const loadSupabase = async () => {
+      if (window.supabase) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        return;
+      }
+
+      return new Promise((resolve) => {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0";
+        script.async = true;
+        script.onload = () => {
+          if (window.supabase) {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            resolve();
+          }
+        };
+        script.onerror = () => {
+          console.error("Failed to load Supabase library");
+          setAuthLoading(false);
+          resolve();
+        };
+        document.head.appendChild(script);
+      });
+    };
+
+    loadSupabase().then(() => {
+      // After Supabase loads, check auth
+      checkAuth();
+    });
   }, []);
 
-  // Check auth status
-  useEffect(() => {
-    if (!supabase) return;
-    
-    const checkAuth = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-          const isAdmin = user.email === ADMIN_EMAIL;
-          setAuthState({ user, approved: prof?.approved || false, isAdmin });
-          
-          if (isAdmin) {
-            const { data: pending } = await supabase.from("profiles").select("*").eq("approved", false);
-            setPendingUsers(pending || []);
-          }
+  const checkAuth = async () => {
+    if (!supabase) {
+      setAuthLoading(false);
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+        const isAdmin = user.email === ADMIN_EMAIL;
+        setAuthState({ user, approved: prof?.approved || false, isAdmin });
+
+        if (isAdmin) {
+          const { data: pending } = await supabase.from("profiles").select("*").eq("approved", false);
+          setPendingUsers(pending || []);
         }
-      } catch (e) {
-        console.error("Auth check failed:", e);
-      } finally {
-        setAuthLoading(false);
       }
-    };
-    
-    checkAuth();
-  }, []);
+    } catch (e) {
+      console.error("Auth check failed:", e);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
 
   const t = (key) => translations[lang][key] || translations["en"][key] || key;
 
