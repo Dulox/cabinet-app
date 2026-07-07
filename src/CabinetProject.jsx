@@ -1299,6 +1299,8 @@ export default function CabinetProject() {
   const [currentProjectId, setCurrentProjectId] = useState(null);
   const [currentProjectName, setCurrentProjectName] = useState("My Project");
   const [saveStatus, setSaveStatus] = useState(""); // "saving", "saved", "error"
+  const [userProjects, setUserProjects] = useState([]); // List of all user's projects
+  const [showProjectList, setShowProjectList] = useState(false);
   
   // Login handler
   const handleLogin = async () => {
@@ -1306,11 +1308,9 @@ export default function CabinetProject() {
       setAuthError("Supabase not loaded yet");
       return;
     }
-    console.log("Starting login with email:", loginEmail);
     setAuthError("");
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
-      console.log("Login response:", { data, error });
       
       if (error) {
         setAuthError(error.message || "Login failed");
@@ -1318,20 +1318,15 @@ export default function CabinetProject() {
       }
       
       const user = data.user;
-      console.log("Logged in user:", user);
       
       const { data: profiles, error: profError } = await supabase.from("profiles").select("*").eq("id", user.id);
       const prof = profiles?.[0];
-      console.log("Profile response:", { prof, profError });
       
       const isAdmin = prof?.is_admin || false;
-      console.log("Admin check result:", { is_admin: prof?.is_admin, isAdmin });
       
       setAuthState({ user, approved: prof?.approved || false, isAdmin });
-      console.log("Auth state set to:", { approved: prof?.approved, isAdmin });
       
       if (isAdmin) {
-        console.log("User is admin, fetching pending users");
         const { data: pending } = await supabase.from("profiles").select("*").eq("approved", false);
         setPendingUsers(pending || []);
       }
@@ -1339,7 +1334,6 @@ export default function CabinetProject() {
       setLoginEmail("");
       setLoginPassword("");
     } catch (e) {
-      console.error("Login error:", e);
       setAuthError(e.message);
     }
   };
@@ -1350,11 +1344,9 @@ export default function CabinetProject() {
       setAuthError("Supabase not loaded yet");
       return;
     }
-    console.log("Starting signup with email:", loginEmail);
     setAuthError("");
     try {
       const { data, error } = await supabase.auth.signUp({ email: loginEmail, password: loginPassword });
-      console.log("Signup response:", { data, error });
       
       if (error) {
         setAuthError(error.message || "Signup failed");
@@ -1362,11 +1354,9 @@ export default function CabinetProject() {
       }
       
       const user = data.user;
-      console.log("New user created:", user);
       const isAdmin = loginEmail === ADMIN_EMAIL;
       
       // Create profile row
-      console.log("Attempting to create profile with:", { id: user.id, email: loginEmail, approved: isAdmin, is_admin: isAdmin });
       const { error: profileError, data: profileData } = await supabase.from("profiles").insert({
         id: user.id,
         email: loginEmail,
@@ -1374,15 +1364,12 @@ export default function CabinetProject() {
         is_admin: isAdmin,
       });
       
-      console.log("Profile insert response:", { profileData, profileError });
       
       if (profileError) {
-        console.error("Profile creation failed:", profileError);
         setAuthError(profileError.message || "Failed to create profile");
         return;
       }
       
-      console.log("Profile created successfully");
       
       // Show message to log in
       setLoginEmail("");
@@ -1390,7 +1377,6 @@ export default function CabinetProject() {
       setSignupMode(false);
       setAuthError("Account created! Now log in with your credentials.");
     } catch (e) {
-      console.error("Signup error:", e);
       setAuthError(e.message);
     }
   };
@@ -1404,7 +1390,6 @@ export default function CabinetProject() {
         setPendingUsers((u) => u.filter((p) => p.id !== userId));
       }
     } catch (e) {
-      console.error("Approve failed:", e);
     }
   };
 
@@ -1431,14 +1416,12 @@ export default function CabinetProject() {
       });
       
       if (error) {
-        console.error("Save error:", error);
         setSaveStatus("error");
       } else {
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus(""), 2000);
       }
     } catch (e) {
-      console.error("Save failed:", e);
       setSaveStatus("error");
     }
   };
@@ -1455,11 +1438,11 @@ export default function CabinetProject() {
         .order("updated_at", { ascending: false });
       
       if (error) {
-        console.error("Load error:", error);
         return;
       }
       
       if (data && data.length > 0) {
+        setUserProjects(data);
         // Load the most recent project
         const project = data[0];
         setCurrentProjectId(project.id);
@@ -1469,6 +1452,7 @@ export default function CabinetProject() {
           setSelectedId(project.cabs[0].id);
         }
       } else {
+        setUserProjects([]);
         // Create a new default project
         const newProjectId = crypto.randomUUID();
         setCurrentProjectId(newProjectId);
@@ -1476,7 +1460,56 @@ export default function CabinetProject() {
         await saveProject(newProjectId, "My Project", cabs);
       }
     } catch (e) {
-      console.error("Load failed:", e);
+    }
+  };
+
+  // Create a new project
+  const createNewProject = async () => {
+    const newProjectId = crypto.randomUUID();
+    const newProjectName = `Project ${new Date().toLocaleDateString()}`;
+    const defaultCabs = [
+      { id: 1, name: "Cabinet 1", type: "base", width: "600", doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null, params: { ...DEFAULTS } },
+    ];
+    
+    setCurrentProjectId(newProjectId);
+    setCurrentProjectName(newProjectName);
+    setCabs(defaultCabs);
+    setSelectedId(1);
+    setShowProjectList(false);
+    
+    await saveProject(newProjectId, newProjectName, defaultCabs);
+    await loadUserProjects();
+  };
+
+  // Switch to a different project
+  const switchProject = async (projectId) => {
+    const project = userProjects.find(p => p.id === projectId);
+    if (!project) return;
+    
+    setCurrentProjectId(project.id);
+    setCurrentProjectName(project.name);
+    setCabs(project.cabs || []);
+    if (project.cabs?.length > 0) {
+      setSelectedId(project.cabs[0].id);
+    }
+    setShowProjectList(false);
+  };
+
+  // Delete a project
+  const deleteProject = async (projectId) => {
+    if (!supabase) return;
+    if (!confirm("Delete this project? This cannot be undone.")) return;
+    
+    try {
+      await supabase.from("cabinet_projects").delete().eq("id", projectId);
+      
+      if (projectId === currentProjectId) {
+        await loadUserProjects();
+      } else {
+        setUserProjects(userProjects.filter(p => p.id !== projectId));
+      }
+      setShowProjectList(false);
+    } catch (e) {
     }
   };
 
@@ -1499,7 +1532,6 @@ export default function CabinetProject() {
           }
         };
         script.onerror = () => {
-          console.error("Failed to load Supabase library");
           setAuthLoading(false);
           resolve();
         };
@@ -1521,22 +1553,17 @@ export default function CabinetProject() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      console.log("Auth user:", user);
       
       if (user) {
         const { data: profiles, error } = await supabase.from("profiles").select("*").eq("id", user.id);
         const prof = profiles?.[0];
-        console.log("Profile data:", prof);
-        console.log("Profile error:", error);
         
         if (error) {
-          console.error("Profile fetch error:", error);
           setAuthLoading(false);
           return;
         }
         
         const isAdmin = prof?.is_admin || false;
-        console.log("Setting auth state - approved:", prof?.approved, "isAdmin:", isAdmin);
         setAuthState({ user, approved: prof?.approved || false, isAdmin });
 
         if (isAdmin) {
@@ -1545,7 +1572,6 @@ export default function CabinetProject() {
         }
       }
     } catch (e) {
-      console.error("Auth check failed:", e);
     } finally {
       setAuthLoading(false);
     }
@@ -1850,7 +1876,33 @@ export default function CabinetProject() {
               style={{ margin: "2px 0 0", fontSize: 27, fontWeight: 800, letterSpacing: "-0.01em", border: "none",
                 background: "transparent", color: C.ink, outline: "none", fontFamily: "'Archivo', sans-serif", maxWidth: "100%" }} />
           </div>
-          <div className="cab-noprint" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <div className="cab-noprint" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end", position: "relative" }}>
+            <div style={{ position: "relative" }}>
+              <button onClick={() => setShowProjectList(!showProjectList)} className="cab-btn" style={btn("transparent", C.ink, `1.5px solid ${C.ink}`)}>
+                {userProjects.length} Projects ▼
+              </button>
+              {showProjectList && (
+                <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, background: C.card, border: `1px solid ${C.hair}`, borderRadius: 10, minWidth: 250, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", zIndex: 1000 }}>
+                  <div style={{ padding: 12 }}>
+                    <button onClick={createNewProject} style={{ width: "100%", padding: 10, background: C.rust, color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 12 }}>+ New Project</button>
+                    <div style={{ maxHeight: 300, overflowY: "auto" }}>
+                      {userProjects.length > 0 ? (
+                        userProjects.map((proj) => (
+                          <div key={proj.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: 6, background: proj.id === currentProjectId ? "#f0f0f0" : "transparent", marginBottom: 4, gap: 8 }}>
+                            <button onClick={() => switchProject(proj.id)} style={{ flex: 1, textAlign: "left", border: "none", background: "transparent", cursor: "pointer", fontSize: 13, color: proj.id === currentProjectId ? C.rust : C.ink, fontWeight: proj.id === currentProjectId ? 700 : 400 }}>
+                              {proj.name}
+                            </button>
+                            <button onClick={() => deleteProject(proj.id)} style={{ padding: "4px 8px", background: "#f0f0f0", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 12, color: "#e74c3c" }}>×</button>
+                          </div>
+                        ))
+                      ) : (
+                        <div style={{ padding: 10, fontSize: 12, color: C.mut }}>No projects yet</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
             <button onClick={downloadPDF} className="cab-btn" style={btn("transparent", C.ink, `1.5px solid ${C.ink}`)}>{t("Download PDF")}</button>
             <button onClick={downloadShopPDF} className="cab-btn" style={btn(C.rust, "#fff", `1.5px solid ${C.rust}`)}>{t("Shop drawing PDF")}</button>
             <button onClick={copyAll} className="cab-btn" style={btn(copied ? C.ink : "transparent", copied ? C.card : C.mut, `1px solid ${C.hair}`)}>
