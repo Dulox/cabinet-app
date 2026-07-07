@@ -1,61 +1,21 @@
 import React, { useState, useMemo, useEffect } from "react";
 
-// Supabase client for auth + cabinet projects
+// Supabase credentials
 const SUPABASE_URL = "https://sgcsvwxzppbldwatmzzq.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_tn6dBkwNzm-H99OAcurSJw_f4lB2o-G";
-const ADMIN_EMAIL = "mario@gmail.com"; // Your admin email — approve signups here
+const ADMIN_EMAIL = "mario@gmail.com";
 
-// Simple Supabase client (no @supabase/js dependency, pure fetch-based)
-const createSupabaseClient = () => ({
-  auth: {
-    signUp: async (email, password) => {
-      const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
-        body: JSON.stringify({ email, password }),
-      });
-      return res.json();
-    },
-    signIn: async (email, password) => {
-      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
-        body: JSON.stringify({ email, password }),
-      });
-      return res.json();
-    },
-    signOut: () => localStorage.removeItem("cabinet_session"),
-    getSession: () => {
-      const s = localStorage.getItem("cabinet_session");
-      return s ? JSON.parse(s) : null;
-    },
-  },
-  db: {
-    getProfile: async (token, userId) => {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
-        headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY },
-      });
-      const data = await res.json();
-      return data[0] || null;
-    },
-    updateProfile: async (token, userId, approved) => {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ approved }),
-      });
-      return res.json();
-    },
-    getPendingProfiles: async (token) => {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?approved=eq.false`, {
-        headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY },
-      });
-      return res.json();
-    },
-  },
-});
+// Initialize Supabase client via global window object (loaded via script tag below)
+let supabase = null;
 
-const supabase = createSupabaseClient();
+// Load Supabase library from CDN
+const loadSupabase = async () => {
+  if (window.supabase) {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+};
+
+loadSupabase();
 
 /* ------------------------------------------------------------------ *
  * Base Cabinet Cut List — shop-drawing style calculator (mm)
@@ -1339,20 +1299,24 @@ export default function CabinetProject() {
   
   // Login handler
   const handleLogin = async () => {
+    if (!supabase) {
+      setAuthError("Supabase not loaded yet");
+      return;
+    }
     setAuthError("");
     try {
-      const res = await supabase.auth.signIn(loginEmail, loginPassword);
-      if (res.error) {
-        setAuthError(res.error.message || "Login failed");
+      const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
+      if (error) {
+        setAuthError(error.message || "Login failed");
         return;
       }
-      localStorage.setItem("cabinet_session", JSON.stringify(res));
-      const user = res.user || { id: "", email: loginEmail };
-      const prof = await supabase.db.getProfile(res.access_token, user.id);
+      const user = data.user;
+      const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
       const isAdmin = loginEmail === ADMIN_EMAIL;
       setAuthState({ user, approved: prof?.approved || false, isAdmin });
       if (isAdmin) {
-        supabase.db.getPendingProfiles(res.access_token).then(setPendingUsers);
+        const { data: pending } = await supabase.from("profiles").select("*").eq("approved", false);
+        setPendingUsers(pending || []);
       }
       setLoginEmail("");
       setLoginPassword("");
@@ -1363,24 +1327,34 @@ export default function CabinetProject() {
 
   // Signup handler
   const handleSignup = async () => {
+    if (!supabase) {
+      setAuthError("Supabase not loaded yet");
+      return;
+    }
     setAuthError("");
     try {
-      const res = await supabase.auth.signUp(loginEmail, loginPassword);
-      if (res.error) {
-        setAuthError(res.error.message || "Signup failed");
+      const { data, error } = await supabase.auth.signUp({ email: loginEmail, password: loginPassword });
+      if (error) {
+        setAuthError(error.message || "Signup failed");
         return;
       }
-      const user = res.user || { id: "", email: loginEmail };
-      // Create profile row with approved=false
-      const sess = supabase.auth.getSession();
-      if (sess) {
-        await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${sess.access_token}`, apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
-          body: JSON.stringify({ id: user.id, email: loginEmail, approved: false }),
-        });
+      const user = data.user;
+      const isAdmin = loginEmail === ADMIN_EMAIL;
+      
+      // Create profile row
+      const { error: profileError } = await supabase.from("profiles").insert({
+        id: user.id,
+        email: loginEmail,
+        approved: isAdmin,
+        is_admin: isAdmin,
+      });
+      
+      if (profileError) {
+        setAuthError(profileError.message || "Failed to create profile");
+        return;
       }
-      setAuthState({ user, approved: false, isAdmin: false });
+      
+      setAuthState({ user, approved: isAdmin, isAdmin });
       setLoginEmail("");
       setLoginPassword("");
       setSignupMode(false);
@@ -1391,10 +1365,10 @@ export default function CabinetProject() {
 
   // Approve user handler (admin only)
   const handleApprove = async (userId) => {
+    if (!supabase) return;
     try {
-      const sess = supabase.auth.getSession();
-      if (sess) {
-        await supabase.db.updateProfile(sess.access_token, userId, true);
+      const { error } = await supabase.from("profiles").update({ approved: true }).eq("id", userId);
+      if (!error) {
         setPendingUsers((u) => u.filter((p) => p.id !== userId));
       }
     } catch (e) {
@@ -1403,27 +1377,56 @@ export default function CabinetProject() {
   };
 
   const handleLogout = () => {
-    supabase.auth.signOut();
+    if (supabase) {
+      supabase.auth.signOut();
+    }
     setAuthState(null);
     setPendingUsers([]);
   };
 
   // Check auth on mount
   useEffect(() => {
-    const sess = supabase.auth.getSession();
-    if (sess && sess.access_token) {
-      const user = sess.user || { id: "", email: "" };
-      supabase.db.getProfile(sess.access_token, user.id).then((prof) => {
-        const isAdmin = user.email === ADMIN_EMAIL;
-        setAuthState({ user, approved: prof?.approved || false, isAdmin });
-        if (isAdmin) {
-          supabase.db.getPendingProfiles(sess.access_token).then(setPendingUsers);
+    // Load Supabase library from CDN if not already loaded
+    if (!window.supabase) {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0";
+      script.async = true;
+      script.onload = () => {
+        if (window.supabase) {
+          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
-        setAuthLoading(false);
-      });
+      };
+      document.head.appendChild(script);
     } else {
-      setAuthLoading(false);
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
+  }, []);
+
+  // Check auth status
+  useEffect(() => {
+    if (!supabase) return;
+    
+    const checkAuth = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+          const isAdmin = user.email === ADMIN_EMAIL;
+          setAuthState({ user, approved: prof?.approved || false, isAdmin });
+          
+          if (isAdmin) {
+            const { data: pending } = await supabase.from("profiles").select("*").eq("approved", false);
+            setPendingUsers(pending || []);
+          }
+        }
+      } catch (e) {
+        console.error("Auth check failed:", e);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+    
+    checkAuth();
   }, []);
 
   const t = (key) => translations[lang][key] || translations["en"][key] || key;
