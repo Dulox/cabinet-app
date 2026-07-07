@@ -908,7 +908,8 @@ function trNote(note, lang) {
   return s;
 }
 
-function CabinetCard({ cab, p, index, t, lang, onChange, onRemove, canRemove }) {
+function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
+  const p = cab.params || DEFAULTS;
   const W = parseFloat(cab.width);
   const valid = !isNaN(W) && W > 2 * p.t + 10;
   const data = valid ? buildCutList(W, p, cab) : null;
@@ -1163,7 +1164,8 @@ function CabinetCard({ cab, p, index, t, lang, onChange, onRemove, canRemove }) 
 /* -------------------------------- app ----------------------------- */
 let SEQ = 2;
 const newCab = (n) => ({ id: ++SEQ, name: `Cabinet ${n}`, type: "base", width: "600",
-  doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null, hingeType: "concealed" });
+  doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null, hingeType: "concealed",
+  params: { ...DEFAULTS } });
 
 export default function CabinetProject() {
   // Auth state
@@ -1177,7 +1179,6 @@ export default function CabinetProject() {
   
   const [lang, setLang] = useState("en");
   const [projectName, setProjectName] = useState("Cabinet project");
-  const [p, setP] = useState(DEFAULTS);
   const [showSpec, setShowSpec] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copyBox, setCopyBox] = useState(null);
@@ -1186,7 +1187,7 @@ export default function CabinetProject() {
   const [pdfBlob, setPdfBlob] = useState(null);
   const [pdfName, setPdfName] = useState("cutlist.pdf");
   const [cabs, setCabs] = useState([
-    { id: 1, name: "Cabinet 1", type: "base", width: "600", doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null },
+    { id: 1, name: "Cabinet 1", type: "base", width: "600", doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null, params: { ...DEFAULTS } },
   ]);
   const [selectedId, setSelectedId] = useState(1);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -1282,7 +1283,6 @@ export default function CabinetProject() {
 
   const t = (key) => translations[lang][key] || translations["en"][key] || key;
 
-  const set = (k) => (v) => setP((s) => ({ ...s, [k]: v === "" ? "" : Number(v) }));
   const updateCab = (id, patch) => setCabs((cs) => cs.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   const addCab = () => { const nc = newCab(cabs.length + 1); setCabs((cs) => [...cs, nc]); setSelectedId(nc.id); };
   const removeCab = (id) => {
@@ -1290,12 +1290,24 @@ export default function CabinetProject() {
     if (id === selectedId) { const rest = cabs.filter((c) => c.id !== id); setSelectedId(rest.length ? rest[0].id : null); }
   };
 
+  const today = new Date().toLocaleDateString();
+  const selectedCab = cabs.find((c) => c.id === selectedId) || cabs[0];
+  const selectedIndex = cabs.indexOf(selectedCab);
+  
+  // Per-cabinet parameters — now selectedCab is defined
+  const setP = (k) => (v) => {
+    const val = typeof v === "boolean" ? v : (v === "" ? "" : Number(v));
+    updateCab(selectedId, { params: { ...selectedCab.params, [k]: val } });
+  };
+  const p = selectedCab.params || DEFAULTS;
+
   const summary = useMemo(() => {
     let area = 0, pieces = 0, n = 0, hbArea = 0, hbPieces = 0;
     let totalShelfPins = 0, totalHinges = 0, totalSlides = 0, totalHandles = 0;
     const items = [];
     cabs.forEach((c) => {
       const W = parseFloat(c.width);
+      const p = c.params || DEFAULTS;
       if (isNaN(W) || W <= 2 * p.t + 10) return;
       const d = buildCutList(W, p, c);
       area += d.area; pieces += d.pieces; hbArea += d.hbArea; hbPieces += d.hbPieces; n++;
@@ -1308,22 +1320,21 @@ export default function CabinetProject() {
         for (let i = 0; i < x.qty; i++) items.push({ w: x.a, h: x.b });
       });
     });
+    const p = selectedCab.params || DEFAULTS;
     const board = estimateBoards(items, p);
     return { area, pieces, n, board, hbArea, hbPieces, shelfPins: totalShelfPins, hinges: totalHinges, slides: totalSlides, handles: totalHandles };
-  }, [cabs, p]);
-
-  const today = new Date().toLocaleDateString();
-  const selectedCab = cabs.find((c) => c.id === selectedId) || cabs[0];
-  const selectedIndex = cabs.indexOf(selectedCab);
+  }, [cabs, selectedCab]);
 
   const copyAll = async () => {
     const blocks = cabs.map((c, i) => {
       const W = parseFloat(c.width);
+      const p = c.params || DEFAULTS;
       if (isNaN(W) || W <= 2 * p.t + 10) return `${cabLabel(c, i, t)}: (${t("Width")} ?)`;
       const d = buildCutList(W, p, c);
       return [`${cabLabel(c, i, t)} — ${t(TYPES[c.type].label)} — ${W} mm`,
         ...d.parts.map((x) => `  ${x.qty}×  ${tName(x.part, t).padEnd(20)} ${fmt(x.a)} × ${fmt(x.b)} (${t(x.aLabel)} × ${t(x.bLabel)})`)].join("\n");
     });
+    const p = selectedCab.params || DEFAULTS;
     const text = [`${projectName} — ${today} — ${p.t}mm ${t("melamine")}`, "", ...blocks, "",
       `TOTAL: ${summary.pieces} ${t("pieces")} · ${summary.area.toFixed(2)} m²`,
       `${t("Boards")} (${p.boardW} × ${p.boardH}): ${t("about")} ${summary.board.boards}`].join("\n");
@@ -1607,7 +1618,7 @@ export default function CabinetProject() {
           {/* RIGHT: selected cabinet + totals */}
           <div className="cab-main">
             {selectedCab && (
-              <CabinetCard key={selectedCab.id} index={selectedIndex} cab={selectedCab} p={p} t={t} lang={lang} canRemove={cabs.length > 1}
+              <CabinetCard key={selectedCab.id} index={selectedIndex} cab={selectedCab} t={t} lang={lang} canRemove={cabs.length > 1}
                 onChange={(patch) => updateCab(selectedCab.id, patch)} onRemove={() => removeCab(selectedCab.id)} />
             )}
         {/* totals + boards */}
@@ -1669,14 +1680,14 @@ export default function CabinetProject() {
             <div style={{ background: C.card, border: `1px solid ${C.hair}`, borderRadius: 12, padding: 16, marginTop: 10, display: "flex", flexWrap: "wrap", gap: 16 }}>
               <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 <span style={labelCss}>{t("Melamine thickness")}</span>
-                <select value={p.t} onChange={(e) => setP((s) => ({ ...s, t: Number(e.target.value) }))} style={selCss}>
+                <select value={p.t} onChange={(e) => setP("t")(Number(e.target.value))} style={selCss}>
                   <option value={19}>19 mm</option>
                   <option value={15}>15 mm</option>
                 </select>
               </label>
               <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 <span style={labelCss}>{t("Back panel")}</span>
-                <select value={p.backType} onChange={(e) => setP((s) => ({ ...s, backType: e.target.value }))} style={selCss}>
+                <select value={p.backType} onChange={(e) => setP("backType")(e.target.value)} style={selCss}>
                   <option value="melamine">{t("Melamine (full)")}</option>
                   <option value="thin">{t("Thin hardboard")}</option>
                 </select>
@@ -1685,48 +1696,48 @@ export default function CabinetProject() {
                 <>
                   <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                     <span style={labelCss}>{t("Back thickness")}</span>
-                    <select value={p.thinBackT} onChange={(e) => setP((s) => ({ ...s, thinBackT: Number(e.target.value) }))} style={selCss}>
+                    <select value={p.thinBackT} onChange={(e) => setP("thinBackT")(Number(e.target.value))} style={selCss}>
                       <option value={3}>3 mm</option>
                       <option value={5.5}>5.5 mm</option>
                     </select>
                   </label>
-                  <NumField label={t("Groove depth +")} value={p.grooveDepthOffset} onChange={set("grooveDepthOffset")} suffix="mm" w={60} />
+                  <NumField label={t("Groove depth +")} value={p.grooveDepthOffset} onChange={setP("grooveDepthOffset")} suffix="mm" w={60} />
                 </>
               )}
-              <NumField label={t("Side height")} value={p.sideH} onChange={set("sideH")} />
-              <NumField label={t("Side depth")} value={p.sideD} onChange={set("sideD")} />
-              <NumField label={t("Back rail height")} value={p.railH} onChange={set("railH")} />
-              <NumField label={t("Front rail height")} value={p.frontRailH} onChange={set("frontRailH")} />
-              <NumField label={t("Rail qty")} value={p.railQty} onChange={set("railQty")} suffix="" w={60} />
-              <NumField label={t("Shelf setback")} value={p.shelfSetback} onChange={set("shelfSetback")} />
-              <NumField label={t("Shelf clearance")} value={p.shelfClearance} onChange={set("shelfClearance")} />
-              <NumField label={t("Door height")} value={p.doorH} onChange={set("doorH")} />
-              <NumField label={t("Door reveal")} value={p.doorReveal} onChange={set("doorReveal")} />
-              <NumField label={t("Door gap (pair)")} value={p.doorGap} onChange={set("doorGap")} />
-              <NumField label={t("False front H")} value={p.falseFrontH} onChange={set("falseFrontH")} />
-              <NumField label={t("Corner stile W")} value={p.cornerStileW} onChange={set("cornerStileW")} />
-              <NumField label={t("Corner blind W (default)")} value={p.cornerBlindW} onChange={set("cornerBlindW")} />
-              <NumField label={t("Base build-up (top)")} value={p.baseBuildUp} onChange={set("baseBuildUp")} />
-              <NumField label={t("Slide clear/side")} value={p.drawerSideClear} onChange={set("drawerSideClear")} />
-              <NumField label={t("Drawer box depth")} value={p.drawerBoxDepth} onChange={set("drawerBoxDepth")} />
-              <NumField label={t("Box H = front −")} value={p.drawerBoxHReduce} onChange={set("drawerBoxHReduce")} />
+              <NumField label={t("Side height")} value={p.sideH} onChange={setP("sideH")} />
+              <NumField label={t("Side depth")} value={p.sideD} onChange={setP("sideD")} />
+              <NumField label={t("Back rail height")} value={p.railH} onChange={setP("railH")} />
+              <NumField label={t("Front rail height")} value={p.frontRailH} onChange={setP("frontRailH")} />
+              <NumField label={t("Rail qty")} value={p.railQty} onChange={setP("railQty")} suffix="" w={60} />
+              <NumField label={t("Shelf setback")} value={p.shelfSetback} onChange={setP("shelfSetback")} />
+              <NumField label={t("Shelf clearance")} value={p.shelfClearance} onChange={setP("shelfClearance")} />
+              <NumField label={t("Door height")} value={p.doorH} onChange={setP("doorH")} />
+              <NumField label={t("Door reveal")} value={p.doorReveal} onChange={setP("doorReveal")} />
+              <NumField label={t("Door gap (pair)")} value={p.doorGap} onChange={setP("doorGap")} />
+              <NumField label={t("False front H")} value={p.falseFrontH} onChange={setP("falseFrontH")} />
+              <NumField label={t("Corner stile W")} value={p.cornerStileW} onChange={setP("cornerStileW")} />
+              <NumField label={t("Corner blind W (default)")} value={p.cornerBlindW} onChange={setP("cornerBlindW")} />
+              <NumField label={t("Base build-up (top)")} value={p.baseBuildUp} onChange={setP("baseBuildUp")} />
+              <NumField label={t("Slide clear/side")} value={p.drawerSideClear} onChange={setP("drawerSideClear")} />
+              <NumField label={t("Drawer box depth")} value={p.drawerBoxDepth} onChange={setP("drawerBoxDepth")} />
+              <NumField label={t("Box H = front −")} value={p.drawerBoxHReduce} onChange={setP("drawerBoxHReduce")} />
               <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
-                <input type="checkbox" checked={p.drawerBoxes} onChange={(e) => setP((s) => ({ ...s, drawerBoxes: e.target.checked }))} />
+                <input type="checkbox" checked={p.drawerBoxes} onChange={(e) => setP("drawerBoxes")(e.target.checked)} />
                 {t("Include drawer boxes")}
               </label>
-              <NumField label={t("Board width")} value={p.boardW} onChange={set("boardW")} />
-              <NumField label={t("Board height")} value={p.boardH} onChange={set("boardH")} />
-              <NumField label={t("Saw kerf")} value={p.kerf} onChange={set("kerf")} />
+              <NumField label={t("Board width")} value={p.boardW} onChange={setP("boardW")} />
+              <NumField label={t("Board height")} value={p.boardH} onChange={setP("boardH")} />
+              <NumField label={t("Saw kerf")} value={p.kerf} onChange={setP("kerf")} />
               <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
-                <input type="checkbox" checked={p.allowRotate} onChange={(e) => setP((s) => ({ ...s, allowRotate: e.target.checked }))} />
+                <input type="checkbox" checked={p.allowRotate} onChange={(e) => setP("allowRotate")(e.target.checked)} />
                 {t("Allow parts to rotate (no grain direction)")}
               </label>
               <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
-                <input type="checkbox" checked={p.backBetween} onChange={(e) => setP((s) => ({ ...s, backBetween: e.target.checked }))} />
+                <input type="checkbox" checked={p.backBetween} onChange={(e) => setP("backBetween")(e.target.checked)} />
                 {t("Back fits between sides")} (−{2 * p.t})
               </label>
               <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
-                <input type="checkbox" checked={p.backOnBottom} onChange={(e) => setP((s) => ({ ...s, backOnBottom: e.target.checked }))} />
+                <input type="checkbox" checked={p.backOnBottom} onChange={(e) => setP("backOnBottom")(e.target.checked)} />
                 {t("Back sits on bottom")} (−{p.t})
               </label>
             </div>
