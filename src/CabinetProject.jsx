@@ -351,7 +351,7 @@ const translations = {
     "Layout estimate — real nesting varies. Buy at least one spare board for offcuts and mistakes.":
       "Estimado de despiece — el anidado real varía. Compra al menos un tablero extra para recortes y errores.",
     "Hardboard backs (separate sheet)": "Traseros de hardboard (hoja aparte)",
-    "Shelf pins": "Soportes de estante", "Hinges": "Bisagras",
+    "Shelf pins": "Soportes de estante",
     "Drawer slide pairs": "Pares de correderas", "Handles / knobs": "Tiradores / pomos",
     "4 per shelf · 32mm spacing from": "4 por estante · espaciado 32mm desde",
     "2 per door · 35mm cup hinges": "2 por puerta · bisagras de cazoleta 35mm",
