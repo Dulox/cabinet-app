@@ -1703,22 +1703,41 @@ export default function CabinetProject() {
   const exportProjectToPDF = async () => {
     try {
       const doc = new MiniPDF();
-      // Use landscape mode (more space)
       const pageW = 297, pageH = 210, M = 8;
-      const colW = [14, 40, 14, 18, 18, 12, 100, 10, 10, 10, 10];
       let y = M;
-      const colX = [M];
-      for (let i = 1; i < colW.length; i++) colX.push(colX[i-1] + colW[i]);
+      
+      // Column positions (mm)
+      const col = {
+        elem: M,
+        nombre: M + 12,
+        cant: M + 50,
+        largo: M + 60,
+        ancho: M + 75,
+        grosor: M + 90,
+        desc: M + 105,
+        l1: M + 190,
+        l2: M + 205,
+        c1: M + 220,
+        c2: M + 235
+      };
       
       // Header
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      const headers = ["Elem", "Nombre de pieza", "Cant", "Largo", "Ancho", "Grosor", "Description", "L1", "L2", "C1", "C2"];
-      headers.forEach((h, i) => {
-        doc.text(h, colX[i] + colW[i]/2, y + 2, { maxWidth: colW[i] - 1, align: "center" });
-      });
-      doc.line(M, y + 4, pageW - M, y + 4);
-      y += 6;
+      doc.setFontSize(8);
+      doc.text("Elem", col.elem, y);
+      doc.text("Nombre", col.nombre, y);
+      doc.text("Cant", col.cant, y);
+      doc.text("Largo", col.largo, y);
+      doc.text("Ancho", col.ancho, y);
+      doc.text("Grosor", col.grosor, y);
+      doc.text("Description", col.desc, y);
+      doc.text("L1", col.l1, y);
+      doc.text("L2", col.l2, y);
+      doc.text("C1", col.c1, y);
+      doc.text("C2", col.c2, y);
+      
+      doc.line(M, y + 2, pageW - M, y + 2);
+      y += 5;
       
       // Collect all parts from all cabinets
       cabs.forEach((cab, cabIdx) => {
@@ -1742,42 +1761,44 @@ export default function CabinetProject() {
           const hasC2 = bandFront.has(part.part) || bandAll.has(part.part);
           
           // Check if we need a new page
-          if (y + 4 > pageH - M) {
+          if (y + 3 > pageH - M) {
             doc.addPage();
             y = M;
             doc.setFont("helvetica", "bold");
-            doc.setFontSize(9);
-            headers.forEach((h, i) => {
-              doc.text(h, colX[i] + colW[i]/2, y + 2, { maxWidth: colW[i] - 1, align: "center" });
-            });
-            doc.line(M, y + 4, pageW - M, y + 4);
-            y += 6;
+            doc.setFontSize(8);
+            doc.text("Elem", col.elem, y);
+            doc.text("Nombre", col.nombre, y);
+            doc.text("Cant", col.cant, y);
+            doc.text("Largo", col.largo, y);
+            doc.text("Ancho", col.ancho, y);
+            doc.text("Grosor", col.grosor, y);
+            doc.text("Description", col.desc, y);
+            doc.text("L1", col.l1, y);
+            doc.text("L2", col.l2, y);
+            doc.text("C1", col.c1, y);
+            doc.text("C2", col.c2, y);
+            doc.line(M, y + 2, pageW - M, y + 2);
+            y += 5;
           }
           
           doc.setFont("helvetica", "normal");
-          doc.setFontSize(8);
+          doc.setFontSize(7);
           
-          // Draw row
-          doc.text(String(cabIdx + 1), colX[0] + 2, y + 2);
-          doc.text(part.part, colX[1] + 2, y + 2, { maxWidth: colW[1] - 2 });
-          doc.text(String(part.qty), colX[2] + colW[2]/2, y + 2, { align: "center" });
-          doc.text(String(Math.round(longDim)), colX[3] + colW[3]/2, y + 2, { align: "center" });
-          doc.text(String(Math.round(shortDim)), colX[4] + colW[4]/2, y + 2, { align: "center" });
-          doc.text(String(p.t), colX[5] + colW[5]/2, y + 2, { align: "center" });
+          doc.text(String(cabIdx + 1), col.elem, y);
+          doc.text(part.part.substring(0, 30), col.nombre, y);
+          doc.text(String(part.qty), col.cant, y);
+          doc.text(String(Math.round(longDim)), col.largo, y);
+          doc.text(String(Math.round(shortDim)), col.ancho, y);
+          doc.text(String(p.t), col.grosor, y);
+          doc.text("", col.desc, y); // Skip description for now
           
-          // Truncate description to fit
-          const desc = (part.note || "").substring(0, 60);
-          doc.text(desc, colX[6] + 2, y + 2, { maxWidth: colW[6] - 2, fontSize: 7 });
+          if (hasL1) doc.text("x", col.l1, y);
+          if (hasL2) doc.text("x", col.l2, y);
+          if (hasC1) doc.text("x", col.c1, y);
+          if (hasC2) doc.text("x", col.c2, y);
           
-          // Edge band marks
-          if (hasL1) doc.text("x", colX[7] + colW[7]/2, y + 2, { align: "center" });
-          if (hasL2) doc.text("x", colX[8] + colW[8]/2, y + 2, { align: "center" });
-          if (hasC1) doc.text("x", colX[9] + colW[9]/2, y + 2, { align: "center" });
-          if (hasC2) doc.text("x", colX[10] + colW[10]/2, y + 2, { align: "center" });
-          
-          // Horizontal line between rows
-          doc.line(M, y + 3.5, pageW - M, y + 3.5);
-          y += 4;
+          doc.line(M, y + 2.5, pageW - M, y + 2.5);
+          y += 3.5;
         });
       });
       
