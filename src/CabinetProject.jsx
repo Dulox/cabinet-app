@@ -1640,7 +1640,16 @@ export default function CabinetProject() {
   
   // Per-cabinet parameters — now selectedCab is defined
   const setP = (k) => (v) => {
-    const val = typeof v === "boolean" ? v : (v === "" ? "" : Number(v));
+    let val;
+    if (typeof v === "boolean") {
+      val = v;
+    } else if (k === "backType") {
+      val = v; // Keep as string for backType
+    } else if (v === "") {
+      val = "";
+    } else {
+      val = Number(v);
+    }
     updateCab(selectedId, { params: { ...selectedCab.params, [k]: val } });
   };
   const p = selectedCab.params || DEFAULTS;
@@ -2080,15 +2089,19 @@ export default function CabinetProject() {
                       <option value="thin">{t("Thin hardboard")}</option>
                     </select>
                   </label>
-                  <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    <span style={labelCss}>{t("Back thickness")}</span>
-                    <select value={p.thinBackT} onChange={(e) => setP("thinBackT")(Number(e.target.value))} style={selCss}>
-                      <option value={3}>3 mm</option>
-                      <option value={5.5}>5.5 mm</option>
-                    </select>
-                  </label>
-                  <NumField label={t("Groove depth +")} value={p.grooveDepthOffset} onChange={setP("grooveDepthOffset")} suffix="mm" w={60} />
-                  <NumField label={t("Saw kerf")} value={p.kerf} onChange={setP("kerf")} />
+                  {p.backType === "thin" && (
+                    <>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                        <span style={labelCss}>{t("Back thickness")}</span>
+                        <select value={p.thinBackT} onChange={(e) => setP("thinBackT")(Number(e.target.value))} style={selCss}>
+                          <option value={3}>3 mm</option>
+                          <option value={5.5}>5.5 mm</option>
+                        </select>
+                      </label>
+                      <NumField label={t("Groove depth +")} value={p.grooveDepthOffset} onChange={setP("grooveDepthOffset")} suffix="mm" w={60} />
+                      <NumField label={t("Saw kerf")} value={p.kerf} onChange={setP("kerf")} />
+                    </>
+                  )}
                   <NumField label={t("Side height")} value={p.sideH} onChange={setP("sideH")} />
                   <NumField label={t("Side depth")} value={p.sideD} onChange={setP("sideD")} />
                   <NumField label={t("Back rail height")} value={p.railH} onChange={setP("railH")} />
