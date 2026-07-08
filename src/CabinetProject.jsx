@@ -364,6 +364,10 @@ const translations = {
     "cabinet": "armario",
     "cabinets": "armarios",
     "wide": "de ancho",
+    "Projects": "Proyectos",
+    "+ New Project": "+ Nuevo Proyecto",
+    "Delete this project? This cannot be undone.": "¿Borrar este proyecto? No se puede deshacer.",
+    "Log out": "Cerrar sesión",
   }
 };
 
@@ -1504,7 +1508,8 @@ export default function CabinetProject() {
   // Delete a project
   const deleteProject = async (projectId) => {
     if (!supabase) return;
-    if (!confirm("Delete this project? This cannot be undone.")) return;
+    const tText = (key) => translations[lang][key] || translations["en"][key] || key;
+    if (!confirm(tText("Delete this project? This cannot be undone."))) return;
     
     try {
       await supabase.from("cabinet_projects").delete().eq("id", projectId);
@@ -1886,12 +1891,12 @@ export default function CabinetProject() {
           <div className="cab-noprint" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end", position: "relative" }}>
             <div style={{ position: "relative" }}>
               <button onClick={() => setShowProjectList(!showProjectList)} className="cab-btn" style={btn("transparent", C.ink, `1.5px solid ${C.ink}`)}>
-                {userProjects.length} Projects ▼
+                {userProjects.length} {t("Projects")} ▼
               </button>
               {showProjectList && (
                 <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, background: C.card, border: `1px solid ${C.hair}`, borderRadius: 10, minWidth: 250, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", zIndex: 1000 }}>
                   <div style={{ padding: 12 }}>
-                    <button onClick={createNewProject} style={{ width: "100%", padding: 10, background: C.rust, color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 12 }}>+ New Project</button>
+                    <button onClick={createNewProject} style={{ width: "100%", padding: 10, background: C.rust, color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 12 }}>{t("+ New Project")}</button>
                     <div style={{ maxHeight: 300, overflowY: "auto" }}>
                       {userProjects.length > 0 ? (
                         userProjects.map((proj) => (
@@ -1920,7 +1925,7 @@ export default function CabinetProject() {
                 color: C.ink, cursor: "pointer", fontSize: 12, fontWeight: 700, letterSpacing: "0.04em" }}>
               {lang === "en" ? "ES" : "EN"}
             </button>
-            <button className="cab-btn" onClick={handleLogout} style={btn(C.ink, C.card, `1.5px solid ${C.ink}`)}>Log out</button>
+            <button className="cab-btn" onClick={handleLogout} style={btn(C.ink, C.card, `1.5px solid ${C.ink}`)}>{t("Log out")}</button>
           </div>
         </div>
         {copyBox && (
