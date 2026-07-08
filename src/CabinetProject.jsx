@@ -2082,9 +2082,6 @@ export default function CabinetProject() {
                   </label>
                   {p.backType === "thin" && (
                     <>
-                      <div style={{ width: "100%", padding: 10, background: "#e3f2fd", border: `1px solid #2196f3`, borderRadius: 8, fontSize: 12, color: "#1565c0", marginBottom: 8 }}>
-                        <span>Thin hardboard: {(parseInt(selectedCab?.width || 600) - (2 * (p.kerf || 3.5)))}×{((p.sideH || 786) - (p.kerf || 3.5))} mm (W − 2 kerfs, H − 1 kerf)</span>
-                      </div>
                       <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                         <span style={labelCss}>{t("Back thickness")}</span>
                         <select value={p.thinBackT} onChange={(e) => setP("thinBackT")(Number(e.target.value))} style={selCss}>
