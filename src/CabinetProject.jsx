@@ -1419,6 +1419,12 @@ export default function CabinetProject() {
         setSaveStatus("error");
       } else {
         setSaveStatus("saved");
+        // Update the project in userProjects list
+        setUserProjects((projects) =>
+          projects.map((p) =>
+            p.id === projectId ? { ...p, name: name, cabs: cabinets, updated_at: new Date().toISOString() } : p
+          )
+        );
         setTimeout(() => setSaveStatus(""), 2000);
       }
     } catch (e) {
@@ -1595,14 +1601,6 @@ export default function CabinetProject() {
     return () => clearTimeout(timer);
   }, [cabs, currentProjectName]);
 
-  // Update userProjects when currentProjectName changes
-  useEffect(() => {
-    setUserProjects((projects) =>
-      projects.map((p) =>
-        p.id === currentProjectId ? { ...p, name: currentProjectName } : p
-      )
-    );
-  }, [currentProjectName, currentProjectId]);
 
   const t = (key) => translations[lang][key] || translations["en"][key] || key;
   const btn = (bg, col, brd) => ({ padding: "8px 14px", borderRadius: 8, cursor: "pointer",
