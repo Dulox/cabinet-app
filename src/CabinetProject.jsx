@@ -1290,6 +1290,7 @@ export default function CabinetProject() {
   const [lang, setLang] = useState("en");
   const [projectName, setProjectName] = useState("Cabinet project");
   const [showSpec, setShowSpec] = useState(false);
+  const [specTab, setSpecTab] = useState("shared"); // "shared" or "generic"
   const [copied, setCopied] = useState(false);
   const [copyBox, setCopyBox] = useState(null);
   const [pdfMsg, setPdfMsg] = useState("");
@@ -2050,7 +2051,7 @@ export default function CabinetProject() {
         </div>
 
         <div className="cab-noprint" style={{ marginTop: 20 }}>
-          <button onClick={() => setShowSpec((s) => !s)} style={{ width: "100%", textAlign: "left",
+          <button onClick={() => { setShowSpec((s) => !s); if (!showSpec) setSpecTab("shared"); }} style={{ width: "100%", textAlign: "left",
             background: "transparent", cursor: "pointer", border: `1px dashed ${C.mut}`, borderRadius: 10,
             padding: "11px 14px", color: C.ink, fontWeight: 700, fontSize: 13, letterSpacing: "0.04em",
             display: "flex", justifyContent: "space-between" }}>
@@ -2058,88 +2059,119 @@ export default function CabinetProject() {
             <span style={{ color: C.mut }}>{showSpec ? "− hide" : "+ edit"}</span>
           </button>
           {showSpec && (
-            <div style={{ background: C.card, border: `1px solid ${C.hair}`, borderRadius: 12, padding: 16, marginTop: 10, display: "flex", flexWrap: "wrap", gap: 16 }}>
-              <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                <span style={labelCss}>{t("Melamine thickness")}</span>
-                <select value={p.t} onChange={(e) => setP("t")(Number(e.target.value))} style={selCss}>
-                  <option value={19}>19 mm</option>
-                  <option value={15}>15 mm</option>
-                </select>
-              </label>
-              <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                <span style={labelCss}>{t("Back panel")}</span>
-                <select value={p.backType} onChange={(e) => setP("backType")(e.target.value)} style={selCss}>
-                  <option value="melamine">{t("Melamine (full)")}</option>
-                  <option value="thin">{t("Thin hardboard")}</option>
-                </select>
-              </label>
-              {p.backType === "thin" && (
-                <>
+            <div style={{ background: C.card, border: `1px solid ${C.hair}`, borderRadius: 12, marginTop: 10, overflow: "hidden" }}>
+              {/* Tab buttons */}
+              <div style={{ display: "flex", borderBottom: `1px solid ${C.hair}` }}>
+                <button onClick={() => setSpecTab("shared")} style={{ flex: 1, padding: "12px 14px", border: "none", background: specTab === "shared" ? C.card : "#f5f5f5", color: specTab === "shared" ? C.rust : C.mut, cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: "0.05em" }}>
+                  Shared Specifications
+                </button>
+                <button onClick={() => setSpecTab("generic")} style={{ flex: 1, padding: "12px 14px", border: "none", background: specTab === "generic" ? C.card : "#f5f5f5", color: specTab === "generic" ? C.rust : C.mut, cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: "0.05em" }}>
+                  Generic Options
+                </button>
+              </div>
+              
+              {/* Shared Specifications Tab */}
+              {specTab === "shared" && (
+                <div style={{ padding: 16, display: "flex", flexWrap: "wrap", gap: 16 }}>
                   <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    <span style={labelCss}>{t("Back thickness")}</span>
-                    <select value={p.thinBackT} onChange={(e) => setP("thinBackT")(Number(e.target.value))} style={selCss}>
-                      <option value={3}>3 mm</option>
-                      <option value={5.5}>5.5 mm</option>
+                    <span style={labelCss}>{t("Back panel")}</span>
+                    <select value={p.backType} onChange={(e) => setP("backType")(e.target.value)} style={selCss}>
+                      <option value="melamine">{t("Melamine (full)")}</option>
+                      <option value="thin">{t("Thin hardboard")}</option>
                     </select>
                   </label>
-                  <NumField label={t("Groove depth +")} value={p.grooveDepthOffset} onChange={setP("grooveDepthOffset")} suffix="mm" w={60} />
-                </>
+                  {p.backType === "thin" && (
+                    <>
+                      {(() => {
+                        const W = parseInt(selectedCab.width) || 600;
+                        const hardboardW = W - (2 * p.kerf);  // Minus 2 kerfs for side panels
+                        const hardboardH = p.sideH - p.kerf;  // Minus 1 kerf for bottom panel
+                        
+                        return (
+                          <div style={{ width: "100%", padding: 10, background: "#e3f2fd", border: `1px solid #2196f3`, borderRadius: 8, fontSize: 12, color: "#1565c0", marginBottom: 8 }}>
+                            <span>Thin hardboard: {hardboardW}×{hardboardH} mm (W − 2 kerfs, H − 1 kerf)</span>
+                          </div>
+                        );
+                      })()}
+                      <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                        <span style={labelCss}>{t("Back thickness")}</span>
+                        <select value={p.thinBackT} onChange={(e) => setP("thinBackT")(Number(e.target.value))} style={selCss}>
+                          <option value={3}>3 mm</option>
+                          <option value={5.5}>5.5 mm</option>
+                        </select>
+                      </label>
+                      <NumField label={t("Groove depth +")} value={p.grooveDepthOffset} onChange={setP("grooveDepthOffset")} suffix="mm" w={60} />
+                      <NumField label={t("Saw kerf")} value={p.kerf} onChange={setP("kerf")} />
+                    </>
+                  )}
+                  <NumField label={t("Side height")} value={p.sideH} onChange={setP("sideH")} />
+                  <NumField label={t("Side depth")} value={p.sideD} onChange={setP("sideD")} />
+                  <NumField label={t("Back rail height")} value={p.railH} onChange={setP("railH")} />
+                  <NumField label={t("Front rail height")} value={p.frontRailH} onChange={setP("frontRailH")} />
+                  <NumField label={t("Rail qty")} value={p.railQty} onChange={setP("railQty")} suffix="" w={60} />
+                  <NumField label={t("Shelf setback")} value={p.shelfSetback} onChange={setP("shelfSetback")} />
+                  <NumField label={t("Shelf clearance")} value={p.shelfClearance} onChange={setP("shelfClearance")} />
+                  
+                  {(selectedCab.type !== "wall" && selectedCab.front === "doors") && (
+                    <>
+                      <NumField label={t("Door height")} value={p.doorH} onChange={setP("doorH")} />
+                      <NumField label={t("Door reveal")} value={p.doorReveal} onChange={setP("doorReveal")} />
+                      <NumField label={t("Door gap (pair)")} value={p.doorGap} onChange={setP("doorGap")} />
+                      <NumField label={t("False front H")} value={p.falseFrontH} onChange={setP("falseFrontH")} />
+                    </>
+                  )}
+                  
+                  {selectedCab.type === "corner" && (
+                    <>
+                      <NumField label={t("Corner stile W")} value={p.cornerStileW} onChange={setP("cornerStileW")} />
+                      <NumField label={t("Corner blind W (default)")} value={p.cornerBlindW} onChange={setP("cornerBlindW")} />
+                    </>
+                  )}
+                  
+                  {selectedCab.type !== "wall" && (
+                    <NumField label={t("Base build-up (top)")} value={p.baseBuildUp} onChange={setP("baseBuildUp")} />
+                  )}
+                  
+                  {selectedCab.type === "base" && selectedCab.front === "drawers" && (
+                    <>
+                      <NumField label={t("Slide clear/side")} value={p.drawerSideClear} onChange={setP("drawerSideClear")} />
+                      <NumField label={t("Drawer box depth")} value={p.drawerBoxDepth} onChange={setP("drawerBoxDepth")} />
+                      <NumField label={t("Box H = front −")} value={p.drawerBoxHReduce} onChange={setP("drawerBoxHReduce")} />
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
+                        <input type="checkbox" checked={p.drawerBoxes} onChange={(e) => setP("drawerBoxes")(e.target.checked)} />
+                        {t("Include drawer boxes")}
+                      </label>
+                    </>
+                  )}
+                </div>
               )}
-              <NumField label={t("Side height")} value={p.sideH} onChange={setP("sideH")} />
-              <NumField label={t("Side depth")} value={p.sideD} onChange={setP("sideD")} />
-              <NumField label={t("Back rail height")} value={p.railH} onChange={setP("railH")} />
-              <NumField label={t("Front rail height")} value={p.frontRailH} onChange={setP("frontRailH")} />
-              <NumField label={t("Rail qty")} value={p.railQty} onChange={setP("railQty")} suffix="" w={60} />
-              <NumField label={t("Shelf setback")} value={p.shelfSetback} onChange={setP("shelfSetback")} />
-              <NumField label={t("Shelf clearance")} value={p.shelfClearance} onChange={setP("shelfClearance")} />
               
-              {(selectedCab.type !== "wall" && selectedCab.front === "doors") && (
-                <>
-                  <NumField label={t("Door height")} value={p.doorH} onChange={setP("doorH")} />
-                  <NumField label={t("Door reveal")} value={p.doorReveal} onChange={setP("doorReveal")} />
-                  <NumField label={t("Door gap (pair)")} value={p.doorGap} onChange={setP("doorGap")} />
-                  <NumField label={t("False front H")} value={p.falseFrontH} onChange={setP("falseFrontH")} />
-                </>
-              )}
-              
-              {selectedCab.type === "corner" && (
-                <>
-                  <NumField label={t("Corner stile W")} value={p.cornerStileW} onChange={setP("cornerStileW")} />
-                  <NumField label={t("Corner blind W (default)")} value={p.cornerBlindW} onChange={setP("cornerBlindW")} />
-                </>
-              )}
-              
-              {selectedCab.type === "base" && (
-                <NumField label={t("Base build-up (top)")} value={p.baseBuildUp} onChange={setP("baseBuildUp")} />
-              )}
-              
-              {selectedCab.type === "base" && selectedCab.front === "drawers" && (
-                <>
-                  <NumField label={t("Slide clear/side")} value={p.drawerSideClear} onChange={setP("drawerSideClear")} />
-                  <NumField label={t("Drawer box depth")} value={p.drawerBoxDepth} onChange={setP("drawerBoxDepth")} />
-                  <NumField label={t("Box H = front −")} value={p.drawerBoxHReduce} onChange={setP("drawerBoxHReduce")} />
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
-                    <input type="checkbox" checked={p.drawerBoxes} onChange={(e) => setP("drawerBoxes")(e.target.checked)} />
-                    {t("Include drawer boxes")}
+              {/* Generic Options Tab */}
+              {specTab === "generic" && (
+                <div style={{ padding: 16, display: "flex", flexWrap: "wrap", gap: 16 }}>
+                  <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <span style={labelCss}>{t("Melamine thickness")}</span>
+                    <select value={p.t} onChange={(e) => setP("t")(Number(e.target.value))} style={selCss}>
+                      <option value={19}>19 mm</option>
+                      <option value={15}>15 mm</option>
+                    </select>
                   </label>
-                </>
+                  <NumField label={t("Board width")} value={p.boardW} onChange={setP("boardW")} />
+                  <NumField label={t("Board height")} value={p.boardH} onChange={setP("boardH")} />
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
+                    <input type="checkbox" checked={p.allowRotate} onChange={(e) => setP("allowRotate")(e.target.checked)} />
+                    {t("Allow parts to rotate (no grain direction)")}
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
+                    <input type="checkbox" checked={p.backBetween} onChange={(e) => setP("backBetween")(e.target.checked)} />
+                    {t("Back fits between sides")} (−{2 * p.t})
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
+                    <input type="checkbox" checked={p.backOnBottom} onChange={(e) => setP("backOnBottom")(e.target.checked)} />
+                    {t("Back sits on bottom")} (−{p.t})
+                  </label>
+                </div>
               )}
-              
-              <NumField label={t("Board width")} value={p.boardW} onChange={setP("boardW")} />
-              <NumField label={t("Board height")} value={p.boardH} onChange={setP("boardH")} />
-              <NumField label={t("Saw kerf")} value={p.kerf} onChange={setP("kerf")} />
-              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
-                <input type="checkbox" checked={p.allowRotate} onChange={(e) => setP("allowRotate")(e.target.checked)} />
-                {t("Allow parts to rotate (no grain direction)")}
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
-                <input type="checkbox" checked={p.backBetween} onChange={(e) => setP("backBetween")(e.target.checked)} />
-                {t("Back fits between sides")} (−{2 * p.t})
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
-                <input type="checkbox" checked={p.backOnBottom} onChange={(e) => setP("backOnBottom")(e.target.checked)} />
-                {t("Back sits on bottom")} (−{p.t})
-              </label>
             </div>
           )}
         </div>
