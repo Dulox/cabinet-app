@@ -2083,15 +2083,19 @@ export default function CabinetProject() {
                   {p.backType === "thin" && (
                     <>
                       {(() => {
-                        const W = parseInt(selectedCab.width) || 600;
-                        const hardboardW = W - (2 * p.kerf);  // Minus 2 kerfs for side panels
-                        const hardboardH = p.sideH - p.kerf;  // Minus 1 kerf for bottom panel
-                        
-                        return (
-                          <div style={{ width: "100%", padding: 10, background: "#e3f2fd", border: `1px solid #2196f3`, borderRadius: 8, fontSize: 12, color: "#1565c0", marginBottom: 8 }}>
-                            <span>Thin hardboard: {hardboardW}×{hardboardH} mm (W − 2 kerfs, H − 1 kerf)</span>
-                          </div>
-                        );
+                        try {
+                          const W = parseInt(selectedCab.width) || 600;
+                          const hardboardW = W - (2 * (p.kerf || 3.5));
+                          const hardboardH = (p.sideH || 786) - (p.kerf || 3.5);
+                          
+                          return (
+                            <div style={{ width: "100%", padding: 10, background: "#e3f2fd", border: `1px solid #2196f3`, borderRadius: 8, fontSize: 12, color: "#1565c0", marginBottom: 8 }}>
+                              <span>Thin hardboard: {hardboardW}×{hardboardH} mm (W − 2 kerfs, H − 1 kerf)</span>
+                            </div>
+                          );
+                        } catch (e) {
+                          return null;
+                        }
                       })()}
                       <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                         <span style={labelCss}>{t("Back thickness")}</span>
