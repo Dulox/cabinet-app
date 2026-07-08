@@ -1710,15 +1710,15 @@ export default function CabinetProject() {
       const col = {
         elem: M,
         nombre: M + 10,
-        cant: M + 40,
-        largo: M + 48,
-        ancho: M + 58,
-        grosor: M + 68,
-        desc: M + 78,
-        l1: M + 160,
-        l2: M + 170,
-        c1: M + 180,
-        c2: M + 190
+        cant: M + 52,
+        largo: M + 62,
+        ancho: M + 72,
+        grosor: M + 82,
+        desc: M + 92,
+        l1: M + 165,
+        l2: M + 177,
+        c1: M + 189,
+        c2: M + 201
       };
       
       // Header
