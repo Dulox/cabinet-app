@@ -2093,7 +2093,7 @@ export default function CabinetProject() {
               <NumField label={t("Shelf setback")} value={p.shelfSetback} onChange={setP("shelfSetback")} />
               <NumField label={t("Shelf clearance")} value={p.shelfClearance} onChange={setP("shelfClearance")} />
               
-              {(cab.type !== "wall" && cab.front === "doors") && (
+              {(selectedCab.type !== "wall" && selectedCab.front === "doors") && (
                 <>
                   <NumField label={t("Door height")} value={p.doorH} onChange={setP("doorH")} />
                   <NumField label={t("Door reveal")} value={p.doorReveal} onChange={setP("doorReveal")} />
@@ -2102,18 +2102,18 @@ export default function CabinetProject() {
                 </>
               )}
               
-              {cab.type === "corner" && (
+              {selectedCab.type === "corner" && (
                 <>
                   <NumField label={t("Corner stile W")} value={p.cornerStileW} onChange={setP("cornerStileW")} />
                   <NumField label={t("Corner blind W (default)")} value={p.cornerBlindW} onChange={setP("cornerBlindW")} />
                 </>
               )}
               
-              {cab.type === "base" && (
+              {selectedCab.type === "base" && (
                 <NumField label={t("Base build-up (top)")} value={p.baseBuildUp} onChange={setP("baseBuildUp")} />
               )}
               
-              {cab.type === "base" && cab.front === "drawers" && (
+              {selectedCab.type === "base" && selectedCab.front === "drawers" && (
                 <>
                   <NumField label={t("Slide clear/side")} value={p.drawerSideClear} onChange={setP("drawerSideClear")} />
                   <NumField label={t("Drawer box depth")} value={p.drawerBoxDepth} onChange={setP("drawerBoxDepth")} />
