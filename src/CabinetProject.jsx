@@ -1606,6 +1606,21 @@ export default function CabinetProject() {
     return () => clearTimeout(timer);
   }, [cabs, currentProjectName]);
 
+  // Close projects dropdown when clicking outside
+  useEffect(() => {
+    if (!showProjectList) return;
+    
+    const handleClickOutside = (e) => {
+      // Check if click is outside the projects dropdown
+      if (!e.target.closest('.projects-dropdown-container')) {
+        setShowProjectList(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showProjectList]);
+
 
   const t = (key) => translations[lang][key] || translations["en"][key] || key;
   const btn = (bg, col, brd) => ({ padding: "8px 14px", borderRadius: 8, cursor: "pointer",
@@ -1889,7 +1904,7 @@ export default function CabinetProject() {
                 background: "transparent", color: C.ink, outline: "none", fontFamily: "'Archivo', sans-serif", maxWidth: "100%" }} />
           </div>
           <div className="cab-noprint" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end", position: "relative" }}>
-            <div style={{ position: "relative" }}>
+            <div className="projects-dropdown-container" style={{ position: "relative" }}>
               <button onClick={() => setShowProjectList(!showProjectList)} className="cab-btn" style={btn("transparent", C.ink, `1.5px solid ${C.ink}`)}>
                 {userProjects.length} {t("Projects")} ▼
               </button>
@@ -2077,20 +2092,39 @@ export default function CabinetProject() {
               <NumField label={t("Rail qty")} value={p.railQty} onChange={setP("railQty")} suffix="" w={60} />
               <NumField label={t("Shelf setback")} value={p.shelfSetback} onChange={setP("shelfSetback")} />
               <NumField label={t("Shelf clearance")} value={p.shelfClearance} onChange={setP("shelfClearance")} />
-              <NumField label={t("Door height")} value={p.doorH} onChange={setP("doorH")} />
-              <NumField label={t("Door reveal")} value={p.doorReveal} onChange={setP("doorReveal")} />
-              <NumField label={t("Door gap (pair)")} value={p.doorGap} onChange={setP("doorGap")} />
-              <NumField label={t("False front H")} value={p.falseFrontH} onChange={setP("falseFrontH")} />
-              <NumField label={t("Corner stile W")} value={p.cornerStileW} onChange={setP("cornerStileW")} />
-              <NumField label={t("Corner blind W (default)")} value={p.cornerBlindW} onChange={setP("cornerBlindW")} />
-              <NumField label={t("Base build-up (top)")} value={p.baseBuildUp} onChange={setP("baseBuildUp")} />
-              <NumField label={t("Slide clear/side")} value={p.drawerSideClear} onChange={setP("drawerSideClear")} />
-              <NumField label={t("Drawer box depth")} value={p.drawerBoxDepth} onChange={setP("drawerBoxDepth")} />
-              <NumField label={t("Box H = front −")} value={p.drawerBoxHReduce} onChange={setP("drawerBoxHReduce")} />
-              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
-                <input type="checkbox" checked={p.drawerBoxes} onChange={(e) => setP("drawerBoxes")(e.target.checked)} />
-                {t("Include drawer boxes")}
-              </label>
+              
+              {(cab.type !== "wall" && cab.front === "doors") && (
+                <>
+                  <NumField label={t("Door height")} value={p.doorH} onChange={setP("doorH")} />
+                  <NumField label={t("Door reveal")} value={p.doorReveal} onChange={setP("doorReveal")} />
+                  <NumField label={t("Door gap (pair)")} value={p.doorGap} onChange={setP("doorGap")} />
+                  <NumField label={t("False front H")} value={p.falseFrontH} onChange={setP("falseFrontH")} />
+                </>
+              )}
+              
+              {cab.type === "corner" && (
+                <>
+                  <NumField label={t("Corner stile W")} value={p.cornerStileW} onChange={setP("cornerStileW")} />
+                  <NumField label={t("Corner blind W (default)")} value={p.cornerBlindW} onChange={setP("cornerBlindW")} />
+                </>
+              )}
+              
+              {cab.type === "base" && (
+                <NumField label={t("Base build-up (top)")} value={p.baseBuildUp} onChange={setP("baseBuildUp")} />
+              )}
+              
+              {cab.type === "base" && cab.front === "drawers" && (
+                <>
+                  <NumField label={t("Slide clear/side")} value={p.drawerSideClear} onChange={setP("drawerSideClear")} />
+                  <NumField label={t("Drawer box depth")} value={p.drawerBoxDepth} onChange={setP("drawerBoxDepth")} />
+                  <NumField label={t("Box H = front −")} value={p.drawerBoxHReduce} onChange={setP("drawerBoxHReduce")} />
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
+                    <input type="checkbox" checked={p.drawerBoxes} onChange={(e) => setP("drawerBoxes")(e.target.checked)} />
+                    {t("Include drawer boxes")}
+                  </label>
+                </>
+              )}
+              
               <NumField label={t("Board width")} value={p.boardW} onChange={setP("boardW")} />
               <NumField label={t("Board height")} value={p.boardH} onChange={setP("boardH")} />
               <NumField label={t("Saw kerf")} value={p.kerf} onChange={setP("kerf")} />
