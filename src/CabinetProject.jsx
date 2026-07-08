@@ -1700,6 +1700,95 @@ export default function CabinetProject() {
   // PDF export works identically in dev, production, on phones, and sandboxes.
   const loadJsPDF = async () => ({ jsPDF: MiniPDF });
 
+  const exportProjectToPDF = async () => {
+    try {
+      const doc = new MiniPDF();
+      const M = 10, colW = [12, 35, 15, 18, 18, 12, 35, 10, 10, 10, 10];
+      let y = M;
+      const pageH = 297 - M, colX = [M];
+      for (let i = 1; i < colW.length; i++) colX.push(colX[i-1] + colW[i]);
+      
+      // Header
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      const headers = ["Elemento", "Nombre de pieza", "Cantidad", "Largo mm", "Ancho mm", "Grosor", "Description", "L1", "L2", "C1", "C2"];
+      headers.forEach((h, i) => {
+        doc.text(h, colX[i], y, { maxWidth: colW[i] - 1, align: "center" });
+      });
+      doc.line(M, y + 2, colX[colX.length - 1] + colW[colW.length - 1], y + 2);
+      y += 6;
+      
+      // Collect all parts from all cabinets
+      let rowNum = 1;
+      cabs.forEach((cab, cabIdx) => {
+        const W = parseFloat(cab.width);
+        const p = cab.params || DEFAULTS;
+        if (isNaN(W) || W <= 2 * p.t + 10) return;
+        
+        const cutList = buildCutList(W, p, cab);
+        const bandAll = new Set(["Door", "Door (pair)", "Door (flap, stacked)", "False front", "False drawer front", "Drawer front", "Blind / filler panel"]);
+        const bandFront = new Set(["Side", "Top", "Bottom", "Shelf", "Separator (fixed)"]);
+        
+        cutList.parts.forEach((part) => {
+          if (part.material === "hardboard") return;
+          
+          const isLong = part.a >= part.b;
+          const longDim = Math.max(part.a, part.b);
+          const shortDim = Math.min(part.a, part.b);
+          
+          const hasL1 = bandAll.has(part.part);
+          const hasL2 = bandAll.has(part.part);
+          const hasC1 = bandFront.has(part.part) || bandAll.has(part.part);
+          const hasC2 = bandFront.has(part.part) || bandAll.has(part.part);
+          
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          
+          if (y + 5 > pageH) {
+            doc.addPage();
+            y = M;
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            headers.forEach((h, i) => {
+              doc.text(h, colX[i], y, { maxWidth: colW[i] - 1, align: "center" });
+            });
+            doc.line(M, y + 2, colX[colX.length - 1] + colW[colW.length - 1], y + 2);
+            y += 6;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+          }
+          
+          doc.text(String(cabIdx + 1), colX[0], y, { align: "center" });
+          doc.text(part.part, colX[1], y, { maxWidth: colW[1] - 1 });
+          doc.text(String(part.qty), colX[2], y, { align: "center" });
+          doc.text(String(Math.round(longDim)), colX[3], y, { align: "center" });
+          doc.text(String(Math.round(shortDim)), colX[4], y, { align: "center" });
+          doc.text(String(p.t), colX[5], y, { align: "center" });
+          doc.text(part.note || "", colX[6], y, { maxWidth: colW[6] - 1, fontSize: 8 });
+          if (hasL1) doc.text("x", colX[7], y, { align: "center" });
+          if (hasL2) doc.text("x", colX[8], y, { align: "center" });
+          if (hasC1) doc.text("x", colX[9], y, { align: "center" });
+          if (hasC2) doc.text("x", colX[10], y, { align: "center" });
+          
+          y += 5;
+          rowNum++;
+        });
+      });
+      
+      const pdfBlob = doc.asBlob ? doc.asBlob() : new Blob([doc.output()], { type: "application/pdf" });
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${currentProjectName}_project_export.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Error exporting PDF: " + e.message);
+    }
+  };
+
   const downloadPDF = async () => {
     setPdfMsg("Building PDF…");
     try {
@@ -1941,6 +2030,7 @@ export default function CabinetProject() {
               )}
             </div>
             <button onClick={downloadPDF} className="cab-btn" style={btn("transparent", C.ink, `1.5px solid ${C.ink}`)}>{t("Download PDF")}</button>
+            <button onClick={exportProjectToPDF} className="cab-btn" style={btn("transparent", C.rust, `1.5px solid ${C.rust}`)}>Export Project PDF</button>
             <button onClick={downloadShopPDF} className="cab-btn" style={btn(C.rust, "#fff", `1.5px solid ${C.rust}`)}>{t("Shop drawing PDF")}</button>
             <button onClick={copyAll} className="cab-btn" style={btn(copied ? C.ink : "transparent", copied ? C.card : C.mut, `1px solid ${C.hair}`)}>
               {copied ? t("Copied ✓") : t("Copy text")}</button>
@@ -2103,7 +2193,6 @@ export default function CabinetProject() {
                     </>
                   )}
                   <NumField label={t("Side height")} value={p.sideH} onChange={setP("sideH")} />
-                  <NumField label={t("Side depth")} value={p.sideD} onChange={setP("sideD")} />
                   <NumField label={t("Back rail height")} value={p.railH} onChange={setP("railH")} />
                   <NumField label={t("Front rail height")} value={p.frontRailH} onChange={setP("frontRailH")} />
                   <NumField label={t("Rail qty")} value={p.railQty} onChange={setP("railQty")} suffix="" w={60} />
