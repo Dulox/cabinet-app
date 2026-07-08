@@ -1706,19 +1706,19 @@ export default function CabinetProject() {
       const pageW = 297, pageH = 210, M = 8;
       let y = M;
       
-      // Column positions (mm)
+      // Column positions (mm) - adjusted to fit all columns
       const col = {
         elem: M,
-        nombre: M + 12,
-        cant: M + 50,
-        largo: M + 60,
-        ancho: M + 75,
-        grosor: M + 90,
-        desc: M + 105,
-        l1: M + 190,
-        l2: M + 205,
-        c1: M + 220,
-        c2: M + 235
+        nombre: M + 10,
+        cant: M + 40,
+        largo: M + 48,
+        ancho: M + 58,
+        grosor: M + 68,
+        desc: M + 78,
+        l1: M + 160,
+        l2: M + 170,
+        c1: M + 180,
+        c2: M + 190
       };
       
       // Header
@@ -1730,7 +1730,7 @@ export default function CabinetProject() {
       doc.text("Largo", col.largo, y);
       doc.text("Ancho", col.ancho, y);
       doc.text("Grosor", col.grosor, y);
-      doc.text("Description", col.desc, y);
+      doc.text("Desc", col.desc, y);
       doc.text("L1", col.l1, y);
       doc.text("L2", col.l2, y);
       doc.text("C1", col.c1, y);
@@ -1772,7 +1772,7 @@ export default function CabinetProject() {
             doc.text("Largo", col.largo, y);
             doc.text("Ancho", col.ancho, y);
             doc.text("Grosor", col.grosor, y);
-            doc.text("Description", col.desc, y);
+            doc.text("Desc", col.desc, y);
             doc.text("L1", col.l1, y);
             doc.text("L2", col.l2, y);
             doc.text("C1", col.c1, y);
@@ -1785,19 +1785,17 @@ export default function CabinetProject() {
           doc.setFontSize(7);
           
           doc.text(String(cabIdx + 1), col.elem, y);
-          doc.text(part.part.substring(0, 30), col.nombre, y);
+          doc.text(part.part.substring(0, 25), col.nombre, y);
           doc.text(String(part.qty), col.cant, y);
           doc.text(String(Math.round(longDim)), col.largo, y);
           doc.text(String(Math.round(shortDim)), col.ancho, y);
           doc.text(String(p.t), col.grosor, y);
-          doc.text("", col.desc, y); // Skip description for now
           
           if (hasL1) doc.text("x", col.l1, y);
           if (hasL2) doc.text("x", col.l2, y);
           if (hasC1) doc.text("x", col.c1, y);
           if (hasC2) doc.text("x", col.c2, y);
           
-          doc.line(M, y + 2.5, pageW - M, y + 2.5);
           y += 3.5;
         });
       });
