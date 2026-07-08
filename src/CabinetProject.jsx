@@ -1703,23 +1703,24 @@ export default function CabinetProject() {
   const exportProjectToPDF = async () => {
     try {
       const doc = new MiniPDF();
-      const M = 10, colW = [12, 35, 15, 18, 18, 12, 35, 10, 10, 10, 10];
+      // Use landscape mode (more space)
+      const pageW = 297, pageH = 210, M = 8;
+      const colW = [14, 40, 14, 18, 18, 12, 100, 10, 10, 10, 10];
       let y = M;
-      const pageH = 297 - M, colX = [M];
+      const colX = [M];
       for (let i = 1; i < colW.length; i++) colX.push(colX[i-1] + colW[i]);
       
       // Header
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      const headers = ["Elemento", "Nombre de pieza", "Cantidad", "Largo mm", "Ancho mm", "Grosor", "Description", "L1", "L2", "C1", "C2"];
+      doc.setFontSize(9);
+      const headers = ["Elem", "Nombre de pieza", "Cant", "Largo", "Ancho", "Grosor", "Description", "L1", "L2", "C1", "C2"];
       headers.forEach((h, i) => {
-        doc.text(h, colX[i], y, { maxWidth: colW[i] - 1, align: "center" });
+        doc.text(h, colX[i] + colW[i]/2, y + 2, { maxWidth: colW[i] - 1, align: "center" });
       });
-      doc.line(M, y + 2, colX[colX.length - 1] + colW[colW.length - 1], y + 2);
+      doc.line(M, y + 4, pageW - M, y + 4);
       y += 6;
       
       // Collect all parts from all cabinets
-      let rowNum = 1;
       cabs.forEach((cab, cabIdx) => {
         const W = parseFloat(cab.width);
         const p = cab.params || DEFAULTS;
@@ -1732,7 +1733,6 @@ export default function CabinetProject() {
         cutList.parts.forEach((part) => {
           if (part.material === "hardboard") return;
           
-          const isLong = part.a >= part.b;
           const longDim = Math.max(part.a, part.b);
           const shortDim = Math.min(part.a, part.b);
           
@@ -1741,37 +1741,43 @@ export default function CabinetProject() {
           const hasC1 = bandFront.has(part.part) || bandAll.has(part.part);
           const hasC2 = bandFront.has(part.part) || bandAll.has(part.part);
           
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(9);
-          
-          if (y + 5 > pageH) {
+          // Check if we need a new page
+          if (y + 4 > pageH - M) {
             doc.addPage();
             y = M;
             doc.setFont("helvetica", "bold");
-            doc.setFontSize(10);
-            headers.forEach((h, i) => {
-              doc.text(h, colX[i], y, { maxWidth: colW[i] - 1, align: "center" });
-            });
-            doc.line(M, y + 2, colX[colX.length - 1] + colW[colW.length - 1], y + 2);
-            y += 6;
-            doc.setFont("helvetica", "normal");
             doc.setFontSize(9);
+            headers.forEach((h, i) => {
+              doc.text(h, colX[i] + colW[i]/2, y + 2, { maxWidth: colW[i] - 1, align: "center" });
+            });
+            doc.line(M, y + 4, pageW - M, y + 4);
+            y += 6;
           }
           
-          doc.text(String(cabIdx + 1), colX[0], y, { align: "center" });
-          doc.text(part.part, colX[1], y, { maxWidth: colW[1] - 1 });
-          doc.text(String(part.qty), colX[2], y, { align: "center" });
-          doc.text(String(Math.round(longDim)), colX[3], y, { align: "center" });
-          doc.text(String(Math.round(shortDim)), colX[4], y, { align: "center" });
-          doc.text(String(p.t), colX[5], y, { align: "center" });
-          doc.text(part.note || "", colX[6], y, { maxWidth: colW[6] - 1, fontSize: 8 });
-          if (hasL1) doc.text("x", colX[7], y, { align: "center" });
-          if (hasL2) doc.text("x", colX[8], y, { align: "center" });
-          if (hasC1) doc.text("x", colX[9], y, { align: "center" });
-          if (hasC2) doc.text("x", colX[10], y, { align: "center" });
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8);
           
-          y += 5;
-          rowNum++;
+          // Draw row
+          doc.text(String(cabIdx + 1), colX[0] + 2, y + 2);
+          doc.text(part.part, colX[1] + 2, y + 2, { maxWidth: colW[1] - 2 });
+          doc.text(String(part.qty), colX[2] + colW[2]/2, y + 2, { align: "center" });
+          doc.text(String(Math.round(longDim)), colX[3] + colW[3]/2, y + 2, { align: "center" });
+          doc.text(String(Math.round(shortDim)), colX[4] + colW[4]/2, y + 2, { align: "center" });
+          doc.text(String(p.t), colX[5] + colW[5]/2, y + 2, { align: "center" });
+          
+          // Truncate description to fit
+          const desc = (part.note || "").substring(0, 60);
+          doc.text(desc, colX[6] + 2, y + 2, { maxWidth: colW[6] - 2, fontSize: 7 });
+          
+          // Edge band marks
+          if (hasL1) doc.text("x", colX[7] + colW[7]/2, y + 2, { align: "center" });
+          if (hasL2) doc.text("x", colX[8] + colW[8]/2, y + 2, { align: "center" });
+          if (hasC1) doc.text("x", colX[9] + colW[9]/2, y + 2, { align: "center" });
+          if (hasC2) doc.text("x", colX[10] + colW[10]/2, y + 2, { align: "center" });
+          
+          // Horizontal line between rows
+          doc.line(M, y + 3.5, pageW - M, y + 3.5);
+          y += 4;
         });
       });
       
@@ -1779,13 +1785,13 @@ export default function CabinetProject() {
       const url = URL.createObjectURL(pdfBlob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${currentProjectName}_project_export.pdf`;
+      link.download = `${currentProjectName}_export.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (e) {
-      alert("Error exporting PDF: " + e.message);
+      alert("Error: " + e.message);
     }
   };
 
