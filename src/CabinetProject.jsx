@@ -1310,6 +1310,7 @@ export default function CabinetProject() {
   const [saveStatus, setSaveStatus] = useState(""); // "saving", "saved", "error"
   const [userProjects, setUserProjects] = useState([]); // List of all user's projects
   const [showProjectList, setShowProjectList] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
   
   // Login handler
   const handleLogin = async () => {
@@ -1666,7 +1667,6 @@ export default function CabinetProject() {
   const selectedIndex = cabs.indexOf(selectedCab);
   
   // Per-cabinet parameters — now selectedCab is defined
-  const [validationErrors, setValidationErrors] = useState({});
 
   // Validation rules for all parameters
   const validationRules = {
@@ -1695,8 +1695,7 @@ export default function CabinetProject() {
     drawerBoxHReduce: { min: 5, max: 50, label: "Drawer box height reduction" },
   };
 
-  // Validate a parameter
-  const validateParam = (key, value, allParams) => {
+  const validateParam = (key, value, cabType) => {
     const rule = validationRules[key];
     if (!rule) return null; // No validation rule, allow it
 
@@ -1711,10 +1710,13 @@ export default function CabinetProject() {
     }
 
     // Special validations
-    if (key === "doorH" && numValue > (allParams?.sideH || 786) - 50) {
-      return "Door height too tall for this cabinet";
+    if (key === "doorH") {
+      const sideH = document.querySelector('input[type="number"]')?.value;
+      if (sideH && numValue > parseInt(sideH) - 50) {
+        return "Door height too tall for this cabinet";
+      }
     }
-    if (key === "sideH" && selectedCab.type === "wall" && numValue > 1200) {
+    if (key === "sideH" && cabType === "wall" && numValue > 1200) {
       return "Wall cabinet height is usually under 1200mm";
     }
 
@@ -1725,7 +1727,7 @@ export default function CabinetProject() {
     const val = typeof v === "boolean" ? v : (k === "backType" ? v : (v === "" ? "" : Number(v)));
     
     // Validate the parameter
-    const error = validateParam(k, val, selectedCab.params);
+    const error = validateParam(k, val, selectedCab?.type);
     
     if (error) {
       setValidationErrors({ ...validationErrors, [k]: error });
