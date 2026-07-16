@@ -12,7 +12,7 @@ let supabase = null;
 const loadSupabase = async () => {
   if (window.supabase) {
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+  }
 };
 
 loadSupabase();
@@ -887,32 +887,27 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
   };
   const setDrawerCount = (c) => onChange({ drawerCount: c, drawerHeights: splitHeights(p.doorH, c, p.doorGap) });
   const setDrawerHeight = (i, v) => {
-    const arr = (cab.drawerHeights || splitHeights(p.doorH, cab.drawerCount || 3, p.doorGap)).slice();
-    const newH = v === "" ? 0 : Math.max(0, Number(v) || 0);
-    arr[i] = newH;
-    
-    // Smart recalculation: adjust other drawers to fit within cabinet height
-    const doorGap = p.doorGap || 3;
-    const buildUp = (cab.type === "wall") ? 0 : (p.baseBuildUp != null ? p.baseBuildUp : 0);
-    const effectiveDoorH = p.doorH - buildUp;
-    const totalGaps = (arr.length - 1) * doorGap; // gaps between drawers
-    const usedHeight = arr.reduce((sum, h) => sum + h, 0);
-    const availableHeight = effectiveDoorH - totalGaps;
-    
-    if (usedHeight > availableHeight) {
-      // User set this drawer too high - recalculate others
-      const otherIndices = arr.map((_, idx) => idx).filter(idx => idx !== i);
-      const thisDrawerHeight = arr[i];
-      const remainingHeight = availableHeight - thisDrawerHeight;
-      const heightPerOther = Math.max(40, Math.floor(remainingHeight / otherIndices.length)); // min 40mm per drawer
-      
-      otherIndices.forEach(idx => {
-        arr[idx] = heightPerOther;
-      });
-    }
-    
-    onChange({ drawerHeights: arr });
-  };
+  const arr = (cab.drawerHeights || splitHeights(p.doorH, cab.drawerCount || 3, p.doorGap)).slice();
+  const newH = v === "" ? 0 : Math.max(0, Number(v) || 0);
+  arr[i] = newH;
+  
+  // Recalculate: when you set one drawer height, others split the remaining space equally
+  const doorGap = p.doorGap || 3;
+  const buildUp = (cab.type === "wall") ? 0 : (p.baseBuildUp != null ? p.baseBuildUp : 0);
+  const effectiveDoorH = p.doorH - buildUp;
+  const totalGaps = (arr.length - 1) * doorGap;
+  const remainingHeight = effectiveDoorH - arr[i] - totalGaps;
+  const otherCount = arr.length - 1;
+  
+  if (remainingHeight > 0 && otherCount > 0) {
+    const heightPerOther = Math.floor(remainingHeight / otherCount);
+    arr.forEach((_, idx) => {
+      if (idx !== i) arr[idx] = heightPerOther;
+    });
+  }
+  
+  onChange({ drawerHeights: arr });
+};
   const buildUp = cab.type === "wall" ? 0 : (p.baseBuildUp ?? 0);
   const effectiveDoorH = p.doorH - buildUp;
   const heights = cab.drawerHeights || splitHeights(effectiveDoorH, cab.drawerCount || 3, p.doorGap);
@@ -959,15 +954,13 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
 
       <div className="cab-noprint" style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-end", marginBottom: 14 }}>
         <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          <span style={{ ...labelCss, color: C.mut }}>{t("Width")}</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexDirection: "column" }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <input type="number" value={cab.width} onChange={(e) => onChange({ width: e.target.value })}
-                style={{ width: 110, padding: "8px 11px", fontSize: 22, fontWeight: 700,
-                  fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
-                  background: "#fff", color: C.ink, outline: "none" }} />
-              <span style={{ fontSize: 13, color: C.mut, fontFamily: "'JetBrains Mono', monospace" }}>mm</span>
-            </span>
+          <span style={labelCss}>{t("Width")}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <input type="number" value={cab.width} onChange={(e) => onChange({ width: e.target.value })}
+              style={{ width: 110, padding: "8px 11px", fontSize: 22, fontWeight: 700,
+                fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
+                background: "#fff", color: C.ink, outline: "none" }} />
+            <span style={{ fontSize: 13, color: C.mut, fontFamily: "'JetBrains Mono', monospace" }}>mm</span>
           </span>
         </label>
 
@@ -1322,7 +1315,7 @@ export default function CabinetProject() {
   const [pdfBlob, setPdfBlob] = useState(null);
   const [pdfName, setPdfName] = useState("cutlist.pdf");
   const [cabs, setCabs] = useState([
-    { id: 1, name: "Cabinet 1", type: "base", width: "600", doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null, hingeType: "concealed", params: { ...DEFAULTS } },
+    { id: 1, name: "Cabinet 1", type: "base", width: "600", doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null, params: { ...DEFAULTS } },
   ]);
   const [selectedId, setSelectedId] = useState(1);
   const [currentProjectId, setCurrentProjectId] = useState(null);
@@ -1392,12 +1385,14 @@ export default function CabinetProject() {
         approved: isAdmin,
         is_admin: isAdmin,
       });
-
+      
+      
       if (profileError) {
         setAuthError(profileError.message || "Failed to create profile");
         return;
       }
-
+      
+      
       // Show message to log in
       setLoginEmail("");
       setLoginPassword("");
@@ -1644,30 +1639,23 @@ export default function CabinetProject() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showProjectList]);
 
-    const numValue = typeof value === "string" ? parseFloat(value) : value;
-    if (isNaN(numValue)) return `${rule.label} must be a number`;
 
-    if (rule.min !== null && numValue < rule.min) {
-      return `${rule.label} must be at least ${rule.min}`;
-    }
-    if (rule.max !== null && numValue > rule.max) {
-      return `${rule.label} must be at most ${rule.max}`;
-    }
+  const t = (key) => translations[lang][key] || translations["en"][key] || key;
+  const btn = (bg, col, brd) => ({ padding: "8px 14px", borderRadius: 8, cursor: "pointer",
+    border: brd, background: bg, color: col, fontWeight: 700, fontSize: 13 });
 
-    // Special validations
-    if (key === "doorH") {
-      const sideH = document.querySelector('input[type="number"]')?.value;
-      if (sideH && numValue > parseInt(sideH) - 50) {
-        return "Door height too tall for this cabinet";
-      }
-    }
-    if (key === "sideH" && cabType === "wall" && numValue > 1200) {
-      return "Wall cabinet height is usually under 1200mm";
-    }
-
-    return null;
+  const updateCab = (id, patch) => setCabs((cs) => cs.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  const addCab = () => { const nc = newCab(cabs.length + 1); setCabs((cs) => [...cs, nc]); setSelectedId(nc.id); };
+  const removeCab = (id) => {
+    setCabs((cs) => cs.filter((c) => c.id !== id));
+    if (id === selectedId) { const rest = cabs.filter((c) => c.id !== id); setSelectedId(rest.length ? rest[0].id : null); }
   };
 
+  const today = new Date().toLocaleDateString();
+  const selectedCab = cabs.find((c) => c.id === selectedId) || cabs[0];
+  const selectedIndex = cabs.indexOf(selectedCab);
+  
+  // Per-cabinet parameters — now selectedCab is defined
   const setP = (k) => (v) => {
     let val;
     if (typeof v === "boolean") {
@@ -1681,30 +1669,6 @@ export default function CabinetProject() {
     }
     updateCab(selectedId, { params: { ...selectedCab.params, [k]: val } });
   };
-  
-  const updateCab = (id, patch) => {
-    setCabs((cs) => cs.map((c) => {
-      if (c.id !== id) return c;
-      // Deep copy params if being updated
-      if (patch.params) {
-        return { ...c, params: { ...c.params, ...patch.params } };
-      }
-      return { ...c, ...patch };
-    }));
-  };
-  const addCab = () => { 
-    const nc = newCab(cabs.length + 1);
-    setCabs((cs) => [...cs, { ...nc, params: { ...DEFAULTS } }]); // Ensure fresh params copy
-    setSelectedId(nc.id); 
-  };
-  const removeCab = (id) => {
-    setCabs((cs) => cs.filter((c) => c.id !== id));
-    if (id === selectedId) { const rest = cabs.filter((c) => c.id !== id); setSelectedId(rest.length ? rest[0].id : null); }
-  };
-
-  const selectedCab = cabs.find((c) => c.id === selectedId) || cabs[0];
-  const selectedIndex = cabs.indexOf(selectedCab);
-
   const p = selectedCab.params || DEFAULTS;
 
   const summary = useMemo(() => {
@@ -1742,11 +1706,129 @@ export default function CabinetProject() {
     });
     const p = selectedCab.params || DEFAULTS;
     const text = [`${projectName} — ${today} — ${p.t}mm ${t("melamine")}`, "", ...blocks, "",
-      `TOTAL: ${summary.pieces} ${t("pieces")} · ${summary.area.toFixed(2)} m²`
-    ].join("\n");
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+      `TOTAL: ${summary.pieces} ${t("pieces")} · ${summary.area.toFixed(2)} m²`,
+      `${t("Boards")} (${p.boardW} × ${p.boardH}): ${t("about")} ${summary.board.boards}`].join("\n");
+    const ok = await writeClipboard(text);
+    if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1600); }
+    else { setCopyBox(text); }
+  };
+
+  // Uses the built-in MiniPDF writer — no external library, no network — so
+  // PDF export works identically in dev, production, on phones, and sandboxes.
+  const loadJsPDF = async () => ({ jsPDF: MiniPDF });
+
+  const exportProjectToPDF = async () => {
+    try {
+      const doc = new MiniPDF();
+      const pageW = 297, pageH = 210, M = 8;
+      let y = M;
+      
+      // Column positions (mm) - adjusted to fit all columns
+      const col = {
+        elem: M,
+        nombre: M + 10,
+        cant: M + 62,
+        largo: M + 72,
+        ancho: M + 82,
+        grosor: M + 92,
+        desc: M + 102,
+        l1: M + 165,
+        l2: M + 177,
+        c1: M + 189,
+        c2: M + 201
+      };
+      
+      // Header
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.text("Elem", col.elem, y);
+      doc.text("Nombre", col.nombre, y);
+      doc.text("Cant", col.cant, y);
+      doc.text("Largo", col.largo, y);
+      doc.text("Ancho", col.ancho, y);
+      doc.text("Grosor", col.grosor, y);
+      doc.text("Desc", col.desc, y);
+      doc.text("L1", col.l1, y);
+      doc.text("L2", col.l2, y);
+      doc.text("C1", col.c1, y);
+      doc.text("C2", col.c2, y);
+      
+      doc.line(M, y + 2, pageW - M, y + 2);
+      y += 5;
+      
+      // Collect all parts from all cabinets
+      cabs.forEach((cab, cabIdx) => {
+        const W = parseFloat(cab.width);
+        const p = cab.params || DEFAULTS;
+        if (isNaN(W) || W <= 2 * p.t + 10) return;
+        
+        const cutList = buildCutList(W, p, cab);
+        const bandAll = new Set(["Door", "Door (pair)", "Door (flap, stacked)", "False front", "False drawer front", "Drawer front", "Blind / filler panel"]);
+        const bandFront = new Set(["Side", "Top", "Bottom", "Shelf", "Separator (fixed)"]);
+        
+        cutList.parts.forEach((part) => {
+          if (part.material === "hardboard") return;
+          
+          const longDim = Math.max(part.a, part.b);
+          const shortDim = Math.min(part.a, part.b);
+          
+          const hasL1 = bandAll.has(part.part);
+          const hasL2 = bandAll.has(part.part);
+          const hasC1 = bandFront.has(part.part) || bandAll.has(part.part);
+          const hasC2 = bandFront.has(part.part) || bandAll.has(part.part);
+          
+          // Check if we need a new page
+          if (y + 3 > pageH - M) {
+            doc.addPage();
+            y = M;
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(8);
+            doc.text("Elem", col.elem, y);
+            doc.text("Nombre", col.nombre, y);
+            doc.text("Cant", col.cant, y);
+            doc.text("Largo", col.largo, y);
+            doc.text("Ancho", col.ancho, y);
+            doc.text("Grosor", col.grosor, y);
+            doc.text("Desc", col.desc, y);
+            doc.text("L1", col.l1, y);
+            doc.text("L2", col.l2, y);
+            doc.text("C1", col.c1, y);
+            doc.text("C2", col.c2, y);
+            doc.line(M, y + 2, pageW - M, y + 2);
+            y += 5;
+          }
+          
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(7);
+          
+          doc.text(String(cabIdx + 1), col.elem, y);
+          doc.text(part.part.substring(0, 25), col.nombre, y);
+          doc.text(String(part.qty), col.cant, y);
+          doc.text(String(Math.round(longDim)), col.largo, y);
+          doc.text(String(Math.round(shortDim)), col.ancho, y);
+          doc.text(String(p.t), col.grosor, y);
+          
+          if (hasL1) doc.text("x", col.l1, y);
+          if (hasL2) doc.text("x", col.l2, y);
+          if (hasC1) doc.text("x", col.c1, y);
+          if (hasC2) doc.text("x", col.c2, y);
+          
+          y += 3.5;
+        });
+      });
+      
+      const pdfBlob = doc.asBlob ? doc.asBlob() : new Blob([doc.output()], { type: "application/pdf" });
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${currentProjectName}_export.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Error: " + e.message);
+    }
   };
 
   const downloadPDF = async () => {
@@ -2223,5 +2305,6 @@ export default function CabinetProject() {
           )}
         </div>
       </div>
+    </div>
   );
 }
