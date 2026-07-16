@@ -888,7 +888,29 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
   const setDrawerCount = (c) => onChange({ drawerCount: c, drawerHeights: splitHeights(p.doorH, c, p.doorGap) });
   const setDrawerHeight = (i, v) => {
     const arr = (cab.drawerHeights || splitHeights(p.doorH, cab.drawerCount || 3, p.doorGap)).slice();
-    arr[i] = v === "" ? 0 : Math.max(0, Number(v) || 0);
+    const newH = v === "" ? 0 : Math.max(0, Number(v) || 0);
+    arr[i] = newH;
+    
+    // Smart recalculation: adjust other drawers to fit within cabinet height
+    const doorGap = p.doorGap || 3;
+    const buildUp = (cab.type === "wall") ? 0 : (p.baseBuildUp != null ? p.baseBuildUp : 0);
+    const effectiveDoorH = p.doorH - buildUp;
+    const totalGaps = (arr.length - 1) * doorGap; // gaps between drawers
+    const usedHeight = arr.reduce((sum, h) => sum + h, 0);
+    const availableHeight = effectiveDoorH - totalGaps;
+    
+    if (usedHeight > availableHeight) {
+      // User set this drawer too high - recalculate others
+      const otherIndices = arr.map((_, idx) => idx).filter(idx => idx !== i);
+      const thisDrawerHeight = arr[i];
+      const remainingHeight = availableHeight - thisDrawerHeight;
+      const heightPerOther = Math.max(40, Math.floor(remainingHeight / otherIndices.length)); // min 40mm per drawer
+      
+      otherIndices.forEach(idx => {
+        arr[idx] = heightPerOther;
+      });
+    }
+    
     onChange({ drawerHeights: arr });
   };
   const buildUp = cab.type === "wall" ? 0 : (p.baseBuildUp ?? 0);
