@@ -751,6 +751,8 @@ function NumField({ label, value, onChange, suffix = "mm", w = 92 }) {
 }
 
 const labelCss = { fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.mut, fontWeight: 600 };
+const btn = (bg, color, border) => ({ padding: "8px 14px", background: bg, color, border, borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Archivo', sans-serif" });
+const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 const selCss = { padding: "9px 9px", border: `1px solid ${C.hair}`, borderRadius: 7, background: "#fff",
   fontFamily: "'JetBrains Mono', monospace", fontSize: 14 };
 
@@ -1694,6 +1696,66 @@ export default function CabinetProject() {
     const board = estimateBoards(items, p);
     return { area, pieces, n, board, hbArea, hbPieces, shelfPins: totalShelfPins, hinges: totalHinges, slides: totalSlides, handles: totalHandles };
   }, [cabs, selectedCab]);
+
+  const exportProjectToPDF = async () => {
+    try {
+      const doc = new MiniPDF();
+      const pageW = 297, pageH = 210, M = 8;
+      let y = M;
+      const col = { elem: M, nombre: M + 10, cant: M + 60, largo: M + 68, ancho: M + 76, grosor: M + 84, desc: M + 92, l1: M + 125, l2: M + 135, c1: M + 145, c2: M + 155 };
+      const drawHeader = () => {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.text("Elem", col.elem, y);
+        doc.text("Nombre", col.nombre, y);
+        doc.text("Cant", col.cant, y);
+        doc.text("Largo", col.largo, y);
+        doc.text("Ancho", col.ancho, y);
+        doc.text("Grosor", col.grosor, y);
+        doc.text("Desc", col.desc, y);
+        doc.text("L1", col.l1, y);
+        doc.text("L2", col.l2, y);
+        doc.text("C1", col.c1, y);
+        doc.text("C2", col.c2, y);
+        doc.line(M, y + 2, pageW - M, y + 2);
+        y += 5;
+      };
+      drawHeader();
+      const bandAll = new Set(["Door", "Door (pair)", "Door (flap, stacked)", "False front", "False drawer front", "Drawer front", "Blind / filler panel"]);
+      const bandFront = new Set(["Side", "Top", "Bottom", "Shelf", "Separator (fixed)"]);
+      cabs.forEach((cab, cabIdx) => {
+        const W = parseFloat(cab.width);
+        const p2 = cab.params || DEFAULTS;
+        if (isNaN(W) || W <= 2 * p2.t + 10) return;
+        const cutList = buildCutList(W, p2, cab);
+        cutList.parts.forEach((part) => {
+          if (part.material === "hardboard") return;
+          const longDim = Math.max(part.a, part.b);
+          const shortDim = Math.min(part.a, part.b);
+          const hasL = bandAll.has(part.part);
+          const hasC = bandFront.has(part.part) || bandAll.has(part.part);
+          if (y + 3 > pageH - M) { doc.addPage(); y = M; drawHeader(); }
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(7);
+          doc.text(String(cabIdx + 1), col.elem, y);
+          doc.text(part.part.substring(0, 28), col.nombre, y);
+          doc.text(String(part.qty), col.cant, y);
+          doc.text(String(Math.round(longDim)), col.largo, y);
+          doc.text(String(Math.round(shortDim)), col.ancho, y);
+          doc.text(String(p2.t), col.grosor, y);
+          if (hasL) doc.text("x", col.l1, y);
+          if (hasL) doc.text("x", col.l2, y);
+          if (hasC) doc.text("x", col.c1, y);
+          if (hasC) doc.text("x", col.c2, y);
+          y += 3.5;
+        });
+      });
+      const pdfBlob = doc.asBlob ? doc.asBlob() : new Blob([doc.output()], { type: "application/pdf" });
+      sharePdf(pdfBlob, `${currentProjectName || "project"}_export.pdf`);
+    } catch (e) {
+      alert("Error: " + e.message);
+    }
+  };
 
   const copyAll = async () => {
     const blocks = cabs.map((c, i) => {
