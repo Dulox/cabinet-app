@@ -845,7 +845,8 @@ function cabLabel(cab, idx, t) {
   const W = parseFloat(cab.width);
   const w = (!isNaN(W) && W > 0) ? ` ${fmt(W)}mm` : "";
   const label = (TYPES[cab.type] && TYPES[cab.type].label) || "Cabinet";
-  return `${idx + 1} ${t ? t(label) : label}${w}`;
+  const qty = cab.qty && cab.qty > 1 ? ` ×${cab.qty}` : "";
+  return `${idx + 1} ${t ? t(label) : label}${w}${qty}`;
 }
 
 /* Translate a part name (handles the dynamic "Back — Xmm hardboard"). */
@@ -1007,6 +1008,17 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
                   background: "#fff", color: C.ink, outline: "none" }} />
               <span style={{ fontSize: 13, color: C.mut, fontFamily: "'JetBrains Mono', monospace" }}>mm</span>
             </span>
+          </span>
+        </label>
+
+        <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          <span style={labelCss}>{t("Qty")}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <input type="number" min="1" max="99" value={cab.qty || 1}
+              onChange={(e) => onChange({ qty: Math.max(1, Number(e.target.value)) })}
+              style={{ width: 64, padding: "8px 11px", fontSize: 22, fontWeight: 700,
+                fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`,
+                borderRadius: 8, background: "#fff", color: C.ink, outline: "none" }} />
           </span>
         </label>
 
@@ -1762,15 +1774,16 @@ export default function CabinetProject() {
       const W = parseFloat(c.width);
       const p = c.params || DEFAULTS;
       if (isNaN(W) || W <= 2 * p.t + 10) return;
+      const cabQty = c.qty || 1;
       const d = buildCutList(W, p, c);
-      area += d.area; pieces += d.pieces; hbArea += d.hbArea; hbPieces += d.hbPieces; n++;
-      totalShelfPins += d.hardware.shelfPins;
-      totalHinges += d.hardware.hinges;
-      totalSlides += d.hardware.drawerSlides;
-      totalHandles += d.hardware.handles;
+      area += d.area * cabQty; pieces += d.pieces * cabQty; hbArea += d.hbArea * cabQty; hbPieces += d.hbPieces * cabQty; n += cabQty;
+      totalShelfPins += d.hardware.shelfPins * cabQty;
+      totalHinges += d.hardware.hinges * cabQty;
+      totalSlides += d.hardware.drawerSlides * cabQty;
+      totalHandles += d.hardware.handles * cabQty;
       d.parts.forEach((x) => {
         if (x.material === "hardboard") return;
-        for (let i = 0; i < x.qty; i++) items.push({ w: x.a, h: x.b });
+        for (let i = 0; i < x.qty * cabQty; i++) items.push({ w: x.a, h: x.b });
       });
     });
     const p = selectedCab.params || DEFAULTS;
@@ -1843,6 +1856,7 @@ export default function CabinetProject() {
       const W = parseFloat(c.width);
       const p = c.params || DEFAULTS;
       if (isNaN(W) || W <= 2 * p.t + 10) return `${cabLabel(c, i, t)}: (${t("Width")} ?)`;
+      const cabQty = c.qty || 1;
       const d = buildCutList(W, p, c);
       return [`${cabLabel(c, i, t)} — ${t(TYPES[c.type].label)} — ${W} mm`,
         ...d.parts.map((x) => `  ${x.qty}×  ${tName(x.part, t).padEnd(20)} ${fmt(x.a)} × ${fmt(x.b)} (${t(x.aLabel)} × ${t(x.bLabel)})`)].join("\n");
