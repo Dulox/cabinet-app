@@ -532,7 +532,8 @@ function buildCutList(W, p, cab) {
     const maxBlind = round1(doorTotal - p.doorGap - 120);
     const req = (cab.blindW != null && cab.blindW !== "") ? Number(cab.blindW) : (p.cornerBlindW || 200);
     const blindW = round1(Math.max(40, Math.min(req, Math.max(40, maxBlind))));
-    const dW = round1(doorTotal - blindW - p.doorGap);
+    const innerW = W - 2 * t;
+    const dW = round1(innerW - blindW - p.doorGap - p.doorReveal);
     parts.push({ part: "Door", qty: 1, a: dW, b: frontH, aLabel: "width", bLabel: "height",
       note: `corner door (${doorOnLeft ? "left side" : "right side"}) · width = ${doorTotal} − ${blindW} blind − ${p.doorGap} gap${buildNote}` });
     parts.push({ part: "Blind / filler panel", qty: 1, a: blindW, b: frontH, aLabel: "width", bLabel: "height",
