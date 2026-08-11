@@ -766,6 +766,15 @@ function Elevation({ W, p, shelfQty, faces }) {
       <text x={ox + W / 2} y={oy - 44} fill="#EDEDE6" fontSize={fs * 0.78} textAnchor="middle" opacity="0.75"
         style={{ fontFamily: "'JetBrains Mono', monospace" }}>opening {W - 2 * t}</text>
     </svg>
+
+      {/* ── MADESOL SHEET MODAL ─────────────────────────────── */}
+      {showMadesol && (
+        <MadesolSheet
+          cabs={cabs}
+          projectName={currentProjectName}
+          onClose={() => setShowMadesol(false)}
+        />
+      )}
   );
 }
 
@@ -1355,6 +1364,288 @@ const newCab = (n) => ({ id: ++SEQ, name: `Cabinet ${n}`, type: "base", width: "
   doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null, hingeType: "concealed",
   params: { ...DEFAULTS } });
 
+
+/* ================================================================
+ * MADESOL SHEET — Formulario de Servicio: Corte y Canteado
+ * Summarises all cabinet cut lists into one editable table
+ * matching the Madesol workshop form format.
+ * ================================================================ */
+function MadesolSheet({ cabs, projectName, onClose }) {
+  const today = new Date().toLocaleDateString("es-DO");
+
+  // Build summarised cut list — group same dimensions, multiply by cabinet qty
+  const buildRows = () => {
+    const map = new Map();
+    cabs.forEach((cab) => {
+      const W = parseFloat(cab.width);
+      const p = cab.params || DEFAULTS;
+      if (isNaN(W) || W <= 2 * p.t + 10) return;
+      const cabQty = cab.qty || 1;
+      const d = buildCutList(W, p, cab);
+      d.parts.forEach((part) => {
+        const L = Math.round(Math.max(part.a, part.b));
+        const A = Math.round(Math.min(part.a, part.b));
+        const G = part.material === "hardboard" ? Math.round(p.grooveDepth || 5.5) : p.t;
+        const key = `${L}-${A}-${G}`;
+        const totalQty = part.qty * cabQty;
+        if (map.has(key)) {
+          map.get(key).cant += totalQty;
+        } else {
+          const bandAll = new Set(["Door", "Door (pair)", "Door (flap, stacked)", "False front", "False drawer front", "Drawer front", "Blind / filler panel"]);
+          const bandFront = new Set(["Side", "Top", "Bottom", "Shelf", "Separator (fixed)", "Rail / Support", "Rail / Support (front)", "Rail / Support (back)"]);
+          const hasAllEdges = bandAll.has(part.part);
+          const hasFrontEdge = bandFront.has(part.part) || hasAllEdges;
+          map.set(key, {
+            largo: L,
+            ancho: A,
+            grosor: G,
+            cant: totalQty,
+            nombre: part.part,
+            // Canteado: L1=largo1, L2=largo2, A1=ancho1, A2=ancho2
+            cl1: hasAllEdges ? "X" : (hasFrontEdge ? "X" : ""),
+            cl2: hasAllEdges ? "X" : "",
+            ca1: hasAllEdges ? "X" : (hasFrontEdge ? "X" : ""),
+            ca2: hasAllEdges ? "X" : "",
+            // Ranuras, Bisagras
+            rl: "", ra: "", hbl: "", hba: "",
+            material: "",
+            isHardboard: part.material === "hardboard",
+          });
+        }
+      });
+    });
+    return Array.from(map.values()).sort((a, b) => b.largo - a.largo || b.ancho - a.ancho);
+  };
+
+  const [rows, setRows] = React.useState(() => buildRows());
+  const [globalMaterial, setGlobalMaterial] = React.useState("");
+  const [globalWidth, setGlobalWidth] = React.useState("");
+  const [factura, setFactura] = React.useState("");
+  const [nombre, setNombre] = React.useState("");
+  const [telefono, setTelefono] = React.useState("");
+
+  // Apply global material to all rows unless individually overridden
+  React.useEffect(() => {
+    if (globalMaterial !== "") {
+      setRows(rs => rs.map(r => r._matOverride ? r : { ...r, material: globalMaterial }));
+    }
+  }, [globalMaterial]);
+
+  const updateRow = (i, field, val) => {
+    setRows(rs => {
+      const next = [...rs];
+      next[i] = { ...next[i], [field]: val };
+      if (field === "material") next[i]._matOverride = true;
+      return next;
+    });
+  };
+
+  const toggleCell = (i, field) => {
+    setRows(rs => {
+      const next = [...rs];
+      next[i] = { ...next[i], [field]: next[i][field] ? "" : "X" };
+      return next;
+    });
+  };
+
+  const totalCant = rows.reduce((s, r) => s + (Number(r.cant) || 0), 0);
+
+  const inputStyle = {
+    border: "none", background: "transparent", width: "100%",
+    fontSize: 11, fontFamily: "Arial, sans-serif", textAlign: "center",
+    padding: 0, outline: "none", cursor: "text",
+  };
+  const cellStyle = (extra = {}) => ({
+    border: "1px solid #888", padding: "2px 3px", textAlign: "center",
+    fontSize: 11, verticalAlign: "middle", ...extra,
+  });
+  const hdrStyle = (extra = {}) => ({
+    ...cellStyle(), background: "#ddd", fontWeight: 700, fontSize: 10, ...extra,
+  });
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)",
+      zIndex: 3000, display: "flex", alignItems: "flex-start",
+      justifyContent: "center", overflowY: "auto", padding: "20px 0",
+    }}>
+      <div style={{
+        background: "#fff", width: 960, maxWidth: "98vw", borderRadius: 10,
+        boxShadow: "0 8px 40px rgba(0,0,0,0.3)", padding: 24, position: "relative",
+      }}>
+        {/* Close */}
+        <button onClick={onClose} style={{
+          position: "absolute", top: 12, right: 14, background: "none",
+          border: "none", fontSize: 22, cursor: "pointer", color: "#666",
+        }}>×</button>
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 24, marginBottom: 16 }}>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 22, letterSpacing: 1 }}>MADESOL</div>
+            <div style={{ fontSize: 10, color: "#555" }}>• Madera • Pintura • Ferretería</div>
+          </div>
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <div style={{ fontWeight: 700, fontSize: 13 }}>FORMULARIO DE SERVICIO: CORTE Y CANTEADO</div>
+            <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>RNC 101-67633-7 · Av. Isabel Aguiar, esq. calle B · Zona Indust. Herrera, Santo Domingo · Tel.: (809) 534-4400</div>
+          </div>
+          <div style={{ fontSize: 11, minWidth: 160 }}>
+            <div>Fecha: <strong>{today}</strong></div>
+            <div>Proyecto: <strong>{projectName}</strong></div>
+          </div>
+        </div>
+
+        {/* Client info */}
+        <div style={{ display: "flex", gap: 16, marginBottom: 12, flexWrap: "wrap" }}>
+          {[["Factura No.", factura, setFactura, 100], ["Nombre", nombre, setNombre, 200], ["Número tel.", telefono, setTelefono, 140]].map(([label, val, setter, w]) => (
+            <label key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+              <span style={{ whiteSpace: "nowrap" }}>{label}</span>
+              <input value={val} onChange={e => setter(e.target.value)}
+                style={{ border: "none", borderBottom: "1px solid #888", width: w, fontSize: 11, outline: "none", padding: "1px 3px" }} />
+            </label>
+          ))}
+        </div>
+
+        {/* Global controls */}
+        <div style={{ display: "flex", gap: 16, marginBottom: 12, alignItems: "center", flexWrap: "wrap",
+          background: "#f5f5f5", padding: "10px 14px", borderRadius: 8 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
+            Material (todos):
+            <input value={globalMaterial} onChange={e => setGlobalMaterial(e.target.value)}
+              placeholder="ej. Melamina Blanca"
+              style={{ border: "1px solid #bbb", borderRadius: 4, padding: "4px 8px", fontSize: 12, width: 180 }} />
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
+            Ancho material (mm):
+            <input value={globalWidth} onChange={e => setGlobalWidth(e.target.value)}
+              placeholder="2440"
+              style={{ border: "1px solid #bbb", borderRadius: 4, padding: "4px 8px", fontSize: 12, width: 80 }} />
+          </label>
+          <span style={{ fontSize: 11, color: "#666" }}>Edita campos individuales para sobrescribir. Haz clic en celdas de canteado/ranuras/bisagras para marcar X.</span>
+        </div>
+
+        {/* Table */}
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 11 }}>
+            <thead>
+              {/* Main header groups */}
+              <tr>
+                <th style={hdrStyle({ width: 30 })} rowSpan={2}>No</th>
+                <th style={hdrStyle({ minWidth: 80 })} rowSpan={2}>Material</th>
+                <th style={hdrStyle({})} colSpan={5}>Despiece</th>
+                <th style={hdrStyle({})} colSpan={4}>Canteado de pieza</th>
+                <th style={hdrStyle({})} colSpan={2}>Ranuras</th>
+                <th style={hdrStyle({})} colSpan={2}>Bisagras</th>
+              </tr>
+              <tr>
+                {/* Despiece sub-headers */}
+                <th style={hdrStyle({ width: 28 })}>Vetas a favor del largo</th>
+                <th style={hdrStyle({ width: 60 })}>Largo (mm)</th>
+                <th style={hdrStyle({ width: 60 })}>Ancho (mm)</th>
+                <th style={hdrStyle({ width: 46 })}>Grosor (mm)</th>
+                <th style={hdrStyle({ width: 36 })}>Cant.</th>
+                {/* Canteado sub-headers: Largo1, Largo2, Ancho1, Ancho2 */}
+                <th style={hdrStyle({ width: 38 })}>Largo 1</th>
+                <th style={hdrStyle({ width: 38 })}>Largo 2</th>
+                <th style={hdrStyle({ width: 38 })}>Ancho 1</th>
+                <th style={hdrStyle({ width: 38 })}>Ancho 2</th>
+                {/* Ranuras */}
+                <th style={hdrStyle({ width: 32 })}>R-L</th>
+                <th style={hdrStyle({ width: 32 })}>R-A</th>
+                {/* Bisagras */}
+                <th style={hdrStyle({ width: 32 })}>HB-L</th>
+                <th style={hdrStyle({ width: 32 })}>HB-A</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, i) => (
+                <tr key={i} style={{ background: row.isHardboard ? "#fffbe6" : (i % 2 === 0 ? "#fff" : "#f9f9f9") }}>
+                  <td style={cellStyle({ color: "#888" })}>{i + 1}</td>
+                  {/* Material — editable */}
+                  <td style={cellStyle({ textAlign: "left", minWidth: 80 })}>
+                    <input value={row.material || globalMaterial} onChange={e => updateRow(i, "material", e.target.value)}
+                      style={{ ...inputStyle, textAlign: "left", fontSize: 10 }} placeholder={globalMaterial || "—"} />
+                  </td>
+                  {/* Vetas */}
+                  <td style={cellStyle({ width: 28 })}></td>
+                  {/* Largo */}
+                  <td style={cellStyle({ fontWeight: 700 })}>
+                    <input value={row.largo} onChange={e => updateRow(i, "largo", e.target.value)} style={inputStyle} />
+                  </td>
+                  {/* Ancho */}
+                  <td style={cellStyle({ fontWeight: 700 })}>
+                    <input value={row.ancho} onChange={e => updateRow(i, "ancho", e.target.value)} style={inputStyle} />
+                  </td>
+                  {/* Grosor */}
+                  <td style={cellStyle()}>
+                    <input value={row.grosor} onChange={e => updateRow(i, "grosor", e.target.value)} style={inputStyle} />
+                  </td>
+                  {/* Cant */}
+                  <td style={cellStyle({ fontWeight: 700 })}>
+                    <input value={row.cant} onChange={e => updateRow(i, "cant", e.target.value)} style={inputStyle} />
+                  </td>
+                  {/* Canteado — clickable to toggle X, pre-filled */}
+                  {["cl1","cl2","ca1","ca2"].map(field => (
+                    <td key={field} style={{ ...cellStyle(), cursor: "pointer", color: row[field] ? "#c00" : "#ddd",
+                      fontWeight: 700, fontSize: 14, userSelect: "none" }}
+                      onClick={() => toggleCell(i, field)}>
+                      {row[field] || "·"}
+                    </td>
+                  ))}
+                  {/* Ranuras — clickable */}
+                  {["rl","ra"].map(field => (
+                    <td key={field} style={{ ...cellStyle(), cursor: "pointer", color: row[field] ? "#c00" : "#ddd",
+                      fontWeight: 700, fontSize: 14, userSelect: "none" }}
+                      onClick={() => toggleCell(i, field)}>
+                      {row[field] || "·"}
+                    </td>
+                  ))}
+                  {/* Bisagras — clickable */}
+                  {["hbl","hba"].map(field => (
+                    <td key={field} style={{ ...cellStyle(), cursor: "pointer", color: row[field] ? "#c00" : "#ddd",
+                      fontWeight: 700, fontSize: 14, userSelect: "none" }}
+                      onClick={() => toggleCell(i, field)}>
+                      {row[field] || "·"}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+              {/* Total row */}
+              <tr style={{ background: "#e8e8e8", fontWeight: 700 }}>
+                <td style={cellStyle()} colSpan={6} >Total</td>
+                <td style={cellStyle({ fontWeight: 700 })}>{totalCant}</td>
+                <td style={cellStyle()} colSpan={7}></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Notes */}
+        <div style={{ marginTop: 14, fontSize: 10, color: "#555", maxWidth: 420,
+          border: "1px solid #ccc", padding: "8px 12px", borderRadius: 4 }}>
+          <strong>NOTAS:</strong><br/>
+          1. Sobrantes deben ser retirados con la producción de lo contrario no somos responsables de los mismos.<br/>
+          2. Después de notificados que su trabajo está listo deben retirar en un plazo no mayor de 72 horas de lo contrario se cobrará un servicio de almacenamiento de RD$1,000.00 diarios por producción.
+        </div>
+
+        {/* Footer buttons */}
+        <div style={{ display: "flex", gap: 12, marginTop: 16, justifyContent: "flex-end" }}>
+          <button onClick={onClose}
+            style={{ padding: "9px 20px", border: "1.5px solid #bbb", borderRadius: 8, background: "#fff",
+              cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+            Cerrar
+          </button>
+          <button onClick={() => window.print()}
+            style={{ padding: "9px 20px", border: "none", borderRadius: 8, background: "#E4572E",
+              color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
+            🖨 Imprimir / Guardar PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CabinetProject() {
   // Auth state
   const [authState, setAuthState] = useState(null); // { user, approved, isAdmin } or null if logged out
@@ -1385,6 +1676,7 @@ export default function CabinetProject() {
   const [saveStatus, setSaveStatus] = useState(""); // "saving", "saved", "error"
   const [userProjects, setUserProjects] = useState([]); // List of all user's projects
   const [showProjectList, setShowProjectList] = useState(false);
+  const [showMadesol, setShowMadesol] = useState(false);
   
   // Login handler
   const handleLogin = async () => {
@@ -2134,10 +2426,16 @@ export default function CabinetProject() {
                   Export Project PDF
                 </div>
                 <div onClick={downloadShopPDF} style={{ padding: "10px 16px", cursor: "pointer", fontSize: 13,
-                  fontWeight: 600, color: C.ink }}
+                  fontWeight: 600, color: C.ink, borderBottom: `1px solid ${C.hair}` }}
                   onMouseEnter={e => e.currentTarget.style.background=C.card}
                   onMouseLeave={e => e.currentTarget.style.background="#fff"}>
                   {t("Shop drawing PDF")}
+                </div>
+                <div onClick={() => setShowMadesol(true)} style={{ padding: "10px 16px", cursor: "pointer", fontSize: 13,
+                  fontWeight: 600, color: C.ink }}
+                  onMouseEnter={e => e.currentTarget.style.background=C.card}
+                  onMouseLeave={e => e.currentTarget.style.background="#fff"}>
+                  Madesol Sheet
                 </div>
               </div>
             </div>
