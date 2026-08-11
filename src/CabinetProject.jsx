@@ -1561,11 +1561,11 @@ function MadesolSheet({ cabs, projectName, onClose }) {
             grosor: G,
             cant: totalQty,
             nombre: part.part,
-            // Canteado: L1=largo1, L2=largo2, A1=ancho1, A2=ancho2
-            cl1: hasAllEdges ? "X" : (hasFrontEdge ? "X" : ""),
-            cl2: hasAllEdges ? "X" : "",
-            ca1: hasAllEdges ? "X" : (hasFrontEdge ? "X" : ""),
-            ca2: hasAllEdges ? "X" : "",
+            // Canteado: all 4 edges X by default — user can click to remove
+            cl1: "X",
+            cl2: "X",
+            ca1: "X",
+            ca2: "X",
             // Ranuras, Bisagras
             rl: "", ra: "", hbl: "", hba: "",
             material: "",
@@ -1579,7 +1579,16 @@ function MadesolSheet({ cabs, projectName, onClose }) {
 
   const [rows, setRows] = React.useState(() => buildRows());
   const [globalMaterial, setGlobalMaterial] = React.useState("");
-  const [pickerOpen, setPickerOpen] = React.useState(null); // null | { target: "global" } | { target: "row", idx: number }
+  const [pickerOpen, setPickerOpen] = React.useState(null);
+  const [sortField, setSortField] = React.useState(null); // null | "nombre" | "cant"
+  const [sortDir, setSortDir] = React.useState(1); // 1=asc -1=desc
+  const [showCustomMat, setShowCustomMat] = React.useState(false);
+  const [customMaterials, setCustomMaterials] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem("customMaterials") || "[]"); } catch { return []; }
+  });
+  const [newMatName, setNewMatName] = React.useState("");
+  const [newMatCode, setNewMatCode] = React.useState("");
+  const [newMatColor, setNewMatColor] = React.useState("#C4A882");
   const [globalWidth, setGlobalWidth] = React.useState("");
   const [factura, setFactura] = React.useState("");
   const [nombre, setNombre] = React.useState("");
@@ -1610,6 +1619,37 @@ function MadesolSheet({ cabs, projectName, onClose }) {
   };
 
   const totalCant = rows.reduce((s, r) => s + (Number(r.cant) || 0), 0);
+
+  const saveCustomMat = () => {
+    if (!newMatName.trim()) return;
+    const m = { code: newMatCode.trim() || "—", name: newMatName.trim(), bg: newMatColor };
+    const updated = [...customMaterials, m];
+    setCustomMaterials(updated);
+    try { localStorage.setItem("customMaterials", JSON.stringify(updated)); } catch {}
+    setNewMatName(""); setNewMatCode(""); setNewMatColor("#C4A882");
+  };
+
+  const deleteCustomMat = (idx) => {
+    const updated = customMaterials.filter((_, i) => i !== idx);
+    setCustomMaterials(updated);
+    try { localStorage.setItem("customMaterials", JSON.stringify(updated)); } catch {}
+  };
+
+  const toggleSort = (field) => {
+    if (sortField === field) setSortDir(d => -d);
+    else { setSortField(field); setSortDir(1); }
+  };
+
+  const sortedRows = React.useMemo(() => {
+    if (!sortField) return rows;
+    return [...rows].sort((a, b) => {
+      const av = sortField === "cant" ? (Number(a.cant) || 0) : String(a.nombre || "");
+      const bv = sortField === "cant" ? (Number(b.cant) || 0) : String(b.nombre || "");
+      if (av < bv) return -sortDir;
+      if (av > bv) return sortDir;
+      return 0;
+    });
+  }, [rows, sortField, sortDir]);
 
   const inputStyle = {
     border: "none", background: "transparent", width: "100%",
@@ -1681,6 +1721,11 @@ function MadesolSheet({ cabs, projectName, onClose }) {
                   borderRadius: 4, cursor: "pointer", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
                 🎨 Innovus
               </button>
+              <button onClick={() => setShowCustomMat(true)}
+                style={{ padding: "4px 10px", background: "#444", color: "#fff", border: "none",
+                  borderRadius: 4, cursor: "pointer", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
+                ⭐ Mis Materiales
+              </button>
             </div>
           </label>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
@@ -1700,6 +1745,10 @@ function MadesolSheet({ cabs, projectName, onClose }) {
               <tr>
                 <th style={hdrStyle({ width: 30 })} rowSpan={2}>No</th>
                 <th style={hdrStyle({ minWidth: 80 })} rowSpan={2}>Material</th>
+                <th style={{ ...hdrStyle({ minWidth: 100 }), cursor: "pointer" }} rowSpan={2}
+                  onClick={() => toggleSort("nombre")}>
+                  Nombre {sortField === "nombre" ? (sortDir === 1 ? "▲" : "▼") : "↕"}
+                </th>
                 <th style={hdrStyle({})} colSpan={5}>Despiece</th>
                 <th style={hdrStyle({})} colSpan={4}>Canteado de pieza</th>
                 <th style={hdrStyle({})} colSpan={2}>Ranuras</th>
@@ -1711,7 +1760,10 @@ function MadesolSheet({ cabs, projectName, onClose }) {
                 <th style={hdrStyle({ width: 60 })}>Largo (mm)</th>
                 <th style={hdrStyle({ width: 60 })}>Ancho (mm)</th>
                 <th style={hdrStyle({ width: 46 })}>Grosor (mm)</th>
-                <th style={hdrStyle({ width: 36 })}>Cant.</th>
+                <th style={{ ...hdrStyle({ width: 36 }), cursor: "pointer" }}
+                  onClick={() => toggleSort("cant")}>
+                  Cant. {sortField === "cant" ? (sortDir === 1 ? "▲" : "▼") : "↕"}
+                </th>
                 {/* Canteado sub-headers: Largo1, Largo2, Ancho1, Ancho2 */}
                 <th style={hdrStyle({ width: 38 })}>Largo 1</th>
                 <th style={hdrStyle({ width: 38 })}>Largo 2</th>
@@ -1726,7 +1778,7 @@ function MadesolSheet({ cabs, projectName, onClose }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, i) => (
+              {sortedRows.map((row, i) => (
                 <tr key={i} style={{ background: row.isHardboard ? "#fffbe6" : (i % 2 === 0 ? "#fff" : "#f9f9f9") }}>
                   <td style={cellStyle({ color: "#888" })}>{i + 1}</td>
                   {/* Material — editable */}
@@ -1735,6 +1787,10 @@ function MadesolSheet({ cabs, projectName, onClose }) {
                     title="Doble clic para abrir selector Innovus">
                     <input value={row.material || globalMaterial} onChange={e => updateRow(i, "material", e.target.value)}
                       style={{ ...inputStyle, textAlign: "left", fontSize: 10 }} placeholder={globalMaterial || "—"} />
+                  </td>
+                  {/* Nombre */}
+                  <td style={cellStyle({ textAlign: "left", minWidth: 100, fontSize: 10, color: "#555" })}>
+                    {row.nombre}
                   </td>
                   {/* Vetas */}
                   <td style={cellStyle({ width: 28 })}></td>
@@ -1782,7 +1838,7 @@ function MadesolSheet({ cabs, projectName, onClose }) {
               ))}
               {/* Total row */}
               <tr style={{ background: "#e8e8e8", fontWeight: 700 }}>
-                <td style={cellStyle()} colSpan={6} >Total</td>
+                <td style={cellStyle()} colSpan={7}>Total</td>
                 <td style={cellStyle({ fontWeight: 700 })}>{totalCant}</td>
                 <td style={cellStyle()} colSpan={7}></td>
               </tr>
@@ -1797,6 +1853,72 @@ function MadesolSheet({ cabs, projectName, onClose }) {
           1. Sobrantes deben ser retirados con la producción de lo contrario no somos responsables de los mismos.<br/>
           2. Después de notificados que su trabajo está listo deben retirar en un plazo no mayor de 72 horas de lo contrario se cobrará un servicio de almacenamiento de RD$1,000.00 diarios por producción.
         </div>
+
+        {/* Custom Materials Modal */}
+        {showCustomMat && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 4000,
+            display: "flex", alignItems: "center", justifyContent: "center" }}
+            onClick={() => setShowCustomMat(false)}>
+            <div style={{ background: "#fff", borderRadius: 12, width: 480, maxWidth: "95vw",
+              maxHeight: "80vh", display: "flex", flexDirection: "column",
+              boxShadow: "0 12px 48px rgba(0,0,0,0.3)", padding: 24 }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <div style={{ fontWeight: 800, fontSize: 16 }}>⭐ Mis Materiales</div>
+                <button onClick={() => setShowCustomMat(false)}
+                  style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#888" }}>×</button>
+              </div>
+              {/* Add new */}
+              <div style={{ background: "#f5f5f5", borderRadius: 8, padding: 14, marginBottom: 16 }}>
+                <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 10, color: "#444" }}>Agregar material</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <input value={newMatCode} onChange={e => setNewMatCode(e.target.value)}
+                    placeholder="Código (ej. L021)" maxLength={12}
+                    style={{ border: "1px solid #ddd", borderRadius: 6, padding: "6px 10px", fontSize: 12, width: 110 }} />
+                  <input value={newMatName} onChange={e => setNewMatName(e.target.value)}
+                    placeholder="Nombre del material *"
+                    style={{ border: "1px solid #ddd", borderRadius: 6, padding: "6px 10px", fontSize: 12, flex: 1, minWidth: 140 }} />
+                  <input type="color" value={newMatColor} onChange={e => setNewMatColor(e.target.value)}
+                    title="Color del swatch"
+                    style={{ width: 38, height: 34, border: "1px solid #ddd", borderRadius: 6, cursor: "pointer", padding: 2 }} />
+                  <button onClick={saveCustomMat}
+                    style={{ padding: "6px 14px", background: "#E4572E", color: "#fff", border: "none",
+                      borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
+                    + Agregar
+                  </button>
+                </div>
+              </div>
+              {/* List */}
+              <div style={{ overflowY: "auto", flex: 1 }}>
+                {customMaterials.length === 0 && (
+                  <div style={{ color: "#aaa", textAlign: "center", padding: 30, fontSize: 13 }}>
+                    No tienes materiales guardados aún.
+                  </div>
+                )}
+                {customMaterials.map((m, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 4px",
+                    borderBottom: "1px solid #f0f0f0" }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 6, background: m.bg, flexShrink: 0,
+                      border: "1px solid rgba(0,0,0,0.1)" }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 12 }}>{m.code} — {m.name}</div>
+                    </div>
+                    <button onClick={() => {
+                      const val = `${m.code} ${m.name}`;
+                      setGlobalMaterial(val);
+                      setShowCustomMat(false);
+                    }} style={{ padding: "4px 10px", background: "#f0f0f0", border: "none",
+                      borderRadius: 5, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+                      Usar
+                    </button>
+                    <button onClick={() => deleteCustomMat(i)}
+                      style={{ background: "none", border: "none", color: "#e74c3c", cursor: "pointer", fontSize: 16 }}>×</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Material Picker */}
         {pickerOpen && (
