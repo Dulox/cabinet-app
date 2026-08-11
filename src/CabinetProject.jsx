@@ -1564,6 +1564,7 @@ function MadesolSheet({ cabs, projectName, onClose }) {
           const hasAllEdges = bandAll.has(part.part);
           const hasFrontEdge = bandFront.has(part.part) || hasAllEdges;
           map.set(key, {
+            id: key,
             largo: L,
             ancho: A,
             grosor: G,
@@ -1609,21 +1610,17 @@ function MadesolSheet({ cabs, projectName, onClose }) {
     }
   }, [globalMaterial]);
 
-  const updateRow = (i, field, val) => {
-    setRows(rs => {
-      const next = [...rs];
-      next[i] = { ...next[i], [field]: val };
-      if (field === "material") next[i]._matOverride = true;
-      return next;
-    });
+  const updateRow = (id, field, val) => {
+    setRows(rs => rs.map(r => {
+      if (r.id !== id) return r;
+      const updated = { ...r, [field]: val };
+      if (field === "material") updated._matOverride = true;
+      return updated;
+    }));
   };
 
-  const toggleCell = (i, field) => {
-    setRows(rs => {
-      const next = [...rs];
-      next[i] = { ...next[i], [field]: next[i][field] ? "" : "X" };
-      return next;
-    });
+  const toggleCell = (id, field) => {
+    setRows(rs => rs.map(r => r.id !== id ? r : { ...r, [field]: r[field] ? "" : "X" }));
   };
 
   const totalCant = rows.reduce((s, r) => s + (Number(r.cant) || 0), 0);
@@ -1716,25 +1713,18 @@ function MadesolSheet({ cabs, projectName, onClose }) {
         </div>
 
         {/* Global controls */}
-        <div style={{ display: "flex", gap: 16, marginBottom: 12, alignItems: "center", flexWrap: "wrap",
+        <div style={{ display: "flex", gap: 12, marginBottom: 12, alignItems: "center", flexWrap: "wrap",
           background: "#f5f5f5", padding: "10px 14px", borderRadius: 8 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
             Material (todos):
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <input value={globalMaterial} onChange={e => setGlobalMaterial(e.target.value)}
-                placeholder="ej. Melamina Blanca"
-                style={{ border: "1px solid #bbb", borderRadius: 4, padding: "4px 8px", fontSize: 12, width: 160 }} />
-              <button onClick={() => setPickerOpen({ target: "global" })}
-                style={{ padding: "4px 10px", background: "#E4572E", color: "#fff", border: "none",
-                  borderRadius: 4, cursor: "pointer", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
-                🎨 Innovus
-              </button>
-              <button onClick={() => setShowCustomMat(true)}
-                style={{ padding: "4px 10px", background: "#444", color: "#fff", border: "none",
-                  borderRadius: 4, cursor: "pointer", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
-                ⭐ Mis Materiales
-              </button>
-            </div>
+            <input value={globalMaterial} onChange={e => setGlobalMaterial(e.target.value)}
+              placeholder="ej. Melamina Blanca"
+              style={{ border: "1px solid #bbb", borderRadius: 4, padding: "4px 8px", fontSize: 12, width: 180 }} />
+            <button onClick={() => setPickerOpen({ target: "global" })}
+              style={{ padding: "5px 12px", background: "#E4572E", color: "#fff", border: "none",
+                borderRadius: 4, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
+              🎨 Seleccionar
+            </button>
           </label>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
             Ancho material (mm):
@@ -1742,7 +1732,12 @@ function MadesolSheet({ cabs, projectName, onClose }) {
               placeholder="2440"
               style={{ border: "1px solid #bbb", borderRadius: 4, padding: "4px 8px", fontSize: 12, width: 80 }} />
           </label>
-          <span style={{ fontSize: 11, color: "#666" }}>Edita campos individuales para sobrescribir. Haz clic en celdas de canteado/ranuras/bisagras para marcar X.</span>
+          <button onClick={() => setShowCustomMat(true)}
+            style={{ padding: "5px 12px", background: "#444", color: "#fff", border: "none",
+              borderRadius: 4, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
+            ⭐ Mis Materiales
+          </button>
+          <span style={{ fontSize: 11, color: "#666" }}>▸ = cambiar material por fila · clic en canteado/ranuras para marcar X</span>
         </div>
 
         {/* Table */}
@@ -1792,9 +1787,9 @@ function MadesolSheet({ cabs, projectName, onClose }) {
                   {/* Material — editable */}
                   <td style={cellStyle({ textAlign: "left", minWidth: 100, padding: "1px 3px" })}>
                     <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      <input value={row.material || globalMaterial} onChange={e => updateRow(i, "material", e.target.value)}
+                      <input value={row.material || globalMaterial} onChange={e => updateRow(row.id, "material", e.target.value)}
                         style={{ ...inputStyle, textAlign: "left", fontSize: 10, flex: 1 }} placeholder={globalMaterial || "—"} />
-                      <button onClick={() => setPickerOpen({ target: "row", idx: i })}
+                      <button onClick={() => setPickerOpen({ target: "row", idx: row.id })}
                         style={{ flexShrink: 0, padding: "1px 5px", background: "#E4572E", color: "#fff",
                           border: "none", borderRadius: 3, cursor: "pointer", fontSize: 9, fontWeight: 700,
                           lineHeight: "14px", whiteSpace: "nowrap" }}>
@@ -1810,19 +1805,19 @@ function MadesolSheet({ cabs, projectName, onClose }) {
                   <td style={cellStyle({ width: 28 })}></td>
                   {/* Largo */}
                   <td style={cellStyle({ fontWeight: 700 })}>
-                    <input value={row.largo} onChange={e => updateRow(i, "largo", e.target.value)} style={inputStyle} />
+                    <input value={row.largo} onChange={e => updateRow(row.id, "largo", e.target.value)} style={inputStyle} />
                   </td>
                   {/* Ancho */}
                   <td style={cellStyle({ fontWeight: 700 })}>
-                    <input value={row.ancho} onChange={e => updateRow(i, "ancho", e.target.value)} style={inputStyle} />
+                    <input value={row.ancho} onChange={e => updateRow(row.id, "ancho", e.target.value)} style={inputStyle} />
                   </td>
                   {/* Grosor */}
                   <td style={cellStyle()}>
-                    <input value={row.grosor} onChange={e => updateRow(i, "grosor", e.target.value)} style={inputStyle} />
+                    <input value={row.grosor} onChange={e => updateRow(row.id, "grosor", e.target.value)} style={inputStyle} />
                   </td>
                   {/* Cant */}
                   <td style={cellStyle({ fontWeight: 700 })}>
-                    <input value={row.cant} onChange={e => updateRow(i, "cant", e.target.value)} style={inputStyle} />
+                    <input value={row.cant} onChange={e => updateRow(row.id, "cant", e.target.value)} style={inputStyle} />
                   </td>
                   {/* Canteado — clickable to toggle X, pre-filled */}
                   {["cl1","cl2","ca1","ca2"].map(field => (
