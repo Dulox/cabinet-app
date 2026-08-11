@@ -1422,14 +1422,19 @@ const INNOVUS_MATERIALS = {
 };
 
 /* ── MATERIAL PICKER MODAL ────────────────────────────────────────── */
-function MaterialPicker({ onSelect, onClose }) {
+function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
   const [activeTab, setActiveTab] = React.useState("maderas");
   const [search, setSearch] = React.useState("");
 
-  const allItems = Object.entries(INNOVUS_MATERIALS).flatMap(([, cat]) => cat.items);
+  const allInnovus = Object.entries(INNOVUS_MATERIALS).flatMap(([, cat]) => cat.items);
+  const allCustom = customMaterials.map(m => ({ ...m, texture: "", grain: false, isCustom: true }));
+  const allItems = [...allInnovus, ...allCustom];
+
   const filtered = search.trim()
     ? allItems.filter(m => m.name.toLowerCase().includes(search.toLowerCase()) || m.code.toLowerCase().includes(search.toLowerCase()))
-    : INNOVUS_MATERIALS[activeTab].items;
+    : activeTab === "mis"
+      ? allCustom
+      : INNOVUS_MATERIALS[activeTab].items;
 
   const tabStyle = (key) => ({
     padding: "8px 16px", border: "none", cursor: "pointer", fontSize: 13,
@@ -1472,6 +1477,9 @@ function MaterialPicker({ onSelect, onClose }) {
                   {cat.label} ({cat.items.length})
                 </button>
               ))}
+              <button style={tabStyle("mis")} onClick={() => setActiveTab("mis")}>
+                ⭐ Mis Materiales ({customMaterials.length})
+              </button>
             </div>
           )}
         </div>
@@ -1481,7 +1489,7 @@ function MaterialPicker({ onSelect, onClose }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 12 }}>
             {filtered.map(mat => (
               <div key={mat.code}
-                onClick={() => { onSelect(`${mat.code} ${mat.name} ${mat.texture}`); onClose(); }}
+                onClick={() => { const label = [mat.code, mat.name, mat.texture].filter(Boolean).join(' ').trim(); onSelect(label); onClose(); }}
                 style={{
                   borderRadius: 10, overflow: "hidden", cursor: "pointer",
                   border: "2px solid transparent", transition: "all 0.15s",
@@ -1782,11 +1790,17 @@ function MadesolSheet({ cabs, projectName, onClose }) {
                 <tr key={i} style={{ background: row.isHardboard ? "#fffbe6" : (i % 2 === 0 ? "#fff" : "#f9f9f9") }}>
                   <td style={cellStyle({ color: "#888" })}>{i + 1}</td>
                   {/* Material — editable */}
-                  <td style={cellStyle({ textAlign: "left", minWidth: 80, position: "relative" })}
-                    onDoubleClick={() => setPickerOpen({ target: "row", idx: i })}
-                    title="Doble clic para abrir selector Innovus">
-                    <input value={row.material || globalMaterial} onChange={e => updateRow(i, "material", e.target.value)}
-                      style={{ ...inputStyle, textAlign: "left", fontSize: 10 }} placeholder={globalMaterial || "—"} />
+                  <td style={cellStyle({ textAlign: "left", minWidth: 100, padding: "1px 3px" })}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      <input value={row.material || globalMaterial} onChange={e => updateRow(i, "material", e.target.value)}
+                        style={{ ...inputStyle, textAlign: "left", fontSize: 10, flex: 1 }} placeholder={globalMaterial || "—"} />
+                      <button onClick={() => setPickerOpen({ target: "row", idx: i })}
+                        style={{ flexShrink: 0, padding: "1px 5px", background: "#E4572E", color: "#fff",
+                          border: "none", borderRadius: 3, cursor: "pointer", fontSize: 9, fontWeight: 700,
+                          lineHeight: "14px", whiteSpace: "nowrap" }}>
+                        ▸
+                      </button>
+                    </div>
                   </td>
                   {/* Nombre */}
                   <td style={cellStyle({ textAlign: "left", minWidth: 100, fontSize: 10, color: "#555" })}>
@@ -1923,6 +1937,7 @@ function MadesolSheet({ cabs, projectName, onClose }) {
         {/* Material Picker */}
         {pickerOpen && (
           <MaterialPicker
+            customMaterials={customMaterials}
             onClose={() => setPickerOpen(null)}
             onSelect={(val) => {
               if (pickerOpen.target === "global") {
