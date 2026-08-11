@@ -533,9 +533,9 @@ function buildCutList(W, p, cab) {
     const req = (cab.blindW != null && cab.blindW !== "") ? Number(cab.blindW) : (p.cornerBlindW || 200);
     const blindW = round1(Math.max(40, Math.min(req, Math.max(40, maxBlind))));
     const innerW = W - 2 * t;
-    const dW = round1(innerW - blindW - p.doorGap - p.doorReveal);
+    const dW = round1(innerW - blindW - 1);
     parts.push({ part: "Door", qty: 1, a: dW, b: frontH, aLabel: "width", bLabel: "height",
-      note: `corner door (${doorOnLeft ? "left side" : "right side"}) · width = ${doorTotal} − ${blindW} blind − ${p.doorGap} gap${buildNote}` });
+      note: `corner door (${doorOnLeft ? "left side" : "right side"}) · width = ${innerW} − ${blindW} blind − 1mm clearance${buildNote}` });
     parts.push({ part: "Blind / filler panel", qty: 1, a: blindW, b: frontH, aLabel: "width", bLabel: "height",
       note: `covers the dead corner (${doorOnLeft ? "right side" : "left side"}) · width set to ${blindW}${buildNote}` });
     parts.push({ part: "Hinge stile / rail", qty: 1, a: stileW, b: round1(p.sideH - 2 * t), aLabel: "depth", bLabel: "height",
