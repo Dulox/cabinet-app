@@ -2112,9 +2112,35 @@ export default function CabinetProject() {
                 </div>
               )}
             </div>
-            <button onClick={downloadPDF} className="cab-btn" style={btn("transparent", C.ink, `1.5px solid ${C.ink}`)}>{t("Download PDF")}</button>
-            <button onClick={exportProjectToPDF} className="cab-btn" style={btn("transparent", C.rust, `1.5px solid ${C.rust}`)}>Export Project PDF</button>
-            <button onClick={downloadShopPDF} className="cab-btn" style={btn(C.rust, "#fff", `1.5px solid ${C.rust}`)}>{t("Shop drawing PDF")}</button>
+            <div style={{ position: "relative", display: "inline-block" }}
+              onMouseEnter={e => e.currentTarget.querySelector('.dl-menu').style.display='block'}
+              onMouseLeave={e => e.currentTarget.querySelector('.dl-menu').style.display='none'}>
+              <button className="cab-btn" style={btn(C.rust, "#fff", `1.5px solid ${C.rust}`)}>
+                ⬇ {t("Download")} ▾
+              </button>
+              <div className="dl-menu" style={{ display: "none", position: "absolute", top: "100%", left: 0,
+                background: "#fff", border: `1.5px solid ${C.hair}`, borderRadius: 8, zIndex: 999,
+                minWidth: 200, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", overflow: "hidden" }}>
+                <div onClick={downloadPDF} style={{ padding: "10px 16px", cursor: "pointer", fontSize: 13,
+                  fontWeight: 600, color: C.ink, borderBottom: `1px solid ${C.hair}` }}
+                  onMouseEnter={e => e.currentTarget.style.background=C.card}
+                  onMouseLeave={e => e.currentTarget.style.background="#fff"}>
+                  {t("Download PDF")}
+                </div>
+                <div onClick={exportProjectToPDF} style={{ padding: "10px 16px", cursor: "pointer", fontSize: 13,
+                  fontWeight: 600, color: C.ink, borderBottom: `1px solid ${C.hair}` }}
+                  onMouseEnter={e => e.currentTarget.style.background=C.card}
+                  onMouseLeave={e => e.currentTarget.style.background="#fff"}>
+                  Export Project PDF
+                </div>
+                <div onClick={downloadShopPDF} style={{ padding: "10px 16px", cursor: "pointer", fontSize: 13,
+                  fontWeight: 600, color: C.ink }}
+                  onMouseEnter={e => e.currentTarget.style.background=C.card}
+                  onMouseLeave={e => e.currentTarget.style.background="#fff"}>
+                  {t("Shop drawing PDF")}
+                </div>
+              </div>
+            </div>
             <button onClick={copyAll} className="cab-btn" style={btn(copied ? C.ink : "transparent", copied ? C.card : C.mut, `1px solid ${C.hair}`)}>
               {copied ? t("Copied ✓") : t("Copy text")}</button>
             <span style={{ width: 1, height: 22, background: C.hair, margin: "0 2px" }} />
