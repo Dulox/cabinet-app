@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 
 // Supabase credentials
 const SUPABASE_URL = "https://sgcsvwxzppbldwatmzzq.supabase.co";
@@ -35,11 +35,11 @@ const DEFAULTS = {
   t: 19, sideH: 786, sideD: 610,
   railH: 100, railQty: 2, frontRailH: 50,
   doorReveal: 2, doorGap: 3, doorH: 786,
-  shelfSetback: 40, shelfClearance: 2, falseFrontH: 0,
-  backBetween: true, backOnBottom: false,
-  backType: "melamine", thinBackT: 3, grooveDepthOffset: 2,
+  shelfSetback: 40, shelfClearance: 2, falseFrontH: 150,
+  backBetween: true,
+  backType: "melamine", grooveDepth: 5.5,
   boardW: 2800, boardH: 2070, kerf: 4, allowRotate: true,
-  cornerDoorW: 400, cornerStileW: 100, cornerBlindW: 200, baseBuildUp: 2,
+  cornerDoorW: 400, cornerStileW: 100, cornerBlindW: 200, baseBuildUp: 25, buildUpStripH: 60, stripBoxClear: 5,
   drawerBoxes: true, drawerSideClear: 13, drawerBoxDepth: 500, drawerBoxHReduce: 20,
 };
 
@@ -262,6 +262,9 @@ const translations = {
   en: {},
   es: {
     "+ Add cabinet": "+ Añadir armario",
+    "Move up": "Subir",
+    "Move down": "Bajar",
+    "Duplicate cabinet": "Duplicar armario",
     "Download PDF": "Descargar PDF",
     "Shop drawing PDF": "Plano de taller PDF",
     "Copy text": "Copiar texto",
@@ -319,7 +322,8 @@ const translations = {
     "about": "aprox.", "Hardware": "Herrajes", "No valid cabinets to draw.": "No hay armarios válidos para dibujar.",
     "sheet": "hoja", "board": "tablero", "hinges": "bisagras", "slide pairs": "pares de correderas",
     "shelf pins": "soportes de estante", "handles": "tiradores",
-    "Melamine thickness": "Espesor de melamina", "Back panel": "Panel trasero",
+    "Melamine thickness": "Espesor de melamina",
+    "Groove depth": "Profundidad de ranura", "Back panel": "Panel trasero",
     "Melamine (full)": "Melamina (completo)", "Thin hardboard": "Hardboard delgado",
     "Back thickness": "Espesor del trasero", "Groove depth +": "Prof. de ranura +",
     "Side height": "Alto del lado", "Side depth": "Prof. del lado", "Rail height": "Alto del riel",
@@ -331,6 +335,8 @@ const translations = {
     "Blind panel W": "Ancho panel ciego", "Corner stile W": "Ancho montante esquina",
     "Corner blind W (default)": "Ancho panel ciego (predet.)", "Hinge stile / rail": "Montante de bisagras",
     "Base build-up (top)": "Refuerzo superior base",
+    "Build-up strip height": "Altura del refuerzo",
+    "Strip → top box clearance": "Holgura refuerzo → cajón superior",
     "Slide clear/side": "Holgura corredera/lado", "Drawer box depth": "Prof. caja de gaveta",
     "Box H = front −": "Alto caja = frente −", "Include drawer boxes": "Incluir cajas de gaveta",
     "Board width": "Ancho del tablero", "Board height": "Alto del tablero", "Saw kerf": "Ancho de corte",
@@ -387,28 +393,35 @@ function shelfPinHoles(sideH, startFromTop = 37, spacing = 32) {
 function buildCutList(W, p, cab) {
   const t = p.t;
   const carcassW = W - 2 * t;
-  const backThick = p.backType === "thin" ? p.thinBackT : t;
-  const bottomDepth = p.backOnBottom ? p.sideD : p.sideD - backThick;
+  const thinBack = p.backType === "thin";
+  const grooveDepth = thinBack ? (p.grooveDepth != null ? p.grooveDepth : 5.5) : 0;
+  const backThick = thinBack ? grooveDepth : t;   // sheet thickness = groove width = groove depth
+  const bottomDepth = p.sideD;                     // ALWAYS full depth (back sits on / grooves into bottom, never behind it)
   const backW = p.backBetween ? W - 2 * t : W;
-  const backH = p.backOnBottom ? p.sideH - t : p.sideH;
+  // Melamine back sits on the bottom (base: −t) or between top+bottom (wall: −2t).
+  // Hardboard back reaches INTO the grooves, so it is taller by one groove depth per grooved edge.
+  const isWall = cab.type === "wall";
+  const backH = isWall
+    ? (thinBack ? p.sideH - 2 * t + 2 * grooveDepth : p.sideH - 2 * t)
+    : (thinBack ? p.sideH - t + grooveDepth : p.sideH - t);
+  // Hardboard back spans groove-to-groove: opening (W−2t) + one groove depth reach on each side.
+  const hardBackW = round1(W - 2 * t + 2 * grooveDepth);
   const doorTotal = W - p.doorReveal;
   const rev = p.doorReveal / 2;
-  const thinBack = p.backType === "thin";
-  const grooveDepth = thinBack ? round1(backThick + p.grooveDepthOffset) : 0;
 
   const parts = [
     { part: "Side", qty: 2, a: p.sideD, b: p.sideH, aLabel: "depth", bLabel: "height",
       note: "Fixed size" },
     { part: "Bottom", qty: 1, a: carcassW, b: bottomDepth, aLabel: "width", bLabel: "depth",
-      note: `width = ${W} − ${2 * t} · depth = ${p.sideD} − ${backThick} (back)` },
+      note: `width = ${W} − ${2 * t} · depth = ${p.sideD} (full)` },
     { part: "Rail / Support (front)", qty: 1, a: carcassW, b: (p.frontRailH != null ? p.frontRailH : p.railH), aLabel: "length", bLabel: "height",
       note: `length = ${W} − ${2 * t} · front rail` },
     ...(p.railQty > 1 ? [{ part: "Rail / Support (back)", qty: p.railQty - 1, a: carcassW, b: p.railH, aLabel: "length", bLabel: "height",
       note: `length = ${W} − ${2 * t} · back rail` }] : []),
-    { part: thinBack ? `Back — ${backThick} mm hardboard` : "Back", qty: 1, a: thinBack ? W : backW, b: backH,
+    { part: thinBack ? `Back — ${backThick} mm hardboard` : "Back", qty: 1, a: thinBack ? hardBackW : backW, b: backH,
       aLabel: "width", bLabel: "height", material: thinBack ? "hardboard" : "melamine",
-      note: `${thinBack ? `full width ${W} (sits in grooves on sides)` : (p.backBetween ? `width = ${W} − ${2 * t}` : "full width")} · ${
-        p.backOnBottom ? `height = ${p.sideH} − ${t} (on bottom)` : `height = ${p.sideH} (behind bottom)`}${
+      note: `${thinBack ? `width ${hardBackW} = ${W} − ${2 * t} + 2×${grooveDepth} groove (sits in side grooves)` : (p.backBetween ? `width = ${W} − ${2 * t}` : "full width")} · ${
+        thinBack ? `height ${backH} (into grooves)` : `height = ${p.sideH} − ${t} (sits on bottom)`}${
         thinBack ? ` · separate hardboard sheet` : ""}` },
   ];
 
@@ -425,8 +438,17 @@ function buildCutList(W, p, cab) {
   const isWallLiftUp = (cab.type === "wall" && cab.hingeType === "lift-up");
   const buildUp = (cab.type === "wall") ? 0 : (p.baseBuildUp != null ? p.baseBuildUp : 0);
   const frontH = round1(p.doorH - buildUp);
-  const buildNote = buildUp ? ` · −${buildUp} base build-up` : "";
+  const buildNote = buildUp ? ` · height = ${p.doorH} − ${buildUp} base build-up` : "";
   const doorH_calc = frontH;
+
+  // The build-up is a real melamine strip along the top front edge. Cut it.
+  if (buildUp > 0) {
+    const stripH = (p.buildUpStripH != null ? p.buildUpStripH : buildUp);
+    const overlap = round1(stripH - buildUp);
+    parts.push({ part: "Base build-up strip", qty: 1, a: carcassW, b: stripH,
+      aLabel: "length", bLabel: "height",
+      note: `length = ${W} − ${2 * t} · strip along top front edge · fronts drop ${buildUp} · overlaps behind front by ${overlap}` });
+  }
   const door = (n) => parts.push(n === 1
     ? { part: "Door", qty: 1, a: doorTotal, b: doorH_calc, aLabel: "width", bLabel: "height",
         note: `width = ${W} − ${p.doorReveal}${buildNote}` }
@@ -444,14 +466,26 @@ function buildCutList(W, p, cab) {
       const key = `${part}|${a}|${b}`; const e = dmap.get(key);
       if (e) e.qty += q; else dmap.set(key, { part, qty: q, a, b, aLabel: aL, bLabel: bL, note });
     };
-    heights.forEach((h) => {
+    heights.forEach((h, i) => {
       add("Drawer front", doorTotal, h, "width", "height", `width = ${W} − ${p.doorReveal}${buildNote}`);
       faces.push({ x: rev, y, w: doorTotal, h, split: 1, kind: "drawer" });
       y += h + p.doorGap;
       if (p.drawerBoxes) {
-        const boxH = Math.max(1, round1(h - p.drawerBoxHReduce));
-        add("Drawer box side", p.drawerBoxDepth, boxH, "depth", "height",
-          `box outer ${boxW} × ${p.drawerBoxDepth} (fits between slides) · height = front − ${p.drawerBoxHReduce}`, 2);
+        let boxH = Math.max(1, round1(h - p.drawerBoxHReduce));
+        let boxNote = `box outer ${boxW} × ${p.drawerBoxDepth} (fits between slides) · height = front − ${p.drawerBoxHReduce}`;
+        // Top drawer only: the build-up strip hangs down at the front, so this
+        // box must stop clear of it or the drawer cannot be pulled out.
+        if (i === 0 && buildUp > 0) {
+          const stripH = (p.buildUpStripH != null ? p.buildUpStripH : buildUp);
+          const clear = (p.stripBoxClear != null ? p.stripBoxClear : 5);
+          const lower = heights.slice(1).reduce((a, b) => a + b, 0) + (heights.length - 1) * p.doorGap;
+          const maxTopBoxH = round1(p.sideH - stripH - clear - lower);
+          if (maxTopBoxH < boxH) {
+            boxH = Math.max(1, maxTopBoxH);
+            boxNote = `top drawer · clears the ${stripH} build-up strip by ${clear} · height = ${p.sideH} − ${stripH} − ${clear} − ${lower} (lower fronts + gaps)`;
+          }
+        }
+        add("Drawer box side", p.drawerBoxDepth, boxH, "depth", "height", boxNote, 2);
         add("Drawer box front/back", fbW, boxH, "width", "height",
           `box outer ${boxW} = opening ${carcassW} − ${2 * p.drawerSideClear} slides · panel = ${boxW} − ${2 * t}`, 2);
         add("Drawer bottom", fbW, p.drawerBoxDepth - 2 * t, "width", "depth",
@@ -484,7 +518,7 @@ function buildCutList(W, p, cab) {
         note: `top dummy drawer face (no working drawer over basin) · width = ${W} − ${p.doorReveal}` });
       faces.push({ x: rev, y: buildUp, w: doorTotal, h: p.falseFrontH, split: 1, kind: "drawer" });
     }
-    const lowerY = cab.falseFront ? p.falseFrontH : 0;
+    const lowerY = cab.falseFront ? p.falseFrontH + 2 : 0;
     const lowerH = round1(frontH - lowerY);
     parts.push({ part: "Door (pair)", qty: 2, a: round1((doorTotal - p.doorGap) / 2), b: lowerH, aLabel: "width", bLabel: "height",
       note: `each = (${W} − ${p.doorReveal} − ${p.doorGap} gap) ÷ 2 · height = ${frontH} − ${lowerY}${buildNote}` });
@@ -515,7 +549,7 @@ function buildCutList(W, p, cab) {
   } else if (cab.type === "wall") {
     // wall cabinet - 305mm depth, top + bottom, 1 rail at top for wall mounting
     const wallDepth = 305;
-    const wallBottomDepth = p.backOnBottom ? wallDepth : wallDepth - backThick;
+    const wallBottomDepth = wallDepth;   // full depth — back grooves in / sits on, never behind
     // Rebuild the carcass cleanly for a wall cabinet — the shared base parts
     // (610-deep side, 591-deep bottom) don't apply here.
     parts.length = 0;
@@ -523,14 +557,14 @@ function buildCutList(W, p, cab) {
       { part: "Side", qty: 2, a: wallDepth, b: p.sideH, aLabel: "depth", bLabel: "height",
         note: "Fixed (305mm depth)" },
       { part: "Top", qty: 1, a: carcassW, b: wallBottomDepth, aLabel: "width", bLabel: "depth",
-        note: `width = ${W} − ${2 * t} · depth = 305 − ${backThick}` },
+        note: `width = ${W} − ${2 * t} · depth = 305 (full)` },
       { part: "Bottom", qty: 1, a: carcassW, b: wallBottomDepth, aLabel: "width", bLabel: "depth",
-        note: `width = ${W} − ${2 * t} · depth = 305 − ${backThick}` },
+        note: `width = ${W} − ${2 * t} · depth = 305 (full)` },
       { part: "Rail / Support", qty: 1, a: carcassW, b: p.railH, aLabel: "length", bLabel: "height",
         note: `length = ${W} − ${2 * t} · at top for wall mounting` },
-      { part: thinBack ? `Back — ${backThick} mm hardboard` : "Back", qty: 1, a: thinBack ? W : backW, b: backH,
+      { part: thinBack ? `Back — ${backThick} mm hardboard` : "Back", qty: 1, a: thinBack ? hardBackW : backW, b: backH,
         aLabel: "width", bLabel: "height", material: thinBack ? "hardboard" : "melamine",
-        note: `${thinBack ? `full width ${W} (sits in grooves, attached to top rail)` : (p.backBetween ? `width = ${W} − ${2 * t}` : "full width")} · height ${backH}` }
+        note: `${thinBack ? `width ${hardBackW} = ${W} − ${2 * t} + 2×${grooveDepth} groove (sits in grooves all round)` : (p.backBetween ? `width = ${W} − ${2 * t}` : "full width")} · height ${backH}` }
     );
     // Shelves / separator
     const isLiftUp = cab.hingeType === "lift-up";
@@ -540,7 +574,7 @@ function buildCutList(W, p, cab) {
       if (cab.doorCount === 2) {
         parts.push({ part: "Separator (fixed)", qty: 1, a: carcassW, b: wallBottomDepth,
           aLabel: "width", bLabel: "depth",
-          note: `fixed horizontal divider — same size as top · centre hinges screw into it (not removable) · width = ${W} − ${2 * t} · depth = 305 − ${backThick}` });
+          note: `fixed horizontal divider — same size as top · centre hinges screw into it (not removable) · width = ${W} − ${2 * t} · depth = 305 (full)` });
       }
     } else if (cab.shelfQty > 0) {
       parts.push({ part: "Shelf", qty: cab.shelfQty, a: carcassW - p.shelfClearance, b: wallBottomDepth - p.shelfSetback,
@@ -606,7 +640,8 @@ function buildCutList(W, p, cab) {
     const add = [];
     if (bandAll.has(x.part)) add.push("edge band all 4 edges");
     else if (bandFront.has(x.part)) add.push("edge band front edge");
-    if (thinBack && (x.part === "Side" || x.part === "Bottom")) add.push(`back groove ${p.t}mm from back edge (${backThick}mm wide × ${grooveDepth}mm deep)`);
+    const grooveEdges = isWall ? ["Side", "Top", "Bottom"] : ["Side", "Bottom"];
+    if (thinBack && grooveEdges.includes(x.part)) add.push(`back groove ${p.t}mm from back edge (${grooveDepth}mm wide × ${grooveDepth}mm deep)`);
     if (cab.shelfQty > 0 && x.part === "Side") add.push("drill shelf pin holes (inner face)");
     if (add.length) x.note = x.note ? `${x.note} · ${add.join(" · ")}` : add.join(" · ");
   });
@@ -751,6 +786,9 @@ function NumField({ label, value, onChange, suffix = "mm", w = 92 }) {
 }
 
 const labelCss = { fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.mut, fontWeight: 600 };
+const navMini = (off) => ({ padding: 0, width: 22, minWidth: 22, border: `1px solid ${C.hair}`,
+  borderRadius: 5, background: C.card, color: off ? C.hair : C.mut, fontSize: 10, lineHeight: 1,
+  cursor: off ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" });
 const btn = (bg, color, border) => ({ padding: "8px 14px", background: bg, color, border, borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Archivo', sans-serif" });
 const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 const selCss = { padding: "9px 9px", border: `1px solid ${C.hair}`, borderRadius: 7, background: "#fff",
@@ -889,43 +927,46 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
   };
   const setDrawerCount = (c) => onChange({ drawerCount: c, drawerHeights: splitHeights(p.doorH, c, p.doorGap) });
   const setDrawerHeight = (i, v) => {
-  const arr = (cab.drawerHeights || splitHeights(p.doorH, cab.drawerCount || 3, p.doorGap)).slice();
-  const newH = v === "" ? 0 : Math.max(0, Number(v) || 0);
-  arr[i] = newH;
-  
-  // Recalculate: when you set one drawer height, others split the remaining space equally
-  const doorGap = p.doorGap || 3;
-  const buildUp = (cab.type === "wall") ? 0 : (p.baseBuildUp != null ? p.baseBuildUp : 0);
-  const effectiveDoorH = p.doorH - buildUp;
-  const totalGaps = (arr.length - 1) * doorGap;
-  const remainingHeight = effectiveDoorH - arr[i] - totalGaps;
-  const otherCount = arr.length - 1;
-  
-  if (remainingHeight > 0 && otherCount > 0) {
-    const heightPerOther = Math.floor(remainingHeight / otherCount);
-    arr.forEach((_, idx) => {
-      if (idx !== i) arr[idx] = heightPerOther;
-    });
-  }
-  
-  onChange({ drawerHeights: arr });
-};
-  const buildUp = cab.type === "wall" ? 0 : (p.baseBuildUp ?? 0);
-  const effectiveDoorH = p.doorH - buildUp;
-  const heights = cab.drawerHeights || splitHeights(effectiveDoorH, cab.drawerCount || 3, p.doorGap);
-
-  // Sync drawerHeights whenever effective door height changes (e.g., when baseBuildUp changes)
-  useEffect(() => {
-    if (cab.type === "drawers" && cab.drawerHeights) {
-      const recalc = splitHeights(effectiveDoorH, cab.drawerCount || 3, p.doorGap);
-      // Compare sums to see if total has changed significantly
-      const oldSum = cab.drawerHeights.reduce((a, b) => a + b, 0);
-      const newSum = recalc.reduce((a, b) => a + b, 0);
-      if (Math.abs(oldSum - newSum) > 0.5) {
-        onChange({ drawerHeights: recalc });
+    const arr = ((cab.drawerHeights && cab.drawerHeights.length > 0) ? cab.drawerHeights : splitHeights(p.doorH, cab.drawerCount || 3, p.doorGap)).slice();
+    const newH = v === "" ? 0 : Math.max(0, Number(v) || 0);
+    arr[i] = newH;
+    // Auto-calculate: drawers AFTER the one you edited split the remaining space.
+    // Drawers BEFORE it keep the heights you already set.
+    const gap = p.doorGap || 3;
+    const bUp = (cab.type === "wall") ? 0 : (p.baseBuildUp != null ? p.baseBuildUp : 0);
+    const totalH = p.doorH - bUp - (arr.length - 1) * gap;
+    const usedByPrev = arr.slice(0, i + 1).reduce((s, h) => s + h, 0);
+    const after = arr.length - (i + 1);
+    if (after > 0) {
+      const remaining = Math.max(0, totalH - usedByPrev);
+      const each = Math.floor(remaining / after);
+      for (let idx = i + 1; idx < arr.length; idx++) {
+        arr[idx] = (idx === arr.length - 1) ? remaining - each * (after - 1) : each;
       }
     }
-  }, [effectiveDoorH, cab.type, cab.drawerHeights, cab.drawerCount, onChange]);
+    onChange({ drawerHeights: arr });
+  };
+  const buildUp = cab.type === "wall" ? 0 : (p.baseBuildUp ?? 0);
+  const effectiveDoorH = p.doorH - buildUp;
+  const heights = (cab.drawerHeights && cab.drawerHeights.length > 0) ? cab.drawerHeights : splitHeights(effectiveDoorH, cab.drawerCount || 3, p.doorGap);
+
+  // When base build-up (or door height) changes, rescale existing drawer heights
+  // proportionally so the fronts keep filling the opening exactly.
+  // Depends ONLY on effectiveDoorH — never on drawerHeights — so it cannot fight typing.
+  const prevEffH = useRef(effectiveDoorH);
+  useEffect(() => {
+    if (prevEffH.current === effectiveDoorH) return;
+    prevEffH.current = effectiveDoorH;
+    if (cab.type !== "drawers") return;
+    if (!cab.drawerHeights || !cab.drawerHeights.length) return;
+    const n = cab.drawerHeights.length;
+    const target = effectiveDoorH - (n - 1) * (p.doorGap || 3);
+    const oldSum = cab.drawerHeights.reduce((a, b) => a + b, 0);
+    if (oldSum <= 0 || target <= 0) return;
+    const scaled = cab.drawerHeights.map((h) => Math.floor((h * target) / oldSum));
+    scaled[n - 1] += target - scaled.reduce((a, b) => a + b, 0);
+    onChange({ drawerHeights: scaled });
+  }, [effectiveDoorH]);
 
   return (
     <div className="cab-card" style={{ background: C.card, border: `1px solid ${C.hair}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
@@ -956,13 +997,15 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
 
       <div className="cab-noprint" style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-end", marginBottom: 14 }}>
         <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          <span style={labelCss}>{t("Width")}</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <input type="number" value={cab.width} onChange={(e) => onChange({ width: e.target.value })}
-              style={{ width: 110, padding: "8px 11px", fontSize: 22, fontWeight: 700,
-                fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
-                background: "#fff", color: C.ink, outline: "none" }} />
-            <span style={{ fontSize: 13, color: C.mut, fontFamily: "'JetBrains Mono', monospace" }}>mm</span>
+          <span style={{ ...labelCss, color: C.mut }}>{t("Width")}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexDirection: "column" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <input type="number" value={cab.width} onChange={(e) => onChange({ width: e.target.value })}
+                style={{ width: 110, padding: "8px 11px", fontSize: 22, fontWeight: 700,
+                  fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
+                  background: "#fff", color: C.ink, outline: "none" }} />
+              <span style={{ fontSize: 13, color: C.mut, fontFamily: "'JetBrains Mono', monospace" }}>mm</span>
+            </span>
           </span>
         </label>
 
@@ -1292,6 +1335,9 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout }) {
 
 /* -------------------------------- main app ----------------------------- */
 let SEQ = 2;
+// IDs must never collide with cabinets loaded from Supabase (SEQ resets to 2 on
+// every page load, so a counter alone hands out ids that already exist).
+const nextCabId = (list) => (list || []).reduce((m, c) => Math.max(m, c.id || 0), 0) + 1;
 const newCab = (n) => ({ id: ++SEQ, name: `Cabinet ${n}`, type: "base", width: "600",
   doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null, hingeType: "concealed",
   params: { ...DEFAULTS } });
@@ -1307,6 +1353,7 @@ export default function CabinetProject() {
   const [pendingUsers, setPendingUsers] = useState([]);
   
   const [lang, setLang] = useState("en");
+  const t = (key) => (translations[lang] && translations[lang][key]) || key;
   const [projectName, setProjectName] = useState("Cabinet project");
   const [showSpec, setShowSpec] = useState(false);
   const [specTab, setSpecTab] = useState("shared"); // "shared" or "generic"
@@ -1317,7 +1364,7 @@ export default function CabinetProject() {
   const [pdfBlob, setPdfBlob] = useState(null);
   const [pdfName, setPdfName] = useState("cutlist.pdf");
   const [cabs, setCabs] = useState([
-    { id: 1, name: "Cabinet 1", type: "base", width: "600", doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null, params: { ...DEFAULTS } },
+    { id: 1, name: "Cabinet 1", type: "base", width: "600", doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null, hingeType: "concealed", params: { ...DEFAULTS } },
   ]);
   const [selectedId, setSelectedId] = useState(1);
   const [currentProjectId, setCurrentProjectId] = useState(null);
@@ -1387,14 +1434,12 @@ export default function CabinetProject() {
         approved: isAdmin,
         is_admin: isAdmin,
       });
-      
-      
+
       if (profileError) {
         setAuthError(profileError.message || "Failed to create profile");
         return;
       }
-      
-      
+
       // Show message to log in
       setLoginEmail("");
       setLoginPassword("");
@@ -1641,23 +1686,6 @@ export default function CabinetProject() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showProjectList]);
 
-
-  const t = (key) => translations[lang][key] || translations["en"][key] || key;
-  const btn = (bg, col, brd) => ({ padding: "8px 14px", borderRadius: 8, cursor: "pointer",
-    border: brd, background: bg, color: col, fontWeight: 700, fontSize: 13 });
-
-  const updateCab = (id, patch) => setCabs((cs) => cs.map((c) => (c.id === id ? { ...c, ...patch } : c)));
-  const addCab = () => { const nc = newCab(cabs.length + 1); setCabs((cs) => [...cs, nc]); setSelectedId(nc.id); };
-  const removeCab = (id) => {
-    setCabs((cs) => cs.filter((c) => c.id !== id));
-    if (id === selectedId) { const rest = cabs.filter((c) => c.id !== id); setSelectedId(rest.length ? rest[0].id : null); }
-  };
-
-  const today = new Date().toLocaleDateString();
-  const selectedCab = cabs.find((c) => c.id === selectedId) || cabs[0];
-  const selectedIndex = cabs.indexOf(selectedCab);
-  
-  // Per-cabinet parameters — now selectedCab is defined
   const setP = (k) => (v) => {
     let val;
     if (typeof v === "boolean") {
@@ -1671,6 +1699,58 @@ export default function CabinetProject() {
     }
     updateCab(selectedId, { params: { ...selectedCab.params, [k]: val } });
   };
+  
+  const updateCab = (id, patch) => {
+    setCabs((cs) => cs.map((c) => {
+      if (c.id !== id) return c;
+      // Deep copy params if being updated
+      if (patch.params) {
+        return { ...c, params: { ...c.params, ...patch.params } };
+      }
+      return { ...c, ...patch };
+    }));
+  };
+  const addCab = () => {
+    const id = nextCabId(cabs);
+    const nc = { ...newCab(cabs.length + 1), id, params: { ...DEFAULTS } };
+    setCabs((cs) => [...cs, nc]);
+    setSelectedId(id);
+  };
+  const moveCab = (id, dir) => {
+    setCabs((cs) => {
+      const i = cs.findIndex((c) => c.id === id);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= cs.length) return cs;
+      const next = cs.slice();
+      const tmp = next[i]; next[i] = next[j]; next[j] = tmp;
+      return next;
+    });
+  };
+  const duplicateCab = (id) => {
+    const src = cabs.find((c) => c.id === id);
+    if (!src) return;
+    const copy = {
+      ...src,
+      id: nextCabId(cabs),
+      params: { ...(src.params || DEFAULTS) },
+      drawerHeights: src.drawerHeights ? [...src.drawerHeights] : null,
+    };
+    setCabs((cs) => {
+      const i = cs.findIndex((c) => c.id === id);
+      const next = cs.slice();
+      next.splice(i + 1, 0, copy);
+      return next;
+    });
+    setSelectedId(copy.id);
+  };
+  const removeCab = (id) => {
+    setCabs((cs) => cs.filter((c) => c.id !== id));
+    if (id === selectedId) { const rest = cabs.filter((c) => c.id !== id); setSelectedId(rest.length ? rest[0].id : null); }
+  };
+
+  const selectedCab = cabs.find((c) => c.id === selectedId) || cabs[0];
+  const selectedIndex = cabs.indexOf(selectedCab);
+
   const p = selectedCab.params || DEFAULTS;
 
   const summary = useMemo(() => {
@@ -1768,129 +1848,11 @@ export default function CabinetProject() {
     });
     const p = selectedCab.params || DEFAULTS;
     const text = [`${projectName} — ${today} — ${p.t}mm ${t("melamine")}`, "", ...blocks, "",
-      `TOTAL: ${summary.pieces} ${t("pieces")} · ${summary.area.toFixed(2)} m²`,
-      `${t("Boards")} (${p.boardW} × ${p.boardH}): ${t("about")} ${summary.board.boards}`].join("\n");
-    const ok = await writeClipboard(text);
-    if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1600); }
-    else { setCopyBox(text); }
-  };
-
-  // Uses the built-in MiniPDF writer — no external library, no network — so
-  // PDF export works identically in dev, production, on phones, and sandboxes.
-  const loadJsPDF = async () => ({ jsPDF: MiniPDF });
-
-  const exportProjectToPDF = async () => {
-    try {
-      const doc = new MiniPDF();
-      const pageW = 297, pageH = 210, M = 8;
-      let y = M;
-      
-      // Column positions (mm) - adjusted to fit all columns
-      const col = {
-        elem: M,
-        nombre: M + 10,
-        cant: M + 62,
-        largo: M + 72,
-        ancho: M + 82,
-        grosor: M + 92,
-        desc: M + 102,
-        l1: M + 165,
-        l2: M + 177,
-        c1: M + 189,
-        c2: M + 201
-      };
-      
-      // Header
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      doc.text("Elem", col.elem, y);
-      doc.text("Nombre", col.nombre, y);
-      doc.text("Cant", col.cant, y);
-      doc.text("Largo", col.largo, y);
-      doc.text("Ancho", col.ancho, y);
-      doc.text("Grosor", col.grosor, y);
-      doc.text("Desc", col.desc, y);
-      doc.text("L1", col.l1, y);
-      doc.text("L2", col.l2, y);
-      doc.text("C1", col.c1, y);
-      doc.text("C2", col.c2, y);
-      
-      doc.line(M, y + 2, pageW - M, y + 2);
-      y += 5;
-      
-      // Collect all parts from all cabinets
-      cabs.forEach((cab, cabIdx) => {
-        const W = parseFloat(cab.width);
-        const p = cab.params || DEFAULTS;
-        if (isNaN(W) || W <= 2 * p.t + 10) return;
-        
-        const cutList = buildCutList(W, p, cab);
-        const bandAll = new Set(["Door", "Door (pair)", "Door (flap, stacked)", "False front", "False drawer front", "Drawer front", "Blind / filler panel"]);
-        const bandFront = new Set(["Side", "Top", "Bottom", "Shelf", "Separator (fixed)"]);
-        
-        cutList.parts.forEach((part) => {
-          if (part.material === "hardboard") return;
-          
-          const longDim = Math.max(part.a, part.b);
-          const shortDim = Math.min(part.a, part.b);
-          
-          const hasL1 = bandAll.has(part.part);
-          const hasL2 = bandAll.has(part.part);
-          const hasC1 = bandFront.has(part.part) || bandAll.has(part.part);
-          const hasC2 = bandFront.has(part.part) || bandAll.has(part.part);
-          
-          // Check if we need a new page
-          if (y + 3 > pageH - M) {
-            doc.addPage();
-            y = M;
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(8);
-            doc.text("Elem", col.elem, y);
-            doc.text("Nombre", col.nombre, y);
-            doc.text("Cant", col.cant, y);
-            doc.text("Largo", col.largo, y);
-            doc.text("Ancho", col.ancho, y);
-            doc.text("Grosor", col.grosor, y);
-            doc.text("Desc", col.desc, y);
-            doc.text("L1", col.l1, y);
-            doc.text("L2", col.l2, y);
-            doc.text("C1", col.c1, y);
-            doc.text("C2", col.c2, y);
-            doc.line(M, y + 2, pageW - M, y + 2);
-            y += 5;
-          }
-          
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(7);
-          
-          doc.text(String(cabIdx + 1), col.elem, y);
-          doc.text(part.part.substring(0, 25), col.nombre, y);
-          doc.text(String(part.qty), col.cant, y);
-          doc.text(String(Math.round(longDim)), col.largo, y);
-          doc.text(String(Math.round(shortDim)), col.ancho, y);
-          doc.text(String(p.t), col.grosor, y);
-          
-          if (hasL1) doc.text("x", col.l1, y);
-          if (hasL2) doc.text("x", col.l2, y);
-          if (hasC1) doc.text("x", col.c1, y);
-          if (hasC2) doc.text("x", col.c2, y);
-          
-          y += 3.5;
-        });
-      });
-      
-      const pdfBlob = doc.asBlob ? doc.asBlob() : new Blob([doc.output()], { type: "application/pdf" });
-      const url = URL.createObjectURL(pdfBlob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${currentProjectName}_export.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      alert("Error: " + e.message);
-    }
+      `TOTAL: ${summary.pieces} ${t("pieces")} · ${summary.area.toFixed(2)} m²`
+    ].join("\n");
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const downloadPDF = async () => {
@@ -2185,12 +2147,23 @@ export default function CabinetProject() {
             {cabs.map((c, i) => {
               const on = c.id === selectedCab?.id;
               return (
-                <button key={c.id} className="cab-nav" onClick={() => setSelectedId(c.id)}
-                  style={{ display: "block", width: "100%", textAlign: "left", cursor: "pointer",
-                    padding: "11px 13px", borderRadius: 10, marginBottom: 7, fontSize: 14, fontWeight: 700,
-                    border: `1px solid ${on ? C.ink : C.hair}`, background: on ? C.ink : C.card, color: on ? C.card : C.ink }}>
-                  {cabLabel(c, i, t)}
-                </button>
+                <div key={c.id} style={{ display: "flex", alignItems: "stretch", gap: 4, marginBottom: 7 }}>
+                  <button className="cab-nav" onClick={() => setSelectedId(c.id)}
+                    style={{ flex: 1, minWidth: 0, textAlign: "left", cursor: "pointer",
+                      padding: "11px 13px", borderRadius: 10, fontSize: 14, fontWeight: 700,
+                      border: `1px solid ${on ? C.ink : C.hair}`, background: on ? C.ink : C.card, color: on ? C.card : C.ink,
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {cabLabel(c, i, t)}
+                  </button>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    <button onClick={() => moveCab(c.id, -1)} disabled={i === 0} title={t("Move up")}
+                      style={{ ...navMini(i === 0), flex: 1 }}>▲</button>
+                    <button onClick={() => moveCab(c.id, 1)} disabled={i === cabs.length - 1} title={t("Move down")}
+                      style={{ ...navMini(i === cabs.length - 1), flex: 1 }}>▼</button>
+                  </div>
+                  <button onClick={() => duplicateCab(c.id)} title={t("Duplicate cabinet")}
+                    style={{ ...navMini(false), width: 26, minWidth: 26, fontSize: 13 }}>⧉</button>
+                </div>
               );
             })}
             <button onClick={addCab} className="cab-nav" style={{ display: "block", width: "100%", textAlign: "center", cursor: "pointer",
@@ -2285,14 +2258,7 @@ export default function CabinetProject() {
                   </label>
                   {p.backType === "thin" && (
                     <>
-                      <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                        <span style={labelCss}>{t("Back thickness")}</span>
-                        <select value={p.thinBackT} onChange={(e) => setP("thinBackT")(Number(e.target.value))} style={selCss}>
-                          <option value={3}>3 mm</option>
-                          <option value={5.5}>5.5 mm</option>
-                        </select>
-                      </label>
-                      <NumField label={t("Groove depth +")} value={p.grooveDepthOffset} onChange={setP("grooveDepthOffset")} suffix="mm" w={60} />
+                      <NumField label={t("Groove depth")} value={p.grooveDepth} onChange={setP("grooveDepth")} suffix="mm" w={72} />
                       <NumField label={t("Saw kerf")} value={p.kerf} onChange={setP("kerf")} />
                     </>
                   )}
@@ -2308,8 +2274,11 @@ export default function CabinetProject() {
                       <NumField label={t("Door height")} value={p.doorH} onChange={setP("doorH")} />
                       <NumField label={t("Door reveal")} value={p.doorReveal} onChange={setP("doorReveal")} />
                       <NumField label={t("Door gap (pair)")} value={p.doorGap} onChange={setP("doorGap")} />
-                      <NumField label={t("False front H")} value={p.falseFrontH} onChange={setP("falseFrontH")} />
                     </>
+                  )}
+
+                  {selectedCab.falseFront && (
+                    <NumField label={t("False front H")} value={p.falseFrontH} onChange={setP("falseFrontH")} />
                   )}
                   
                   {selectedCab.type === "corner" && (
@@ -2320,7 +2289,11 @@ export default function CabinetProject() {
                   )}
                   
                   {selectedCab.type !== "wall" && (
-                    <NumField label={t("Base build-up (top)")} value={p.baseBuildUp} onChange={setP("baseBuildUp")} />
+                    <>
+                      <NumField label={t("Base build-up (top)")} value={p.baseBuildUp} onChange={setP("baseBuildUp")} />
+                      <NumField label={t("Build-up strip height")} value={p.buildUpStripH} onChange={setP("buildUpStripH")} />
+                      <NumField label={t("Strip → top box clearance")} value={p.stripBoxClear} onChange={setP("stripBoxClear")} />
+                    </>
                   )}
                   
                   {selectedCab.type === "base" && selectedCab.front === "drawers" && (
@@ -2344,6 +2317,7 @@ export default function CabinetProject() {
                     <span style={labelCss}>{t("Melamine thickness")}</span>
                     <select value={p.t} onChange={(e) => setP("t")(Number(e.target.value))} style={selCss}>
                       <option value={19}>19 mm</option>
+                      <option value={18}>18 mm</option>
                       <option value={15}>15 mm</option>
                     </select>
                   </label>
@@ -2356,10 +2330,6 @@ export default function CabinetProject() {
                   <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
                     <input type="checkbox" checked={p.backBetween} onChange={(e) => setP("backBetween")(e.target.checked)} />
                     {t("Back fits between sides")} (−{2 * p.t})
-                  </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
-                    <input type="checkbox" checked={p.backOnBottom} onChange={(e) => setP("backOnBottom")(e.target.checked)} />
-                    {t("Back sits on bottom")} (−{p.t})
                   </label>
                 </div>
               )}
