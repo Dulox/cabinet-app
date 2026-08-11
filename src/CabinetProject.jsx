@@ -767,14 +767,6 @@ function Elevation({ W, p, shelfQty, faces }) {
         style={{ fontFamily: "'JetBrains Mono', monospace" }}>opening {W - 2 * t}</text>
     </svg>
 
-      {/* ── MADESOL SHEET MODAL ─────────────────────────────── */}
-      {showMadesol && (
-        <MadesolSheet
-          cabs={cabs}
-          projectName={currentProjectName}
-          onClose={() => setShowMadesol(false)}
-        />
-      )}
   );
 }
 
@@ -2678,6 +2670,15 @@ export default function CabinetProject() {
           )}
         </div>
       </div>
+
+      {/* ── MADESOL SHEET MODAL ─────────────────────────────── */}
+      {showMadesol && (
+        <MadesolSheet
+          cabs={cabs}
+          projectName={currentProjectName}
+          onClose={() => setShowMadesol(false)}
+        />
+      )}
     </div>
   );
 }
