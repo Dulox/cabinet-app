@@ -494,7 +494,7 @@ function buildCutList(W, p, cab) {
     });
     [...dmap.values()].forEach((x) => parts.push(x));
   } else if (cab.type === "stove") {
-    const drawerH = cab.falseFront ? p.falseFrontH : 0;
+    const drawerH = cab.falseFront ? p.falseFrontH + 2 : 0;
     const lowerH = round1(frontH - drawerH);
     if (cab.falseFront) {
       parts.push({ part: "False drawer front", qty: 1, a: doorTotal, b: p.falseFrontH, aLabel: "width", bLabel: "height",
