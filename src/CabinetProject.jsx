@@ -1592,6 +1592,11 @@ function MadesolSheet({ cabs, projectName, onClose }) {
   const [sortField, setSortField] = React.useState(null); // null | "nombre" | "cant"
   const [sortDir, setSortDir] = React.useState(1); // 1=asc -1=desc
   const [showCustomMat, setShowCustomMat] = React.useState(false);
+  const [showSaved, setShowSaved] = React.useState(false);
+  const [savedSheets, setSavedSheets] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem("savedMadesolSheets") || "[]"); } catch { return []; }
+  });
+  const [saveSheetName, setSaveSheetName] = React.useState("");
   const [customMaterials, setCustomMaterials] = React.useState(() => {
     try { return JSON.parse(localStorage.getItem("customMaterials") || "[]"); } catch { return []; }
   });
@@ -1640,6 +1645,31 @@ function MadesolSheet({ cabs, projectName, onClose }) {
     try { localStorage.setItem("customMaterials", JSON.stringify(updated)); } catch {}
   };
 
+  const saveSheet = () => {
+    const name = saveSheetName.trim() || projectName || "Hoja sin nombre";
+    const sheet = { name, date: new Date().toLocaleDateString("es-DO"), rows, globalMaterial, factura, nombre, telefono };
+    const updated = [sheet, ...savedSheets.slice(0, 19)]; // keep last 20
+    setSavedSheets(updated);
+    try { localStorage.setItem("savedMadesolSheets", JSON.stringify(updated)); } catch {}
+    setSaveSheetName("");
+    alert("Hoja guardada: " + name);
+  };
+
+  const loadSheet = (sheet) => {
+    setRows(sheet.rows);
+    setGlobalMaterial(sheet.globalMaterial || "");
+    setFactura(sheet.factura || "");
+    setNombre(sheet.nombre || "");
+    setTelefono(sheet.telefono || "");
+    setShowSaved(false);
+  };
+
+  const deleteSavedSheet = (idx) => {
+    const updated = savedSheets.filter((_, i) => i !== idx);
+    setSavedSheets(updated);
+    try { localStorage.setItem("savedMadesolSheets", JSON.stringify(updated)); } catch {}
+  };
+
   const toggleSort = (field) => {
     if (sortField === field) setSortDir(d => -d);
     else { setSortField(field); setSortDir(1); }
@@ -1686,16 +1716,9 @@ function MadesolSheet({ cabs, projectName, onClose }) {
         }}>×</button>
 
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 24, marginBottom: 16 }}>
-          <div>
-            <div style={{ fontWeight: 900, fontSize: 22, letterSpacing: 1 }}>MADESOL</div>
-            <div style={{ fontSize: 10, color: "#555" }}>• Madera • Pintura • Ferretería</div>
-          </div>
-          <div style={{ flex: 1, textAlign: "center" }}>
-            <div style={{ fontWeight: 700, fontSize: 13 }}>FORMULARIO DE SERVICIO: CORTE Y CANTEADO</div>
-            <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>RNC 101-67633-7 · Av. Isabel Aguiar, esq. calle B · Zona Indust. Herrera, Santo Domingo · Tel.: (809) 534-4400</div>
-          </div>
-          <div style={{ fontSize: 11, minWidth: 160 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <div style={{ fontWeight: 700, fontSize: 15 }}>FORMULARIO DE SERVICIO: CORTE Y CANTEADO</div>
+          <div style={{ fontSize: 11, color: "#555", textAlign: "right" }}>
             <div>Fecha: <strong>{today}</strong></div>
             <div>Proyecto: <strong>{projectName}</strong></div>
           </div>
@@ -1831,7 +1854,7 @@ function MadesolSheet({ cabs, projectName, onClose }) {
                   {["rl","ra"].map(field => (
                     <td key={field} style={{ ...cellStyle(), cursor: "pointer", color: row[field] ? "#c00" : "#ddd",
                       fontWeight: 700, fontSize: 14, userSelect: "none" }}
-                      onClick={() => toggleCell(i, field)}>
+                      onClick={() => toggleCell(row.id, field)}>
                       {row[field] || "·"}
                     </td>
                   ))}
@@ -1839,7 +1862,7 @@ function MadesolSheet({ cabs, projectName, onClose }) {
                   {["hbl","hba"].map(field => (
                     <td key={field} style={{ ...cellStyle(), cursor: "pointer", color: row[field] ? "#c00" : "#ddd",
                       fontWeight: 700, fontSize: 14, userSelect: "none" }}
-                      onClick={() => toggleCell(i, field)}>
+                      onClick={() => toggleCell(row.id, field)}>
                       {row[field] || "·"}
                     </td>
                   ))}
@@ -1946,18 +1969,77 @@ function MadesolSheet({ cabs, projectName, onClose }) {
         )}
 
         {/* Footer buttons */}
-        <div style={{ display: "flex", gap: 12, marginTop: 16, justifyContent: "flex-end" }}>
-          <button onClick={onClose}
-            style={{ padding: "9px 20px", border: "1.5px solid #bbb", borderRadius: 8, background: "#fff",
-              cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-            Cerrar
-          </button>
-          <button onClick={() => window.print()}
-            style={{ padding: "9px 20px", border: "none", borderRadius: 8, background: "#E4572E",
-              color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
-            🖨 Imprimir / Guardar PDF
-          </button>
+        <div style={{ display: "flex", gap: 10, marginTop: 16, alignItems: "center", flexWrap: "wrap" }}>
+          {/* Save row */}
+          <div style={{ display: "flex", gap: 6, alignItems: "center", flex: 1 }}>
+            <input value={saveSheetName} onChange={e => setSaveSheetName(e.target.value)}
+              placeholder={`Nombre hoja (ej. ${projectName})`}
+              style={{ border: "1px solid #bbb", borderRadius: 6, padding: "7px 10px", fontSize: 12, width: 200 }} />
+            <button onClick={saveSheet}
+              style={{ padding: "8px 14px", background: "#276221", color: "#fff", border: "none",
+                borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
+              💾 Guardar hoja
+            </button>
+            <button onClick={() => setShowSaved(true)}
+              style={{ padding: "8px 14px", background: "#f0f0f0", color: "#333", border: "1px solid #ddd",
+                borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
+              📂 Hojas guardadas {savedSheets.length > 0 ? `(${savedSheets.length})` : ""}
+            </button>
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={onClose}
+              style={{ padding: "9px 20px", border: "1.5px solid #bbb", borderRadius: 8, background: "#fff",
+                cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+              Cerrar
+            </button>
+            <button onClick={() => window.print()}
+              style={{ padding: "9px 20px", border: "none", borderRadius: 8, background: "#E4572E",
+                color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
+              🖨 Imprimir / Guardar PDF
+            </button>
+          </div>
         </div>
+
+        {/* Saved Sheets Modal */}
+        {showSaved && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 4500,
+            display: "flex", alignItems: "center", justifyContent: "center" }}
+            onClick={() => setShowSaved(false)}>
+            <div style={{ background: "#fff", borderRadius: 12, width: 480, maxWidth: "95vw",
+              maxHeight: "75vh", display: "flex", flexDirection: "column", padding: 24,
+              boxShadow: "0 12px 48px rgba(0,0,0,0.3)" }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <div style={{ fontWeight: 800, fontSize: 16 }}>📂 Hojas Guardadas</div>
+                <button onClick={() => setShowSaved(false)}
+                  style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#888" }}>×</button>
+              </div>
+              <div style={{ overflowY: "auto", flex: 1 }}>
+                {savedSheets.length === 0 && (
+                  <div style={{ color: "#aaa", textAlign: "center", padding: 30, fontSize: 13 }}>
+                    No hay hojas guardadas aún.
+                  </div>
+                )}
+                {savedSheets.map((s, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10,
+                    padding: "10px 4px", borderBottom: "1px solid #f0f0f0" }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 13 }}>{s.name}</div>
+                      <div style={{ fontSize: 11, color: "#888" }}>{s.date} · {s.rows?.length || 0} piezas</div>
+                    </div>
+                    <button onClick={() => loadSheet(s)}
+                      style={{ padding: "5px 12px", background: "#E4572E", color: "#fff",
+                        border: "none", borderRadius: 5, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
+                      Cargar
+                    </button>
+                    <button onClick={() => deleteSavedSheet(i)}
+                      style={{ background: "none", border: "none", color: "#e74c3c", cursor: "pointer", fontSize: 18 }}>×</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
