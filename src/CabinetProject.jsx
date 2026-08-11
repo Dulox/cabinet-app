@@ -1133,7 +1133,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
                 display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 14.5 }}>
-                    <span style={{ color: C.rust, fontFamily: "'JetBrains Mono', monospace" }}>{x.qty}×</span> {tName(x.part, t)}
+                    <span style={{ color: C.rust, fontFamily: "'JetBrains Mono', monospace" }}>{x.qty * (cab.qty || 1)}×</span> {tName(x.part, t)}
                   </div>
                   <div style={{ fontSize: 11, color: C.mut, marginTop: 2 }}>{trNote(x.note, lang)}</div>
                 </div>
@@ -1859,7 +1859,7 @@ export default function CabinetProject() {
       const cabQty = c.qty || 1;
       const d = buildCutList(W, p, c);
       return [`${cabLabel(c, i, t)} — ${t(TYPES[c.type].label)} — ${W} mm`,
-        ...d.parts.map((x) => `  ${x.qty}×  ${tName(x.part, t).padEnd(20)} ${fmt(x.a)} × ${fmt(x.b)} (${t(x.aLabel)} × ${t(x.bLabel)})`)].join("\n");
+        ...d.parts.map((x) => `  ${x.qty * cabQty}×  ${tName(x.part, t).padEnd(20)} ${fmt(x.a)} × ${fmt(x.b)} (${t(x.aLabel)} × ${t(x.bLabel)})`)].join("\n");
     });
     const p = selectedCab.params || DEFAULTS;
     const text = [`${projectName} — ${today} — ${p.t}mm ${t("melamine")}`, "", ...blocks, "",
@@ -1886,6 +1886,7 @@ export default function CabinetProject() {
       cabs.forEach((c, ci) => {
         const Wd = parseFloat(c.width);
         if (isNaN(Wd) || Wd <= 2 * p.t + 10) return;
+        const cabQty = c.qty || 1;
         const d = buildCutList(Wd, p, c);
         need(20);
         doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(20, 23, 15);
@@ -1897,7 +1898,7 @@ export default function CabinetProject() {
           const noteLines = doc.splitTextToSize(`${t(x.aLabel)} × ${t(x.bLabel)} — ${trNote(x.note, lang)}`, right - M);
           need(5 + noteLines.length * 3.4 + 2);
           doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.setTextColor(20, 23, 15);
-          doc.text(`${x.qty}×  ${tName(x.part, t)}`, M, y);
+          doc.text(`${x.qty * cabQty}×  ${tName(x.part, t)}`, M, y);
           doc.setFont("courier", "bold"); doc.setFontSize(11);
           doc.text(`${fmt(x.a)} × ${fmt(x.b)} mm`, right, y, { align: "right" }); y += 4.4;
           doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120, 124, 112);
@@ -1958,6 +1959,7 @@ export default function CabinetProject() {
       valid.forEach((c, idx) => {
         if (idx > 0) doc.addPage();
         const Wd = parseFloat(c.width);
+        const cabQty = c.qty || 1;
         const d = buildCutList(Wd, p, c);
         let y = M;
         // header
@@ -1981,7 +1983,7 @@ export default function CabinetProject() {
         d.parts.forEach((x) => {
           if (y > bottom - 8) { doc.addPage(); y = M; }
           doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(20, 23, 15);
-          doc.text(`${x.qty}x  ${tName(x.part, t)}`, M, y);
+          doc.text(`${x.qty * cabQty}x  ${tName(x.part, t)}`, M, y);
           doc.setFont("courier", "bold"); doc.setFontSize(10); doc.setTextColor(20, 23, 15);
           doc.text(`${fmt(x.a)} × ${fmt(x.b)} mm`, right, y, { align: "right" }); y += 4;
           if (x.note) {
