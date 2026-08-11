@@ -1357,6 +1357,174 @@ const newCab = (n) => ({ id: ++SEQ, name: `Cabinet ${n}`, type: "base", width: "
   params: { ...DEFAULTS } });
 
 
+/* ── INNOVUS MATERIAL CATALOGUE ───────────────────────────────────── */
+const INNOVUS_MATERIALS = {
+  maderas: {
+    label: "Maderas",
+    items: [
+      { code: "M6321", name: "Endless Oak Natural",  texture: "SPT", bg: "#D4B896", grain: true  },
+      { code: "M6316", name: "Elegance Grey",         texture: "SPT", bg: "#9E9E93", grain: true  },
+      { code: "M6315", name: "Elegance Brown",        texture: "SPT", bg: "#5C3D2E", grain: true  },
+      { code: "M6320", name: "Blanco Supremo",        texture: "SPT", bg: "#EDE8DF", grain: true  },
+      { code: "M6319", name: "Negro Supremo",         texture: "SPT", bg: "#3A3A3A", grain: true  },
+      { code: "M6342", name: "French Echo",           texture: "FUN", bg: "#9E8060", grain: true  },
+      { code: "M6280", name: "Roble Sanctuary",       texture: "FUN", bg: "#C4A882", grain: true  },
+      { code: "M6326", name: "Durini Light",          texture: "FUN", bg: "#B8956A", grain: true  },
+      { code: "M6293", name: "Nogal Imperial",        texture: "FUN", bg: "#7A5C3C", grain: true  },
+      { code: "M6295", name: "Baccata",               texture: "FUN", bg: "#C08040", grain: true  },
+      { code: "M6267", name: "Luna Nueva",            texture: "FUN", bg: "#2C2C2C", grain: true  },
+      { code: "M6304", name: "Etna Oak",              texture: "FLW", bg: "#C4A070", grain: true  },
+      { code: "M6344", name: "Karlstad Oak Grey",     texture: "FLW", bg: "#B0A898", grain: true  },
+      { code: "M6252", name: "Bari Oak Nature",       texture: "FLW", bg: "#D4B87A", grain: true  },
+      { code: "M9328", name: "Andu Wood",             texture: "FLW", bg: "#E8DDD0", grain: true  },
+      { code: "M6307", name: "Smart Ash Dark",        texture: "FLW", bg: "#4E3828", grain: true  },
+      { code: "M999",  name: "Iguazu Oak",            texture: "FLW", bg: "#D0BC98", grain: true  },
+      { code: "M2112", name: "Pien Beech",            texture: "FLW", bg: "#D4A870", grain: true  },
+      { code: "M9001", name: "Roble Espejo",          texture: "FLW", bg: "#D8C8A8", grain: true  },
+      { code: "M3861", name: "Light Mediterranean",   texture: "SMA", bg: "#EAE0D0", grain: true  },
+      { code: "M4451", name: "Mediterraneo",          texture: "SMA", bg: "#C8A880", grain: true  },
+      { code: "M2106", name: "Clear Maple",           texture: "SMA", bg: "#E8D090", grain: true  },
+      { code: "M2511", name: "Nogal Troia",           texture: "SMA", bg: "#8C6040", grain: true  },
+      { code: "M6225", name: "Clasico Memphis",       texture: "SC",  bg: "#6C4830", grain: true  },
+      { code: "M6120", name: "Roble Sonoma",          texture: "NTL", bg: "#B09070", grain: true  },
+      { code: "M3866", name: "Whitewood",             texture: "NTL", bg: "#EDE8E0", grain: true  },
+      { code: "M6053", name: "Pino Carrizo",          texture: "NTL", bg: "#D0B898", grain: true  },
+      { code: "M6046", name: "Wengue Salonga",        texture: "NTL", bg: "#2A1A10", grain: true  },
+    ]
+  },
+  fantasias: {
+    label: "Fantasías",
+    items: [
+      { code: "F2281", name: "Urbanstone Clay",    texture: "CMS", bg: "#C8C4B8", grain: false },
+      { code: "F2282", name: "Urbanstone Grafito", texture: "CMS", bg: "#3C3C3C", grain: false },
+      { code: "F2273", name: "Yang Marble",        texture: "STU", bg: "#F0EEEA", grain: false },
+      { code: "F2272", name: "Yin Marble",         texture: "STU", bg: "#2A2A2A", grain: false },
+      { code: "F750",  name: "Atlas",              texture: "TL",  bg: "#D8D0C0", grain: false },
+    ]
+  },
+  unicolores: {
+    label: "Unicolores",
+    items: [
+      { code: "L968",  name: "Alabaster",    texture: "SMA", bg: "#F2EEE6", grain: false },
+      { code: "L021",  name: "Gris Perla",   texture: "SC",  bg: "#B8BEC0", grain: false },
+      { code: "L5200", name: "Cotton",       texture: "MA",  bg: "#C8C0B8", grain: false },
+      { code: "L4054", name: "Anthracite",   texture: "SC",  bg: "#5A5A5A", grain: false },
+      { code: "L3031", name: "Negro",        texture: "SC",  bg: "#1A1A1A", grain: false },
+      { code: "L927",  name: "Basalt",       texture: "SMA", bg: "#7A7870", grain: false },
+      { code: "L5219", name: "Hot Pepper",   texture: "SC",  bg: "#CC1414", grain: false },
+      { code: "L6160", name: "Grey Beige",   texture: "SC",  bg: "#C0B4A4", grain: false },
+      { code: "L5230", name: "Azurite",      texture: "SC",  bg: "#5A7090", grain: false },
+      { code: "L6274", name: "Storm Grey",   texture: "MA",  bg: "#6E7880", grain: false },
+      { code: "L5206", name: "Bambus",       texture: "MA",  bg: "#8C9478", grain: false },
+      { code: "L5207", name: "Camouflage",   texture: "SMA", bg: "#7A806A", grain: false },
+    ]
+  }
+};
+
+/* ── MATERIAL PICKER MODAL ────────────────────────────────────────── */
+function MaterialPicker({ onSelect, onClose }) {
+  const [activeTab, setActiveTab] = React.useState("maderas");
+  const [search, setSearch] = React.useState("");
+
+  const allItems = Object.entries(INNOVUS_MATERIALS).flatMap(([, cat]) => cat.items);
+  const filtered = search.trim()
+    ? allItems.filter(m => m.name.toLowerCase().includes(search.toLowerCase()) || m.code.toLowerCase().includes(search.toLowerCase()))
+    : INNOVUS_MATERIALS[activeTab].items;
+
+  const tabStyle = (key) => ({
+    padding: "8px 16px", border: "none", cursor: "pointer", fontSize: 13,
+    fontWeight: 700, borderBottom: activeTab === key && !search ? "3px solid #E4572E" : "3px solid transparent",
+    background: "transparent", color: activeTab === key && !search ? "#E4572E" : "#666",
+  });
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)",
+      zIndex: 4000, display: "flex", alignItems: "center", justifyContent: "center",
+    }} onClick={onClose}>
+      <div style={{
+        background: "#fff", borderRadius: 12, width: 780, maxWidth: "95vw",
+        maxHeight: "88vh", display: "flex", flexDirection: "column",
+        boxShadow: "0 12px 48px rgba(0,0,0,0.35)",
+      }} onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{ padding: "16px 20px 0", borderBottom: "1px solid #eee" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 16 }}>Innovus® — Selector de Material</div>
+              <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>Catálogo Matching our nature · Sonae Arauco</div>
+            </div>
+            <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#888" }}>×</button>
+          </div>
+          {/* Search */}
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar por nombre o código..."
+            style={{ width: "100%", padding: "8px 12px", border: "1.5px solid #ddd", borderRadius: 8,
+              fontSize: 13, marginBottom: 10, outline: "none", boxSizing: "border-box" }}
+          />
+          {/* Tabs */}
+          {!search && (
+            <div style={{ display: "flex", gap: 0 }}>
+              {Object.entries(INNOVUS_MATERIALS).map(([key, cat]) => (
+                <button key={key} style={tabStyle(key)} onClick={() => setActiveTab(key)}>
+                  {cat.label} ({cat.items.length})
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Grid */}
+        <div style={{ overflowY: "auto", padding: 16, flex: 1 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 12 }}>
+            {filtered.map(mat => (
+              <div key={mat.code}
+                onClick={() => { onSelect(`${mat.code} ${mat.name} ${mat.texture}`); onClose(); }}
+                style={{
+                  borderRadius: 10, overflow: "hidden", cursor: "pointer",
+                  border: "2px solid transparent", transition: "all 0.15s",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.border = "2px solid #E4572E"; e.currentTarget.style.transform = "scale(1.04)"; }}
+                onMouseLeave={e => { e.currentTarget.style.border = "2px solid transparent"; e.currentTarget.style.transform = "scale(1)"; }}
+              >
+                {/* Swatch */}
+                <div style={{
+                  height: 90, background: mat.bg, position: "relative",
+                  backgroundImage: mat.grain
+                    ? `repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255,255,255,0.04) 2px, rgba(255,255,255,0.04) 4px),
+                       repeating-linear-gradient(180deg, transparent, transparent 8px, rgba(0,0,0,0.03) 8px, rgba(0,0,0,0.03) 10px)`
+                    : "none",
+                }}>
+                  <span style={{
+                    position: "absolute", top: 6, right: 6,
+                    background: "rgba(0,0,0,0.45)", color: "#fff",
+                    fontSize: 9, fontWeight: 700, padding: "2px 5px", borderRadius: 4,
+                    letterSpacing: "0.05em",
+                  }}>{mat.texture}</span>
+                </div>
+                {/* Label */}
+                <div style={{ padding: "7px 8px", background: "#fafafa" }}>
+                  <div style={{ fontSize: 10, color: "#999", fontWeight: 600 }}>{mat.code}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#222", lineHeight: 1.3, marginTop: 1 }}>{mat.name}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {filtered.length === 0 && (
+            <div style={{ textAlign: "center", color: "#aaa", padding: 40, fontSize: 14 }}>
+              No se encontraron materiales para "{search}"
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 /* ================================================================
  * MADESOL SHEET — Formulario de Servicio: Corte y Canteado
  * Summarises all cabinet cut lists into one editable table
@@ -1411,6 +1579,7 @@ function MadesolSheet({ cabs, projectName, onClose }) {
 
   const [rows, setRows] = React.useState(() => buildRows());
   const [globalMaterial, setGlobalMaterial] = React.useState("");
+  const [pickerOpen, setPickerOpen] = React.useState(null); // null | { target: "global" } | { target: "row", idx: number }
   const [globalWidth, setGlobalWidth] = React.useState("");
   const [factura, setFactura] = React.useState("");
   const [nombre, setNombre] = React.useState("");
@@ -1503,9 +1672,16 @@ function MadesolSheet({ cabs, projectName, onClose }) {
           background: "#f5f5f5", padding: "10px 14px", borderRadius: 8 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
             Material (todos):
-            <input value={globalMaterial} onChange={e => setGlobalMaterial(e.target.value)}
-              placeholder="ej. Melamina Blanca"
-              style={{ border: "1px solid #bbb", borderRadius: 4, padding: "4px 8px", fontSize: 12, width: 180 }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input value={globalMaterial} onChange={e => setGlobalMaterial(e.target.value)}
+                placeholder="ej. Melamina Blanca"
+                style={{ border: "1px solid #bbb", borderRadius: 4, padding: "4px 8px", fontSize: 12, width: 160 }} />
+              <button onClick={() => setPickerOpen({ target: "global" })}
+                style={{ padding: "4px 10px", background: "#E4572E", color: "#fff", border: "none",
+                  borderRadius: 4, cursor: "pointer", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
+                🎨 Innovus
+              </button>
+            </div>
           </label>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
             Ancho material (mm):
@@ -1554,7 +1730,9 @@ function MadesolSheet({ cabs, projectName, onClose }) {
                 <tr key={i} style={{ background: row.isHardboard ? "#fffbe6" : (i % 2 === 0 ? "#fff" : "#f9f9f9") }}>
                   <td style={cellStyle({ color: "#888" })}>{i + 1}</td>
                   {/* Material — editable */}
-                  <td style={cellStyle({ textAlign: "left", minWidth: 80 })}>
+                  <td style={cellStyle({ textAlign: "left", minWidth: 80, position: "relative" })}
+                    onDoubleClick={() => setPickerOpen({ target: "row", idx: i })}
+                    title="Doble clic para abrir selector Innovus">
                     <input value={row.material || globalMaterial} onChange={e => updateRow(i, "material", e.target.value)}
                       style={{ ...inputStyle, textAlign: "left", fontSize: 10 }} placeholder={globalMaterial || "—"} />
                   </td>
@@ -1619,6 +1797,21 @@ function MadesolSheet({ cabs, projectName, onClose }) {
           1. Sobrantes deben ser retirados con la producción de lo contrario no somos responsables de los mismos.<br/>
           2. Después de notificados que su trabajo está listo deben retirar en un plazo no mayor de 72 horas de lo contrario se cobrará un servicio de almacenamiento de RD$1,000.00 diarios por producción.
         </div>
+
+        {/* Material Picker */}
+        {pickerOpen && (
+          <MaterialPicker
+            onClose={() => setPickerOpen(null)}
+            onSelect={(val) => {
+              if (pickerOpen.target === "global") {
+                setGlobalMaterial(val);
+              } else {
+                updateRow(pickerOpen.idx, "material", val);
+              }
+              setPickerOpen(null);
+            }}
+          />
+        )}
 
         {/* Footer buttons */}
         <div style={{ display: "flex", gap: 12, marginTop: 16, justifyContent: "flex-end" }}>
