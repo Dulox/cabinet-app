@@ -2756,7 +2756,7 @@ export default function CabinetProject() {
     } else {
       val = Number(v);
     }
-    updateCab(selectedId, { params: { ...selectedCab.params, [k]: val } });
+    if (selectedCab) updateCab(selectedId, { params: { ...selectedCab.params, [k]: val } });
   };
   
   const updateCab = (id, patch) => {
@@ -2810,7 +2810,7 @@ export default function CabinetProject() {
   const selectedCab = cabs.find((c) => c.id === selectedId) || null;
   const selectedIndex = cabs.indexOf(selectedCab);
 
-  const p = selectedCab.params || DEFAULTS;
+  const p = (selectedCab && selectedCab.params) || DEFAULTS;
 
   const summary = useMemo(() => {
     let area = 0, pieces = 0, n = 0, hbArea = 0, hbPieces = 0;
@@ -2832,7 +2832,7 @@ export default function CabinetProject() {
         for (let i = 0; i < x.qty * cabQty; i++) items.push({ w: x.a, h: x.b });
       });
     });
-    const p = selectedCab.params || DEFAULTS;
+    const p = (selectedCab && selectedCab.params) || DEFAULTS;
     const board = estimateBoards(items, p);
     return { area, pieces, n, board, hbArea, hbPieces, shelfPins: totalShelfPins, hinges: totalHinges, slides: totalSlides, handles: totalHandles };
   }, [cabs, selectedCab]);
@@ -2907,7 +2907,7 @@ export default function CabinetProject() {
       return [`${cabLabel(c, i, t)} — ${t(TYPES[c.type].label)} — ${W} mm`,
         ...d.parts.map((x) => `  ${x.qty * cabQty}×  ${tName(x.part, t).padEnd(20)} ${fmt(x.a)} × ${fmt(x.b)} (${t(x.aLabel)} × ${t(x.bLabel)})`)].join("\n");
     });
-    const p = selectedCab.params || DEFAULTS;
+    const p = (selectedCab && selectedCab.params) || DEFAULTS;
     const text = [`${projectName} — ${today} — ${p.t}mm ${t("melamine")}`, "", ...blocks, "",
       `TOTAL: ${summary.pieces} ${t("pieces")} · ${summary.area.toFixed(2)} m²`
     ].join("\n");
@@ -3384,7 +3384,7 @@ export default function CabinetProject() {
                   <NumField label={t("Shelf setback")} value={p.shelfSetback} onChange={setP("shelfSetback")} />
                   <NumField label={t("Shelf clearance")} value={p.shelfClearance} onChange={setP("shelfClearance")} />
                   
-                  {(selectedCab.type !== "wall" && selectedCab.front === "doors") && (
+                  {selectedCab && (selectedCab.type !== "wall" && selectedCab.front === "doors") && (
                     <>
                       <NumField label={t("Door height")} value={p.doorH} onChange={setP("doorH")} />
                       <NumField label={t("Door reveal")} value={p.doorReveal} onChange={setP("doorReveal")} />
@@ -3392,18 +3392,18 @@ export default function CabinetProject() {
                     </>
                   )}
 
-                  {selectedCab.falseFront && (
+                  {selectedCab && selectedCab.falseFront && (
                     <NumField label={t("False front H")} value={p.falseFrontH} onChange={setP("falseFrontH")} />
                   )}
                   
-                  {selectedCab.type === "corner" && (
+                  {selectedCab && selectedCab.type === "corner" && (
                     <>
                       <NumField label={t("Corner stile W")} value={p.cornerStileW} onChange={setP("cornerStileW")} />
                       <NumField label={t("Corner blind W (default)")} value={p.cornerBlindW} onChange={setP("cornerBlindW")} />
                     </>
                   )}
                   
-                  {selectedCab.type !== "wall" && (
+                  {selectedCab && selectedCab.type !== "wall" && (
                     <>
                       <NumField label={t("Base build-up (top)")} value={p.baseBuildUp} onChange={setP("baseBuildUp")} />
                       <NumField label={t("Build-up strip height")} value={p.buildUpStripH} onChange={setP("buildUpStripH")} />
@@ -3411,7 +3411,7 @@ export default function CabinetProject() {
                     </>
                   )}
                   
-                  {selectedCab.type === "base" && selectedCab.front === "drawers" && (
+                  {selectedCab && selectedCab.type === "base" && selectedCab.front === "drawers" && (
                     <>
                       <NumField label={t("Slide clear/side")} value={p.drawerSideClear} onChange={setP("drawerSideClear")} />
                       <NumField label={t("Drawer box depth")} value={p.drawerBoxDepth} onChange={setP("drawerBoxDepth")} />
