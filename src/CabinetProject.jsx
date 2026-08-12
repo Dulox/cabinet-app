@@ -2071,39 +2071,22 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
               if (!el) return;
               const win = window.open('', '_blank', 'width=1100,height=800');
               const css = [
-                '@page{size:A4 landscape;margin:8mm}',
+                '@page{size:A4 landscape;margin:6mm}',
                 '*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}',
                 'body{font-size:8px}',
-                'table{border-collapse:collapse;width:100%;font-size:7.5px;table-layout:fixed}',
-                'th,td{border:0.5px solid #888;padding:1.5px 2px;text-align:center;vertical-align:middle;overflow:hidden;word-break:break-word}',
-                'th{background:#ddd;font-weight:700;font-size:7px}',
-                'td.left,span.left{text-align:left}',
+                'table{border-collapse:collapse;width:100%;font-size:8px;table-layout:auto}',
+                'th,td{border:0.5px solid #888;padding:2px 3px;text-align:center;vertical-align:middle;white-space:nowrap}',
+                'th{background:#ddd;font-weight:700;font-size:7.5px}',
+                'td.left,span.left{text-align:left;white-space:nowrap}',
                 'tr:nth-child(even) td{background:#f5f5f5}',
                 'tr.total td{background:#ddd;font-weight:700}',
-                '.red{color:#c00;font-weight:700}',
-                '.hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:3mm;border-bottom:1px solid #333;padding-bottom:2mm}',
-                '.hdr h1{font-size:10px;font-weight:700}',
-                '.hdr .meta{font-size:8px;text-align:right;color:#555}',
-                '.cinfo{display:flex;gap:12px;margin-bottom:3mm;font-size:8px}',
-                '.cinfo label{display:flex;gap:4px;align-items:center}',
-                '.cinfo span{border-bottom:0.5px solid #888;min-width:60px;display:inline-block}',
-                /* Fixed column widths to fit landscape A4 ~277mm usable */
-                'table colgroup col:nth-child(1){width:18px}',  /* No */
-                'table colgroup col:nth-child(2){width:22mm}',  /* Material */
-                'table colgroup col:nth-child(3){width:28mm}',  /* Nombre */
-                'table colgroup col:nth-child(4){width:8mm}',   /* Vetas */
-                'table colgroup col:nth-child(5){width:14mm}',  /* Largo */
-                'table colgroup col:nth-child(6){width:14mm}',  /* Ancho */
-                'table colgroup col:nth-child(7){width:10mm}',  /* Grosor */
-                'table colgroup col:nth-child(8){width:10mm}',  /* Cant */
-                'table colgroup col:nth-child(9){width:10mm}',  /* L1 */
-                'table colgroup col:nth-child(10){width:10mm}', /* L2 */
-                'table colgroup col:nth-child(11){width:10mm}', /* A1 */
-                'table colgroup col:nth-child(12){width:10mm}', /* A2 */
-                'table colgroup col:nth-child(13){width:9mm}',  /* R-L */
-                'table colgroup col:nth-child(14){width:9mm}',  /* R-A */
-                'table colgroup col:nth-child(15){width:9mm}',  /* HB-L */
-                'table colgroup col:nth-child(16){width:9mm}',  /* HB-A */
+                '.red{color:#c00;font-weight:700;font-size:11px}',
+                '.hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:2mm;border-bottom:1px solid #333;padding-bottom:1.5mm}',
+                '.hdr h1{font-size:9px;font-weight:700}',
+                '.hdr .meta{font-size:7.5px;text-align:right;color:#555}',
+                '.cinfo{display:flex;gap:10px;margin-bottom:2mm;font-size:7.5px}',
+                '.cinfo label{display:flex;gap:3px;align-items:center}',
+                '.cinfo span{border-bottom:0.5px solid #888;min-width:50px;display:inline-block}',
               ].join('');
               win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Corte y Canteado</title><style>' + css + '</style></head><body>');
               win.document.write('<div class="hdr"><h1>FORMULARIO DE SERVICIO: CORTE Y CANTEADO</h1><div class="meta">Fecha: ' + new Date().toLocaleDateString('es-DO') + '<br>Proyecto: ' + (projectName || '') + '</div></div>');
