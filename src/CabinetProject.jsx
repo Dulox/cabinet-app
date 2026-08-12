@@ -1547,6 +1547,21 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
   // Build summarised cut list — group same dimensions, multiply by cabinet qty
   const buildRows = () => {
     const map = new Map();
+    // Helper: add a part to the map, merging by name+dimensions
+    const emitPart = (map, name, L, A, G, qty, part) => {
+      const key = `${name}|${L}-${A}-${G}`;
+      if (map.has(key)) {
+        map.get(key).cant += qty;
+      } else {
+        const bandAll = new Set(["Door", "Door (pair)", "Door (flap, stacked)", "False front", "False drawer front", "Drawer front", "Blind / filler panel"]);
+        map.set(key, {
+          id: key, largo: L, ancho: A, grosor: G, cant: qty, nombre: name,
+          cl1: "X", cl2: "X", ca1: "X", ca2: "X",
+          vetas: "", rl: "", ra: "", hbl: "", hba: "",
+          material: "", isHardboard: part.material === "hardboard",
+        });
+      }
+    };
     cabs.forEach((cab) => {
       const W = parseFloat(cab.width);
       const p = cab.params || DEFAULTS;
@@ -1557,11 +1572,27 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
         const L = Math.round(Math.max(part.a, part.b));
         const A = Math.round(Math.min(part.a, part.b));
         const G = part.material === "hardboard" ? Math.round(p.grooveDepth || 5.5) : p.t;
-        // Side panels: separate row depending on whether cabinet has hinges (needs hinge drilling)
-        const hasDoors = cab.type !== "drawers" && (cab.doorCount || 0) > 0;
-        const sideLabel = part.part === "Side"
-          ? (hasDoors ? "Side (with doors)" : "Side")
-          : part.part;
+
+        // Side panels: split into "with doors" (needs hinge holes) vs plain.
+        // Corner cabinet: hinges go on the hinge stile, so NO side panel needs holes.
+        // Otherwise: number of sides needing holes = doorCount (1 door → 1 side, 2 doors → 2 sides).
+        if (part.part === "Side") {
+          const totalSides = part.qty * cabQty;      // usually 2 × cabQty
+          const perCab = part.qty;                    // sides per single cabinet (2)
+          let hingeSidesPerCab = 0;
+          if (cab.type !== "drawers" && cab.type !== "corner") {
+            hingeSidesPerCab = Math.min(cab.doorCount || 0, perCab);
+          }
+          const hingeSides = hingeSidesPerCab * cabQty;
+          const plainSides = totalSides - hingeSides;
+          // Emit plain sides
+          if (plainSides > 0) emitPart(map, "Side", L, A, G, plainSides, part);
+          // Emit hinge sides
+          if (hingeSides > 0) emitPart(map, "Side (with doors)", L, A, G, hingeSides, part);
+          return;
+        }
+
+        const sideLabel = part.part;
         const key = `${sideLabel}|${L}-${A}-${G}`;
         const totalQty = part.qty * cabQty;
         if (map.has(key)) {
