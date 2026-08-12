@@ -1554,12 +1554,12 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
         const L = Math.round(Math.max(part.a, part.b));
         const A = Math.round(Math.min(part.a, part.b));
         const G = part.material === "hardboard" ? Math.round(p.grooveDepth || 5.5) : p.t;
-        // Door/face parts: never merge across cabinets — each cabinet keeps its own row
-        const isFacePart = ["Door", "Door (pair)", "Door (flap, stacked)", "False front",
-          "False drawer front", "Drawer front", "Blind / filler panel", "Blind Front Panel"].includes(part.part);
-        const key = isFacePart
-          ? `${cab.id}|${part.part}|${L}-${A}-${G}`
-          : `${part.part}|${L}-${A}-${G}`;
+        // Side panels: separate row depending on whether cabinet has doors (needs hinge drilling)
+        const hasDoors = (cab.doorCount > 0) || (cab.front === "doors" && cab.doorCount !== 0);
+        const sideLabel = part.part === "Side Panels"
+          ? (hasDoors ? "Side Panels (with doors)" : "Side Panels")
+          : part.part;
+        const key = `${sideLabel}|${L}-${A}-${G}`;
         const totalQty = part.qty * cabQty;
         if (map.has(key)) {
           map.get(key).cant += totalQty;
@@ -1574,7 +1574,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
             ancho: A,
             grosor: G,
             cant: totalQty,
-            nombre: part.part,
+            nombre: sideLabel,
             // Canteado: all 4 edges X by default — user can click to remove
             cl1: "X",
             cl2: "X",
@@ -1619,6 +1619,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
     if (mLang !== "es") return name;
     const map = {
       "Side Panels": "Paneles laterales",
+      "Side Panels (with doors)": "Paneles laterales (con puertas)",
       "Side": "Lateral",
       "Bottom Panel": "Panel de fondo",
       "Bottom": "Fondo",
