@@ -2124,6 +2124,35 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
                 color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
               🖨 Imprimir / Guardar PDF
             </button>
+            <button onClick={() => {
+              const headers = ["No","Material","Nombre","Vetas","Largo (mm)","Ancho (mm)","Grosor (mm)","Cant.","L1","L2","A1","A2","R-L","R-A","HB-L","HB-A"];
+              const csvRows = sortedRows.map((row, i) => [
+                i + 1,
+                row.material || globalMaterial,
+                mTName(row.nombre),
+                row.vetas || "",
+                row.largo,
+                row.ancho,
+                row.grosor,
+                row.cant,
+                row.cl1 || "", row.cl2 || "", row.ca1 || "", row.ca2 || "",
+                row.rl || "", row.ra || "", row.hbl || "", row.hba || "",
+              ]);
+              const csv = [headers, ...csvRows]
+                .map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(','))
+                .join('\r\n');
+              const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = (projectName || 'corte') + '_madesol.csv';
+              a.click();
+              setTimeout(() => URL.revokeObjectURL(url), 2000);
+            }}
+              style={{ padding: "9px 20px", border: "none", borderRadius: 8, background: "#1D6F42",
+                color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
+              📊 Excel / CSV
+            </button>
           </div>
         </div>
 
