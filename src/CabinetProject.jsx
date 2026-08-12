@@ -1647,7 +1647,9 @@ function MadesolSheet({ cabs, projectName, onClose }) {
 
   const saveSheet = () => {
     const name = saveSheetName.trim() || projectName || "Hoja sin nombre";
-    const sheet = { name, date: new Date().toLocaleDateString("es-DO"), rows, globalMaterial, factura, nombre, telefono };
+    const now = new Date();
+    const date = now.toLocaleDateString("es-DO") + " " + now.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" });
+    const sheet = { name, date, rows, globalMaterial, factura, nombre, telefono };
     const updated = [sheet, ...savedSheets.slice(0, 19)]; // keep last 20
     setSavedSheets(updated);
     try { localStorage.setItem("savedMadesolSheets", JSON.stringify(updated)); } catch {}
@@ -2018,7 +2020,47 @@ function MadesolSheet({ cabs, projectName, onClose }) {
                 cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
               Cerrar
             </button>
-            <button onClick={() => window.print()}
+            <button onClick={() => {
+              const el = document.querySelector('.madesol-print-area');
+              if (!el) return;
+              const win = window.open('', '_blank', 'width=1100,height=800');
+              const css = [
+                '*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}',
+                'body{padding:10mm;font-size:11px}',
+                'table{border-collapse:collapse;width:100%;font-size:10px}',
+                'th,td{border:1px solid #888;padding:2px 4px;text-align:center;vertical-align:middle}',
+                'th{background:#ddd;font-weight:700;font-size:9px}',
+                'td.left,span.left{text-align:left}',
+                'tr:nth-child(even){background:#f9f9f9}',
+                'tr.total td{background:#e8e8e8;font-weight:700}',
+                '.red{color:#c00;font-weight:700;font-size:13px}',
+                '.hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6mm;border-bottom:1.5px solid #333;padding-bottom:3mm}',
+                '.hdr h1{font-size:13px;font-weight:700}',
+                '.hdr .meta{font-size:10px;text-align:right;color:#555}',
+                '.cinfo{display:flex;gap:16px;margin-bottom:5mm;font-size:11px}',
+                '.cinfo label{display:flex;gap:6px;align-items:center}',
+                '.cinfo span{border-bottom:1px solid #888;min-width:80px;display:inline-block}',
+              ].join('');
+              win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Corte y Canteado</title><style>' + css + '</style></head><body>');
+              win.document.write('<div class="hdr"><h1>FORMULARIO DE SERVICIO: CORTE Y CANTEADO</h1><div class="meta">Fecha: ' + new Date().toLocaleDateString('es-DO') + '<br>Proyecto: ' + (projectName || '') + '</div></div>');
+              win.document.write('<div class="cinfo"><label>Factura No.: <span>' + factura + '</span></label><label>Nombre: <span>' + nombre + '</span></label><label>Tel.: <span>' + telefono + '</span></label></div>');
+              const tbl = el.querySelector('table');
+              if (tbl) {
+                const clone = tbl.cloneNode(true);
+                clone.querySelectorAll('input').forEach(function(inp) {
+                  var sp = document.createElement('span');
+                  sp.textContent = inp.value;
+                  if (inp.style.textAlign === 'left') sp.className = 'left';
+                  inp.parentNode.replaceChild(sp, inp);
+                });
+                clone.querySelectorAll('button,.madesol-noprint').forEach(function(b) { b.remove(); });
+                win.document.write(clone.outerHTML);
+              }
+              win.document.write('</body></html>');
+              win.document.close();
+              win.focus();
+              setTimeout(function() { win.print(); }, 400);
+            }}
               style={{ padding: "9px 20px", border: "none", borderRadius: 8, background: "#E4572E",
                 color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
               🖨 Imprimir / Guardar PDF
