@@ -50,6 +50,7 @@ const TYPES = {
   sink:    { label: "Sink cabinet",            set: { doorCount: 2, shelfQty: 0, falseFront: true, hingeType: "concealed" } },
   stove:   { label: "Stove cabinet",           set: { doorCount: 2, shelfQty: 0, falseFront: true, front: "doors", hingeType: "concealed" } },
   corner:  { label: "Corner cabinet (blind)",  set: { doorCount: 1, shelfQty: 1, hingeType: "concealed" } },
+  filler:  { label: "Filler piece",               set: { doorCount: 0, shelfQty: 0 } },
 };
 
 const round1 = (n) => Math.round(n * 10) / 10;
@@ -314,7 +315,7 @@ const translations = {
     "Side": "Lado", "Bottom": "Fondo", "Top": "Tapa", "Back": "Espalda",
     "Rail / Support": "Riel / Soporte", "Rail / Support (front)": "Riel / Soporte (frontal)", "Rail / Support (back)": "Riel / Soporte (trasero)", "Shelf": "Estante", "Separator (fixed)": "Separador (fijo)",
     "Door": "Puerta", "Door (pair)": "Puertas (par)", "Door (flap, stacked)": "Puerta (abatible, apilada)",
-    "Blind / filler panel": "Panel ciego / relleno", "False drawer front": "Frente de gaveta falso",
+    "Blind / filler panel": "Panel ciego / relleno", "Filler piece": "Pieza de relleno", "Filler": "Relleno", "False drawer front": "Frente de gaveta falso",
     "Drawer front": "Frente de gaveta", "Drawer box side": "Lado de caja de gaveta",
     "Drawer box front/back": "Frente/fondo de caja de gaveta", "Drawer bottom": "Fondo de gaveta",
     "width": "ancho", "depth": "profundidad", "height": "alto", "length": "largo",
@@ -547,6 +548,10 @@ function buildCutList(W, p, cab) {
       faces.push({ x: rev, y: buildUp, w: blindW, h: frontH, split: 1, kind: "blind" });
       faces.push({ x: rev + blindW + p.doorGap, y: buildUp, w: dW, h: frontH, split: 1, kind: "door", hinge: "left" });
     }
+  } else if (cab.type === "filler") {
+    // Filler piece: one plain panel, width × height, all 4 edges banded
+    parts.push({ part: "Filler", qty: 1, a: LL(W, p.doorH), b: WW(W, p.doorH), aLabel: "width", bLabel: "height",
+      note: `filler piece · width = ${W} · height = ${p.doorH} · edge band all 4 edges` });
   } else if (cab.type === "wall") {
     // wall cabinet - 305mm depth, top + bottom, 1 rail at top for wall mounting
     const wallDepth = 305;
@@ -1037,6 +1042,12 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
           </label>
         )}
 
+        {cab.type === "filler" && (
+          <div style={{ fontSize: 12, color: "#666", background: "#f9f9f9", borderRadius: 6, padding: "8px 12px", marginBottom: 8 }}>
+            <strong>{t("Filler piece")}</strong> — {t("Width")} × {t("Height")} only.
+            {t(" Height is taken from the cabinet height setting (Door H).")}
+          </div>
+        )}
         {cab.type === "corner" && (
           <>
             <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -1109,7 +1120,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
           </>
         )}
 
-        {cab.type !== "drawers" && !(cab.type === "wall" && cab.hingeType === "lift-up") && (
+        {cab.type !== "drawers" && cab.type !== "filler" && !(cab.type === "wall" && cab.hingeType === "lift-up") && (
           <NumField label={t("Shelves")} value={cab.shelfQty} suffix="" w={64}
             onChange={(v) => onChange({ shelfQty: v === "" ? 0 : Math.max(0, Math.floor(Number(v) || 0)) })} />
         )}
@@ -1208,7 +1219,13 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
             </div>
           )}
 
-          {cab.type === "corner" && (
+          {cab.type === "filler" && (
+          <div style={{ fontSize: 12, color: "#666", background: "#f9f9f9", borderRadius: 6, padding: "8px 12px", marginBottom: 8 }}>
+            <strong>{t("Filler piece")}</strong> — {t("Width")} × {t("Height")} only.
+            {t(" Height is taken from the cabinet height setting (Door H).")}
+          </div>
+        )}
+        {cab.type === "corner" && (
             <div style={{ fontSize: 11.5, color: C.rust, marginTop: 8 }}>
               {t("Corner = blind-corner approximation (one door + a blind/filler panel). Tell me how you build corners to refine it.")}
             </div>
@@ -1668,7 +1685,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
       "Door": "Puerta",
       "Door (pair)": "Puertas (par)",
       "Door (flap, stacked)": "Puerta (abatible)",
-      "Blind / filler panel": "Panel ciego / relleno",
+      "Blind / filler panel": "Panel ciego / relleno", "Filler piece": "Pieza de relleno", "Filler": "Relleno",
       "False drawer front": "Frente de gaveta falso",
       "False front": "Frente falso",
       "Drawer front": "Frente de gaveta",
@@ -1678,6 +1695,8 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
       "Hinge stile / rail": "Montante de bisagras",
       "Hinge Panel": "Panel de bisagras",
       "Blind Front Panel": "Panel frontal ciego",
+      "Filler piece": "Pieza de relleno",
+      "Filler": "Relleno",
       "Base build-up strip": "Refuerzo superior base",
     };
     // Check exact match first
