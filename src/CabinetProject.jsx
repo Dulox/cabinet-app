@@ -1554,7 +1554,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
         const L = Math.round(Math.max(part.a, part.b));
         const A = Math.round(Math.min(part.a, part.b));
         const G = part.material === "hardboard" ? Math.round(p.grooveDepth || 5.5) : p.t;
-        const key = `${L}-${A}-${G}`;
+        const key = `${part.part}|${L}-${A}-${G}`;
         const totalQty = part.qty * cabQty;
         if (map.has(key)) {
           map.get(key).cant += totalQty;
