@@ -2070,6 +2070,11 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
                 borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
               💾 Guardar hoja
             </button>
+            <button onClick={() => { if (window.confirm("Rebuild from current cabinets? Unsaved changes will be lost.")) setRows(buildRows()); }}
+              style={{ padding: "8px 14px", background: "#555", color: "#fff", border: "none",
+                borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
+              🔄 Rebuild
+            </button>
             <button onClick={() => setShowSaved(true)}
               style={{ padding: "8px 14px", background: "#f0f0f0", color: "#333", border: "1px solid #ddd",
                 borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
