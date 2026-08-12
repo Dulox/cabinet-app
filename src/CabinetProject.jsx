@@ -1586,8 +1586,19 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
     return Array.from(map.values()).sort((a, b) => b.largo - a.largo || b.ancho - a.ancho);
   };
 
-  const [rows, setRows] = React.useState(() => buildRows());
-  const [globalMaterial, setGlobalMaterial] = React.useState("");
+  const [rows, setRows] = React.useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("savedMadesolSheets") || "[]");
+      if (saved.length > 0 && saved[0].rows && saved[0].rows.length > 0) return saved[0].rows;
+    } catch {}
+    return buildRows();
+  });
+  const [globalMaterial, setGlobalMaterial] = React.useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("savedMadesolSheets") || "[]");
+      return saved.length > 0 ? (saved[0].globalMaterial || "") : "";
+    } catch { return ""; }
+  });
   const [pickerOpen, setPickerOpen] = React.useState(null);
   const [sortField, setSortField] = React.useState(null); // null | "nombre" | "cant"
   const [sortDir, setSortDir] = React.useState(1); // 1=asc -1=desc
