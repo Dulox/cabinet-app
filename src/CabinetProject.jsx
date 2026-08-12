@@ -2071,21 +2071,39 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
               if (!el) return;
               const win = window.open('', '_blank', 'width=1100,height=800');
               const css = [
+                '@page{size:A4 landscape;margin:8mm}',
                 '*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}',
-                'body{padding:10mm;font-size:11px}',
-                'table{border-collapse:collapse;width:100%;font-size:10px}',
-                'th,td{border:1px solid #888;padding:2px 4px;text-align:center;vertical-align:middle}',
-                'th{background:#ddd;font-weight:700;font-size:9px}',
+                'body{font-size:8px}',
+                'table{border-collapse:collapse;width:100%;font-size:7.5px;table-layout:fixed}',
+                'th,td{border:0.5px solid #888;padding:1.5px 2px;text-align:center;vertical-align:middle;overflow:hidden;word-break:break-word}',
+                'th{background:#ddd;font-weight:700;font-size:7px}',
                 'td.left,span.left{text-align:left}',
-                'tr:nth-child(even){background:#f9f9f9}',
-                'tr.total td{background:#e8e8e8;font-weight:700}',
-                '.red{color:#c00;font-weight:700;font-size:13px}',
-                '.hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6mm;border-bottom:1.5px solid #333;padding-bottom:3mm}',
-                '.hdr h1{font-size:13px;font-weight:700}',
-                '.hdr .meta{font-size:10px;text-align:right;color:#555}',
-                '.cinfo{display:flex;gap:16px;margin-bottom:5mm;font-size:11px}',
-                '.cinfo label{display:flex;gap:6px;align-items:center}',
-                '.cinfo span{border-bottom:1px solid #888;min-width:80px;display:inline-block}',
+                'tr:nth-child(even) td{background:#f5f5f5}',
+                'tr.total td{background:#ddd;font-weight:700}',
+                '.red{color:#c00;font-weight:700}',
+                '.hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:3mm;border-bottom:1px solid #333;padding-bottom:2mm}',
+                '.hdr h1{font-size:10px;font-weight:700}',
+                '.hdr .meta{font-size:8px;text-align:right;color:#555}',
+                '.cinfo{display:flex;gap:12px;margin-bottom:3mm;font-size:8px}',
+                '.cinfo label{display:flex;gap:4px;align-items:center}',
+                '.cinfo span{border-bottom:0.5px solid #888;min-width:60px;display:inline-block}',
+                /* Fixed column widths to fit landscape A4 ~277mm usable */
+                'table colgroup col:nth-child(1){width:18px}',  /* No */
+                'table colgroup col:nth-child(2){width:22mm}',  /* Material */
+                'table colgroup col:nth-child(3){width:28mm}',  /* Nombre */
+                'table colgroup col:nth-child(4){width:8mm}',   /* Vetas */
+                'table colgroup col:nth-child(5){width:14mm}',  /* Largo */
+                'table colgroup col:nth-child(6){width:14mm}',  /* Ancho */
+                'table colgroup col:nth-child(7){width:10mm}',  /* Grosor */
+                'table colgroup col:nth-child(8){width:10mm}',  /* Cant */
+                'table colgroup col:nth-child(9){width:10mm}',  /* L1 */
+                'table colgroup col:nth-child(10){width:10mm}', /* L2 */
+                'table colgroup col:nth-child(11){width:10mm}', /* A1 */
+                'table colgroup col:nth-child(12){width:10mm}', /* A2 */
+                'table colgroup col:nth-child(13){width:9mm}',  /* R-L */
+                'table colgroup col:nth-child(14){width:9mm}',  /* R-A */
+                'table colgroup col:nth-child(15){width:9mm}',  /* HB-L */
+                'table colgroup col:nth-child(16){width:9mm}',  /* HB-A */
               ].join('');
               win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Corte y Canteado</title><style>' + css + '</style></head><body>');
               win.document.write('<div class="hdr"><h1>FORMULARIO DE SERVICIO: CORTE Y CANTEADO</h1><div class="meta">Fecha: ' + new Date().toLocaleDateString('es-DO') + '<br>Proyecto: ' + (projectName || '') + '</div></div>');
@@ -2100,6 +2118,18 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
                   inp.parentNode.replaceChild(sp, inp);
                 });
                 clone.querySelectorAll('button,.madesol-noprint').forEach(function(b) { b.remove(); });
+                // Remove any inline styles that would override our print CSS
+                clone.querySelectorAll('td,th').forEach(function(cell) {
+                  cell.style.cssText = '';
+                  if (cell.className && cell.className.includes('left')) cell.className = 'left';
+                  else cell.className = '';
+                });
+                // Mark total row
+                var rows = clone.querySelectorAll('tr');
+                rows.forEach(function(r) {
+                  var first = r.querySelector('td');
+                  if (first && first.colSpan > 3) r.className = 'total';
+                });
                 win.document.write(clone.outerHTML);
               }
               win.document.write('</body></html>');
