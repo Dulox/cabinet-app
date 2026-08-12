@@ -925,7 +925,10 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
   const pickType = (e) => {
     const k = e.target.value, s = TYPES[k].set;
     const patch = { type: k, ...s };
-    if (k === "drawers") patch.drawerHeights = splitHeights(p.doorH, s.drawerCount, p.doorGap);
+    if (k === "drawers") {
+      patch.drawerHeights = splitHeights(p.doorH, s.drawerCount, p.doorGap);
+      patch.doorCount = 0;
+    }
     onChange(patch);
   };
   const setDrawerCount = (c) => onChange({ drawerCount: c, drawerHeights: splitHeights(p.doorH, c, p.doorGap) });
@@ -1555,7 +1558,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
         const A = Math.round(Math.min(part.a, part.b));
         const G = part.material === "hardboard" ? Math.round(p.grooveDepth || 5.5) : p.t;
         // Side panels: separate row depending on whether cabinet has hinges (needs hinge drilling)
-        const hasDoors = d.hardware && d.hardware.hinges > 0;
+        const hasDoors = (d.hardware && d.hardware.hinges > 0) || (cab.type !== "drawers" && (cab.doorCount || 0) > 0);
         const sideLabel = part.part === "Side"
           ? (hasDoors ? "Side (with doors)" : "Side")
           : part.part;
