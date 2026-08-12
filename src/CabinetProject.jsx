@@ -1651,11 +1651,11 @@ function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
  * Summarises all cabinet cut lists into one editable table
  * matching the Madesol workshop form format.
  * ================================================================ */
-function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
+function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProjects = [] }) {
   const today = new Date().toLocaleDateString("es-DO");
 
   // Build summarised cut list — group same dimensions, multiply by cabinet qty
-  const buildRows = () => {
+  const buildRows = (cabsToUse) => {
     const map = new Map();
     // Helper: add a part to the map, merging by name+dimensions
     const emitPart = (map, name, L, A, G, qty, part) => {
@@ -1672,7 +1672,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
         });
       }
     };
-    cabs.forEach((cab) => {
+    (cabsToUse || cabs).forEach((cab) => {
       const W = parseFloat(cab.width);
       const p = cab.params || DEFAULTS;
       if (isNaN(W) || W <= 2 * p.t + 10) return;
@@ -1740,7 +1740,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
       const saved = JSON.parse(localStorage.getItem("savedMadesolSheets") || "[]");
       if (saved.length > 0 && saved[0].rows && saved[0].rows.length > 0) return saved[0].rows;
     } catch {}
-    return buildRows();
+    return buildRows(cabs);
   });
   const [globalMaterial, setGlobalMaterial] = React.useState(() => {
     try {
@@ -1758,6 +1758,8 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
   });
   const [saveSheetName, setSaveSheetName] = React.useState("");
   const [mLang, setMLang] = React.useState(initialLang);
+  const [activeCabs, setActiveCabs] = React.useState(cabs);
+  const [activeProjectName, setActiveProjectName] = React.useState(projectName);
   const ms = (en, es) => mLang === "es" ? es : en;
   const mTName = (name) => {
     if (mLang !== "es") return name;
@@ -1941,6 +1943,23 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
         {/* Global controls */}
         <div className="madesol-noprint" style={{ display: "flex", gap: 12, marginBottom: 12, alignItems: "center", flexWrap: "wrap",
           background: "#f5f5f5", padding: "10px 14px", borderRadius: 8 }}>
+          {allProjects.length > 1 && (
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
+              {ms("Project:", "Proyecto:")}
+              <select value={activeProjectName}
+                onChange={e => {
+                  const proj = allProjects.find(p => p.name === e.target.value);
+                  if (proj && window.confirm(ms('Load cabinets from "' + proj.name + '"? Current rows will be replaced.', '¿Cargar gabinetes de "' + proj.name + '"? Las filas actuales serán reemplazadas.'))) {
+                    setActiveCabs(proj.cabs || []);
+                    setActiveProjectName(proj.name);
+                    setRows(buildRows(proj.cabs || []));
+                  }
+                }}
+                style={{ border: "1px solid #bbb", borderRadius: 4, padding: "4px 8px", fontSize: 12, maxWidth: 180 }}>
+                {allProjects.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+              </select>
+            </label>
+          )}
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
             {ms("Material (all):", "Material (todos):")}
             <input value={globalMaterial} onChange={e => setGlobalMaterial(e.target.value)}
@@ -2214,7 +2233,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
                 borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
               💾 Guardar hoja
             </button>
-            <button onClick={() => { if (window.confirm("Rebuild from current cabinets? Unsaved changes will be lost.")) setRows(buildRows()); }}
+            <button onClick={() => { if (window.confirm("Rebuild from current cabinets? Unsaved changes will be lost.")) setRows(buildRows(activeCabs)); }}
               style={{ padding: "8px 14px", background: "#555", color: "#fff", border: "none",
                 borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
               🔄 Rebuild
@@ -3431,6 +3450,7 @@ export default function CabinetProject() {
           projectName={currentProjectName}
           onClose={() => setShowMadesol(false)}
           initialLang={lang}
+          allProjects={userProjects}
         />
       )}
     </div>
