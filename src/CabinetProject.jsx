@@ -1599,6 +1599,45 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
   const [saveSheetName, setSaveSheetName] = React.useState("");
   const [mLang, setMLang] = React.useState(initialLang);
   const ms = (en, es) => mLang === "es" ? es : en;
+  const mTName = (name) => {
+    if (mLang !== "es") return name;
+    const map = {
+      "Side Panels": "Paneles laterales",
+      "Side": "Lateral",
+      "Bottom Panel": "Panel de fondo",
+      "Bottom": "Fondo",
+      "Top Panel": "Panel superior",
+      "Top": "Superior",
+      "Back Panel": "Panel trasero",
+      "Back": "Trasero",
+      "Rail / Support (front)": "Riel / Soporte (frontal)",
+      "Rail / Support (back)": "Riel / Soporte (trasero)",
+      "Rail / Support": "Riel / Soporte",
+      "Shelf": "Estante",
+      "Separator (fixed)": "Separador (fijo)",
+      "Door": "Puerta",
+      "Door (pair)": "Puertas (par)",
+      "Door (flap, stacked)": "Puerta (abatible)",
+      "Blind / filler panel": "Panel ciego / relleno",
+      "False drawer front": "Frente de gaveta falso",
+      "False front": "Frente falso",
+      "Drawer front": "Frente de gaveta",
+      "Drawer box side": "Lado de caja de gaveta",
+      "Drawer box front/back": "Frente/fondo de caja de gaveta",
+      "Drawer bottom": "Fondo de gaveta",
+      "Hinge stile / rail": "Montante de bisagras",
+      "Hinge Panel": "Panel de bisagras",
+      "Blind Front Panel": "Panel frontal ciego",
+      "Base build-up strip": "Refuerzo superior base",
+    };
+    // Check exact match first
+    if (map[name]) return map[name];
+    // Check partial match for dynamic names like "Back — 5.5mm hardboard"
+    for (const [k, v] of Object.entries(map)) {
+      if (name.startsWith(k)) return v + name.slice(k.length);
+    }
+    return name;
+  };
   const [customMaterials, setCustomMaterials] = React.useState(() => {
     try { return JSON.parse(localStorage.getItem("customMaterials") || "[]"); } catch { return []; }
   });
@@ -1831,7 +1870,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
                   </td>
                   {/* Nombre */}
                   <td style={cellStyle({ textAlign: "left", minWidth: 100, fontSize: 10, color: "#555" })}>
-                    {row.nombre}
+                    {mTName(row.nombre)}
                   </td>
                   {/* Vetas */}
                   <td style={{ ...cellStyle({ width: 28 }), cursor: "pointer", color: row.vetas ? "#c00" : "#ddd",
