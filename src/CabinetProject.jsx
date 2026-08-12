@@ -1046,7 +1046,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
           </label>
         )}
 
-        {cab.type === "filler" && (
+        {cab.type === "filler" && (<>
           <div style={{ background: "#f9f9f9", borderRadius: 8, padding: "12px", marginBottom: 8 }}>
             <div style={{ fontSize: 11, color: "#888", marginBottom: 10 }}>Plain panel — no construction, just dimensions</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
@@ -1076,7 +1076,25 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
               </label>
             </div>
           </div>
-        )}
+          <div style={{ border: `1px solid ${C.hair}`, borderRadius: 10, overflow: "hidden", background: "#fff", marginTop: 12 }}>
+            <div style={{ padding: "10px 13px", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14.5 }}>
+                  <span style={{ color: C.rust, fontFamily: "'JetBrains Mono', monospace" }}>{cab.qty || 1}×</span> Filler
+                </div>
+                <div style={{ fontSize: 11, color: C.mut, marginTop: 2 }}>
+                  height = {cab.fillerH || 786}mm · width = {cab.fillerW || "?"}mm · thickness = {cab.fillerT || 18}mm · edge band all 4 edges
+                </div>
+              </div>
+              <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 15.5 }}>
+                  {Math.max(Number(cab.fillerH) || 786, Number(cab.fillerW) || 0)} × {Math.min(Number(cab.fillerH) || 786, Number(cab.fillerW) || 0)}
+                </div>
+                <div style={{ fontSize: 10, color: C.mut }}>height × width</div>
+              </div>
+            </div>
+          </div>
+        </>)}
         {cab.type === "corner" && (
           <>
             <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -1164,9 +1182,9 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
         </div>
       )}
 
-      {!valid && <div style={{ color: C.rust, fontSize: 13 }}>Enter a width over {2 * p.t + 10} mm.</div>}
+      {!valid && cab.type !== "filler" && <div style={{ color: C.rust, fontSize: 13 }}>Enter a width over {2 * p.t + 10} mm.</div>}
 
-      {data && (
+      {data && cab.type !== "filler" && (
         <>
           <div className="cab-mat cab-noprint" style={{ marginBottom: 12, maxWidth: 380 }}>
             <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces} />
@@ -1248,7 +1266,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
             </div>
           )}
 
-          {cab.type === "filler" && (
+          {cab.type === "filler" && (<>
           <div style={{ background: "#f9f9f9", borderRadius: 8, padding: "12px", marginBottom: 8 }}>
             <div style={{ fontSize: 11, color: "#888", marginBottom: 10 }}>Plain panel — no construction, just dimensions</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
@@ -1278,7 +1296,25 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
               </label>
             </div>
           </div>
-        )}
+          <div style={{ border: `1px solid ${C.hair}`, borderRadius: 10, overflow: "hidden", background: "#fff", marginTop: 12 }}>
+            <div style={{ padding: "10px 13px", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14.5 }}>
+                  <span style={{ color: C.rust, fontFamily: "'JetBrains Mono', monospace" }}>{cab.qty || 1}×</span> Filler
+                </div>
+                <div style={{ fontSize: 11, color: C.mut, marginTop: 2 }}>
+                  height = {cab.fillerH || 786}mm · width = {cab.fillerW || "?"}mm · thickness = {cab.fillerT || 18}mm · edge band all 4 edges
+                </div>
+              </div>
+              <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 15.5 }}>
+                  {Math.max(Number(cab.fillerH) || 786, Number(cab.fillerW) || 0)} × {Math.min(Number(cab.fillerH) || 786, Number(cab.fillerW) || 0)}
+                </div>
+                <div style={{ fontSize: 10, color: C.mut }}>height × width</div>
+              </div>
+            </div>
+          </div>
+        </>)}
         {cab.type === "corner" && (
             <div style={{ fontSize: 11.5, color: C.rust, marginTop: 8 }}>
               {t("Corner = blind-corner approximation (one door + a blind/filler panel). Tell me how you build corners to refine it.")}
