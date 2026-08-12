@@ -1673,10 +1673,27 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
       }
     };
     (cabsToUse || cabs).forEach((cab) => {
+      const cabQty = cab.qty || 1;
+
+      // Filler piece — completely standalone, not a cabinet
+      if (cab.type === "filler") {
+        const fW = parseFloat(cab.fillerW) || 0;
+        const fH = parseFloat(cab.fillerH) || 0;
+        const fT = parseFloat(cab.fillerT) || 18;
+        if (fW > 0 && fH > 0) {
+          const L = Math.max(fW, fH), A = Math.min(fW, fH);
+          const fakePart = { material: "melamine" };
+          emitPart(map, "Filler", L, A, fT, cabQty, fakePart);
+          // Override grosor since emitPart uses a fixed G — update it after
+          const key = "Filler|" + L + "-" + A + "-" + fT;
+          if (map.has(key)) map.get(key).grosor = fT;
+        }
+        return;
+      }
+
       const W = parseFloat(cab.width);
       const p = cab.params || DEFAULTS;
       if (isNaN(W) || W <= 2 * p.t + 10) return;
-      const cabQty = cab.qty || 1;
       const d = buildCutList(W, p, cab);
       d.parts.forEach((part) => {
         const L = Math.round(Math.max(part.a, part.b));
