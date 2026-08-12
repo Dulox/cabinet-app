@@ -549,10 +549,13 @@ function buildCutList(W, p, cab) {
       faces.push({ x: rev + blindW + p.doorGap, y: buildUp, w: dW, h: frontH, split: 1, kind: "door", hinge: "left" });
     }
   } else if (cab.type === "filler") {
-    // Filler piece: one plain panel, width × height, all 4 edges banded
-    const fH = p.doorH || 786;
-    parts.push({ part: "Filler", qty: 1, a: Math.max(W, fH), b: Math.min(W, fH), aLabel: "width", bLabel: "height",
-      note: `filler piece · width = ${W} · height = ${fH} · edge band all 4 edges` });
+    // Filler piece: plain single panel — completely independent of cabinet logic
+    const fW = parseFloat(cab.fillerW) || W || 100;
+    const fH = parseFloat(cab.fillerH) || 786;
+    const fT = parseFloat(cab.fillerT) || p.t || 18;
+    const L = Math.max(fW, fH), A = Math.min(fW, fH);
+    parts.push({ part: "Filler", qty: 1, a: L, b: A, t: fT, aLabel: "width", bLabel: "height",
+      note: `filler piece · ${fW} × ${fH} × ${fT}mm · edge band all 4 edges` });
   } else if (cab.type === "wall") {
     // wall cabinet - 305mm depth, top + bottom, 1 rail at top for wall mounting
     const wallDepth = 305;
@@ -1007,7 +1010,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
         {TYPES[cab.type] ? t(TYPES[cab.type].label) : t("Cabinet")} · {fmt(W)} mm {t("wide")}
       </div>
 
-      <div className="cab-noprint" style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-end", marginBottom: 14 }}>
+      {cab.type === "filler" ? null : <div className="cab-noprint" style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-end", marginBottom: 14 }}>
         <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           <span style={{ ...labelCss, color: C.mut }}>{t("Width")}</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexDirection: "column" }}>
@@ -1044,9 +1047,34 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
         )}
 
         {cab.type === "filler" && (
-          <div style={{ fontSize: 12, color: "#666", background: "#f9f9f9", borderRadius: 6, padding: "8px 12px", marginBottom: 8 }}>
-            <strong>{t("Filler piece")}</strong> — {t("Width")} × {t("Height")} only.
-            {t(" Height is taken from the cabinet height setting (Door H).")}
+          <div style={{ background: "#f9f9f9", borderRadius: 8, padding: "12px", marginBottom: 8 }}>
+            <div style={{ fontSize: 11, color: "#888", marginBottom: 10 }}>Plain panel — no construction, just dimensions</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{t("Height")} (mm)</span>
+                <input type="number" value={cab.fillerH || ""} onChange={e => onChange({ fillerH: e.target.value })}
+                  placeholder="786"
+                  style={{ width: 90, padding: "7px 10px", fontSize: 18, fontWeight: 700,
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
+                    background: "#fff", color: C.ink, outline: "none" }} />
+              </label>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{t("Width")} (mm)</span>
+                <input type="number" value={cab.fillerW || ""} onChange={e => onChange({ fillerW: e.target.value })}
+                  placeholder="100"
+                  style={{ width: 90, padding: "7px 10px", fontSize: 18, fontWeight: 700,
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
+                    background: "#fff", color: C.ink, outline: "none" }} />
+              </label>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>Thickness (mm)</span>
+                <input type="number" value={cab.fillerT || ""} onChange={e => onChange({ fillerT: e.target.value })}
+                  placeholder="18"
+                  style={{ width: 80, padding: "7px 10px", fontSize: 18, fontWeight: 700,
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
+                    background: "#fff", color: C.ink, outline: "none" }} />
+              </label>
+            </div>
           </div>
         )}
         {cab.type === "corner" && (
@@ -1125,7 +1153,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
           <NumField label={t("Shelves")} value={cab.shelfQty} suffix="" w={64}
             onChange={(v) => onChange({ shelfQty: v === "" ? 0 : Math.max(0, Math.floor(Number(v) || 0)) })} />
         )}
-      </div>
+      </div>}
 
       {/* per-drawer heights */}
       {cab.type === "drawers" && (
@@ -1221,9 +1249,34 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
           )}
 
           {cab.type === "filler" && (
-          <div style={{ fontSize: 12, color: "#666", background: "#f9f9f9", borderRadius: 6, padding: "8px 12px", marginBottom: 8 }}>
-            <strong>{t("Filler piece")}</strong> — {t("Width")} × {t("Height")} only.
-            {t(" Height is taken from the cabinet height setting (Door H).")}
+          <div style={{ background: "#f9f9f9", borderRadius: 8, padding: "12px", marginBottom: 8 }}>
+            <div style={{ fontSize: 11, color: "#888", marginBottom: 10 }}>Plain panel — no construction, just dimensions</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{t("Height")} (mm)</span>
+                <input type="number" value={cab.fillerH || ""} onChange={e => onChange({ fillerH: e.target.value })}
+                  placeholder="786"
+                  style={{ width: 90, padding: "7px 10px", fontSize: 18, fontWeight: 700,
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
+                    background: "#fff", color: C.ink, outline: "none" }} />
+              </label>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{t("Width")} (mm)</span>
+                <input type="number" value={cab.fillerW || ""} onChange={e => onChange({ fillerW: e.target.value })}
+                  placeholder="100"
+                  style={{ width: 90, padding: "7px 10px", fontSize: 18, fontWeight: 700,
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
+                    background: "#fff", color: C.ink, outline: "none" }} />
+              </label>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>Thickness (mm)</span>
+                <input type="number" value={cab.fillerT || ""} onChange={e => onChange({ fillerT: e.target.value })}
+                  placeholder="18"
+                  style={{ width: 80, padding: "7px 10px", fontSize: 18, fontWeight: 700,
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
+                    background: "#fff", color: C.ink, outline: "none" }} />
+              </label>
+            </div>
           </div>
         )}
         {cab.type === "corner" && (
