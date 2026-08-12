@@ -1695,8 +1695,6 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
       "Hinge stile / rail": "Montante de bisagras",
       "Hinge Panel": "Panel de bisagras",
       "Blind Front Panel": "Panel frontal ciego",
-      "Filler piece": "Pieza de relleno",
-      "Filler": "Relleno",
       "Base build-up strip": "Refuerzo superior base",
     };
     // Check exact match first
