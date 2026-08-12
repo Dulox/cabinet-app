@@ -1556,8 +1556,8 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
         const G = part.material === "hardboard" ? Math.round(p.grooveDepth || 5.5) : p.t;
         // Side panels: separate row depending on whether cabinet has hinges (needs hinge drilling)
         const hasDoors = d.hardware && d.hardware.hinges > 0;
-        const sideLabel = part.part === "Side Panels"
-          ? (hasDoors ? "Side Panels (with doors)" : "Side Panels")
+        const sideLabel = part.part === "Side"
+          ? (hasDoors ? "Side (with doors)" : "Side")
           : part.part;
         const key = `${sideLabel}|${L}-${A}-${G}`;
         const totalQty = part.qty * cabQty;
@@ -1618,8 +1618,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
   const mTName = (name) => {
     if (mLang !== "es") return name;
     const map = {
-      "Side Panels": "Paneles laterales",
-      "Side Panels (with doors)": "Paneles laterales (con puertas)",
+      "Side (with doors)": "Lateral (con puertas)",
       "Side": "Lateral",
       "Bottom Panel": "Panel de fondo",
       "Bottom": "Fondo",
