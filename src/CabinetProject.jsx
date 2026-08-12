@@ -1554,7 +1554,12 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
         const L = Math.round(Math.max(part.a, part.b));
         const A = Math.round(Math.min(part.a, part.b));
         const G = part.material === "hardboard" ? Math.round(p.grooveDepth || 5.5) : p.t;
-        const key = `${part.part}|${L}-${A}-${G}`;
+        // Door/face parts: never merge across cabinets — each cabinet keeps its own row
+        const isFacePart = ["Door", "Door (pair)", "Door (flap, stacked)", "False front",
+          "False drawer front", "Drawer front", "Blind / filler panel", "Blind Front Panel"].includes(part.part);
+        const key = isFacePart
+          ? `${cab.id}|${part.part}|${L}-${A}-${G}`
+          : `${part.part}|${L}-${A}-${G}`;
         const totalQty = part.qty * cabQty;
         if (map.has(key)) {
           map.get(key).cant += totalQty;
