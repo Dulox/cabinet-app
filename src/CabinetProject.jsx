@@ -550,8 +550,9 @@ function buildCutList(W, p, cab) {
     }
   } else if (cab.type === "filler") {
     // Filler piece: one plain panel, width × height, all 4 edges banded
-    parts.push({ part: "Filler", qty: 1, a: LL(W, p.doorH), b: WW(W, p.doorH), aLabel: "width", bLabel: "height",
-      note: `filler piece · width = ${W} · height = ${p.doorH} · edge band all 4 edges` });
+    const fH = p.doorH || 786;
+    parts.push({ part: "Filler", qty: 1, a: Math.max(W, fH), b: Math.min(W, fH), aLabel: "width", bLabel: "height",
+      note: `filler piece · width = ${W} · height = ${fH} · edge band all 4 edges` });
   } else if (cab.type === "wall") {
     // wall cabinet - 305mm depth, top + bottom, 1 rail at top for wall mounting
     const wallDepth = 305;
