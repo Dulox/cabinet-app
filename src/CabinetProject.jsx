@@ -628,9 +628,9 @@ function buildCutList(W, p, cab) {
 
   // Hardware tally
   const shelfPins = cab.shelfQty > 0 ? cab.shelfQty * 4 : 0;
-  const hinges = cab.doorCount > 0 ? cab.doorCount * 2 : 0;
+  const hinges = (cab.type !== "drawers" && cab.doorCount > 0) ? cab.doorCount * 2 : 0;
   const drawerSlides = cab.type === "drawers" ? (cab.drawerCount || 3) : 0;
-  const handles = (cab.doorCount > 0 ? cab.doorCount : 0) + (cab.type === "drawers" ? (cab.drawerCount || 3) : 0);
+  const handles = ((cab.type !== "drawers" && cab.doorCount > 0) ? cab.doorCount : 0) + (cab.type === "drawers" ? (cab.drawerCount || 3) : 0);
   const hardware = { shelfPins, hinges, drawerSlides, handles };
 
   // Fabrication notes: edge banding on visible parts, back groove (thin hardboard
@@ -1558,7 +1558,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
         const A = Math.round(Math.min(part.a, part.b));
         const G = part.material === "hardboard" ? Math.round(p.grooveDepth || 5.5) : p.t;
         // Side panels: separate row depending on whether cabinet has hinges (needs hinge drilling)
-        const hasDoors = (d.hardware && d.hardware.hinges > 0) || (cab.type !== "drawers" && (cab.doorCount || 0) > 0);
+        const hasDoors = cab.type !== "drawers" && (cab.doorCount || 0) > 0;
         const sideLabel = part.part === "Side"
           ? (hasDoors ? "Side (with doors)" : "Side")
           : part.part;
