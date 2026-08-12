@@ -1576,7 +1576,7 @@ function MadesolSheet({ cabs, projectName, onClose }) {
             ca1: "X",
             ca2: "X",
             // Ranuras, Bisagras
-            rl: "", ra: "", hbl: "", hba: "",
+            vetas: "", rl: "", ra: "", hbl: "", hba: "",
             material: "",
             isHardboard: part.material === "hardboard",
           });
@@ -1700,17 +1700,17 @@ function MadesolSheet({ cabs, projectName, onClose }) {
   });
 
   return (
-    <div style={{
+    <div className="madesol-overlay" style={{
       position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)",
       zIndex: 3000, display: "flex", alignItems: "flex-start",
       justifyContent: "center", overflowY: "auto", padding: "20px 0",
     }}>
-      <div style={{
+      <div className="madesol-print-area" style={{
         background: "#fff", width: 960, maxWidth: "98vw", borderRadius: 10,
         boxShadow: "0 8px 40px rgba(0,0,0,0.3)", padding: 24, position: "relative",
       }}>
         {/* Close */}
-        <button onClick={onClose} style={{
+        <button className="madesol-noprint" onClick={onClose} style={{
           position: "absolute", top: 12, right: 14, background: "none",
           border: "none", fontSize: 22, cursor: "pointer", color: "#666",
         }}>×</button>
@@ -1725,7 +1725,7 @@ function MadesolSheet({ cabs, projectName, onClose }) {
         </div>
 
         {/* Client info */}
-        <div style={{ display: "flex", gap: 16, marginBottom: 12, flexWrap: "wrap" }}>
+        <div className="madesol-noprint" style={{ display: "flex", gap: 16, marginBottom: 12, flexWrap: "wrap" }}>
           {[["Factura No.", factura, setFactura, 100], ["Nombre", nombre, setNombre, 200], ["Número tel.", telefono, setTelefono, 140]].map(([label, val, setter, w]) => (
             <label key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
               <span style={{ whiteSpace: "nowrap" }}>{label}</span>
@@ -1736,7 +1736,7 @@ function MadesolSheet({ cabs, projectName, onClose }) {
         </div>
 
         {/* Global controls */}
-        <div style={{ display: "flex", gap: 12, marginBottom: 12, alignItems: "center", flexWrap: "wrap",
+        <div className="madesol-noprint" style={{ display: "flex", gap: 12, marginBottom: 12, alignItems: "center", flexWrap: "wrap",
           background: "#f5f5f5", padding: "10px 14px", borderRadius: 8 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
             Material (todos):
@@ -1812,7 +1812,7 @@ function MadesolSheet({ cabs, projectName, onClose }) {
                     <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                       <input value={row.material || globalMaterial} onChange={e => updateRow(row.id, "material", e.target.value)}
                         style={{ ...inputStyle, textAlign: "left", fontSize: 10, flex: 1 }} placeholder={globalMaterial || "—"} />
-                      <button onClick={() => setPickerOpen({ target: "row", idx: row.id })}
+                      <button className="madesol-noprint" onClick={() => setPickerOpen({ target: "row", idx: row.id })}
                         style={{ flexShrink: 0, padding: "1px 5px", background: "#E4572E", color: "#fff",
                           border: "none", borderRadius: 3, cursor: "pointer", fontSize: 9, fontWeight: 700,
                           lineHeight: "14px", whiteSpace: "nowrap" }}>
@@ -1825,7 +1825,11 @@ function MadesolSheet({ cabs, projectName, onClose }) {
                     {row.nombre}
                   </td>
                   {/* Vetas */}
-                  <td style={cellStyle({ width: 28 })}></td>
+                  <td style={{ ...cellStyle({ width: 28 }), cursor: "pointer", color: row.vetas ? "#c00" : "#ddd",
+                    fontWeight: 700, fontSize: 14, userSelect: "none" }}
+                    onClick={() => toggleCell(row.id, "vetas")}>
+                    {row.vetas || "·"}
+                  </td>
                   {/* Largo */}
                   <td style={cellStyle({ fontWeight: 700 })}>
                     <input value={row.largo} onChange={e => updateRow(row.id, "largo", e.target.value)} style={inputStyle} />
@@ -1866,6 +1870,13 @@ function MadesolSheet({ cabs, projectName, onClose }) {
                       {row[field] || "·"}
                     </td>
                   ))}
+                  {/* Delete row */}
+                  <td className="madesol-noprint" style={{ border: "none", padding: "0 2px" }}>
+                    <button onClick={() => setRows(rs => rs.filter(r => r.id !== row.id))}
+                      style={{ background: "none", border: "none", color: "#ccc", cursor: "pointer",
+                        fontSize: 14, padding: "0 2px", lineHeight: 1 }}
+                      title="Eliminar fila">×</button>
+                  </td>
                 </tr>
               ))}
               {/* Total row */}
@@ -1878,8 +1889,23 @@ function MadesolSheet({ cabs, projectName, onClose }) {
           </table>
         </div>
 
+        {/* Add row button */}
+        <div className="madesol-noprint" style={{ marginTop: 8 }}>
+          <button onClick={() => {
+            const newId = "manual-" + Date.now();
+            setRows(rs => [...rs, {
+              id: newId, largo: "", ancho: "", grosor: "", cant: 1,
+              nombre: "—", material: "", cl1: "X", cl2: "X", ca1: "X", ca2: "X",
+              vetas: "", rl: "", ra: "", hbl: "", hba: "", isHardboard: false,
+            }]);
+          }} style={{ padding: "6px 16px", background: "#f5f5f5", border: "1.5px dashed #bbb",
+            borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#444" }}>
+            + Agregar fila manual
+          </button>
+        </div>
+
         {/* Notes */}
-        <div style={{ marginTop: 14, fontSize: 10, color: "#555", maxWidth: 420,
+        <div className="madesol-noprint" style={{ marginTop: 14, fontSize: 10, color: "#555", maxWidth: 420,
           border: "1px solid #ccc", padding: "8px 12px", borderRadius: 4 }}>
           <strong>NOTAS:</strong><br/>
           1. Sobrantes deben ser retirados con la producción de lo contrario no somos responsables de los mismos.<br/>
@@ -1969,7 +1995,7 @@ function MadesolSheet({ cabs, projectName, onClose }) {
         )}
 
         {/* Footer buttons */}
-        <div style={{ display: "flex", gap: 10, marginTop: 16, alignItems: "center", flexWrap: "wrap" }}>
+        <div className="madesol-noprint" style={{ display: "flex", gap: 10, marginTop: 16, alignItems: "center", flexWrap: "wrap" }}>
           {/* Save row */}
           <div style={{ display: "flex", gap: 6, alignItems: "center", flex: 1 }}>
             <input value={saveSheetName} onChange={e => setSaveSheetName(e.target.value)}
@@ -2756,7 +2782,7 @@ export default function CabinetProject() {
         .cab-nav{transition:background .15s,border-color .15s}
         @media (max-width:900px){.cab-wb{flex-direction:column}.cab-side{width:100%}}
         @media print{
-          @page{margin:14mm}
+          @page{margin:10mm}
           .cab-root{background:#fff!important;padding:0!important}
           .cab-noprint,.cab-mat{display:none!important}
           .cab-printonly{display:block!important}
@@ -2764,6 +2790,15 @@ export default function CabinetProject() {
           .cab-card{break-inside:avoid;border:1px solid #000!important;background:#fff!important;margin-bottom:12px!important}
           .cab-root input,.cab-root select{border:none!important;background:transparent!important;color:#000!important;padding:0!important;font-weight:700}
           .cab-row:hover{background:transparent!important}
+          /* Madesol sheet print */
+          body > *:not(.madesol-overlay){display:none!important}
+          .madesol-overlay{position:static!important;background:none!important;padding:0!important;display:block!important}
+          .madesol-print-area{box-shadow:none!important;border-radius:0!important;width:100%!important;max-width:100%!important;padding:8mm!important}
+          .madesol-noprint{display:none!important}
+          .madesol-print-area input{border:none!important;background:transparent!important;outline:none!important;font-size:11px!important}
+          .madesol-print-area table{font-size:10px!important;border-collapse:collapse!important;width:100%!important}
+          .madesol-print-area td,.madesol-print-area th{border:1px solid #888!important;padding:2px 3px!important}
+          .madesol-print-area button{display:none!important}
         }
       `}</style>
 
