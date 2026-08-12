@@ -2504,6 +2504,21 @@ export default function CabinetProject() {
     }
   };
 
+  const duplicateProject = async (proj) => {
+    if (!supabase) return;
+    const newName = proj.name + " (copy)";
+    try {
+      const { data, error } = await supabase
+        .from("cabinet_projects")
+        .insert([{ name: newName, user_id: authState.user.id, cabs: proj.cabs || [] }])
+        .select()
+        .single();
+      if (!error && data) {
+        setUserProjects(prev => [data, ...prev]);
+      }
+    } catch (e) {}
+  };
+
   // Load Supabase library from CDN on mount
   useEffect(() => {
     const loadSupabase = async () => {
@@ -3012,6 +3027,7 @@ export default function CabinetProject() {
                             <button onClick={() => switchProject(proj.id)} style={{ flex: 1, textAlign: "left", border: "none", background: "transparent", cursor: "pointer", fontSize: 13, color: proj.id === currentProjectId ? C.rust : C.ink, fontWeight: proj.id === currentProjectId ? 700 : 400 }}>
                               {proj.name}
                             </button>
+                            <button onClick={() => duplicateProject(proj)} title="Duplicate project" style={{ padding: "4px 8px", background: "#f0f0f0", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 12, color: "#276221", fontWeight: 700 }}>⧉</button>
                             <button onClick={() => deleteProject(proj.id)} style={{ padding: "4px 8px", background: "#f0f0f0", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 12, color: "#e74c3c" }}>×</button>
                           </div>
                         ))
