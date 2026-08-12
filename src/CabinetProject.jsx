@@ -1554,8 +1554,8 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
         const L = Math.round(Math.max(part.a, part.b));
         const A = Math.round(Math.min(part.a, part.b));
         const G = part.material === "hardboard" ? Math.round(p.grooveDepth || 5.5) : p.t;
-        // Side panels: separate row depending on whether cabinet has doors (needs hinge drilling)
-        const hasDoors = (cab.doorCount > 0) || (cab.front === "doors" && cab.doorCount !== 0);
+        // Side panels: separate row depending on whether cabinet has hinges (needs hinge drilling)
+        const hasDoors = d.hardware && d.hardware.hinges > 0;
         const sideLabel = part.part === "Side Panels"
           ? (hasDoors ? "Side Panels (with doors)" : "Side Panels")
           : part.part;
