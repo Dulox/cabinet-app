@@ -1538,7 +1538,7 @@ function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
  * Summarises all cabinet cut lists into one editable table
  * matching the Madesol workshop form format.
  * ================================================================ */
-function MadesolSheet({ cabs, projectName, onClose }) {
+function MadesolSheet({ cabs, projectName, onClose, initialLang = "en" }) {
   const today = new Date().toLocaleDateString("es-DO");
 
   // Build summarised cut list — group same dimensions, multiply by cabinet qty
@@ -1597,6 +1597,8 @@ function MadesolSheet({ cabs, projectName, onClose }) {
     try { return JSON.parse(localStorage.getItem("savedMadesolSheets") || "[]"); } catch { return []; }
   });
   const [saveSheetName, setSaveSheetName] = React.useState("");
+  const [mLang, setMLang] = React.useState(initialLang);
+  const ms = (en, es) => mLang === "es" ? es : en;
   const [customMaterials, setCustomMaterials] = React.useState(() => {
     try { return JSON.parse(localStorage.getItem("customMaterials") || "[]"); } catch { return []; }
   });
@@ -1741,9 +1743,9 @@ function MadesolSheet({ cabs, projectName, onClose }) {
         <div className="madesol-noprint" style={{ display: "flex", gap: 12, marginBottom: 12, alignItems: "center", flexWrap: "wrap",
           background: "#f5f5f5", padding: "10px 14px", borderRadius: 8 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
-            Material (todos):
+            {ms("Material (all):", "Material (todos):")}
             <input value={globalMaterial} onChange={e => setGlobalMaterial(e.target.value)}
-              placeholder="ej. Melamina Blanca"
+              placeholder={ms("e.g. White Melamine", "ej. Melamina Blanca")}
               style={{ border: "1px solid #bbb", borderRadius: 4, padding: "4px 8px", fontSize: 12, width: 180 }} />
             <button onClick={() => setPickerOpen({ target: "global" })}
               style={{ padding: "5px 12px", background: "#E4572E", color: "#fff", border: "none",
@@ -1762,7 +1764,12 @@ function MadesolSheet({ cabs, projectName, onClose }) {
               borderRadius: 4, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
             ⭐ Mis Materiales
           </button>
-          <span style={{ fontSize: 11, color: "#666" }}>▸ = cambiar material por fila · clic en canteado/ranuras para marcar X</span>
+          <button onClick={() => setMLang(l => l === "en" ? "es" : "en")}
+            style={{ padding: "5px 12px", background: "#555", color: "#fff", border: "none",
+              borderRadius: 4, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
+            {mLang === "en" ? "ES" : "EN"}
+          </button>
+          <span style={{ fontSize: 11, color: "#666" }}>{ms("▸ = change material per row · click edging/grooves to mark X", "▸ = cambiar material por fila · clic en canteado/ranuras para marcar X")}</span>
         </div>
 
         {/* Table */}
@@ -3161,6 +3168,7 @@ export default function CabinetProject() {
           cabs={cabs}
           projectName={currentProjectName}
           onClose={() => setShowMadesol(false)}
+          initialLang={lang}
         />
       )}
     </div>
