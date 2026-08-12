@@ -594,27 +594,28 @@ function buildCutList(W, p, cab) {
     // Doors. A lift-up flap folds upward. One flap covers the full opening;
     // two flaps stack vertically with the fixed separator between them.
     const isLU = cab.hingeType === "lift-up";
+    // Wall cabinet doors: full height, no top/bottom gap
+    const wallDoorH = p.sideH;
     if (cab.doorCount === 1) {
-      parts.push({ part: "Door", qty: 1, a: doorTotal, b: p.doorH, aLabel: "width", bLabel: "height",
+      parts.push({ part: "Door", qty: 1, a: doorTotal, b: wallDoorH, aLabel: "width", bLabel: "height",
         note: isLU
           ? `width = ${W} − ${p.doorReveal} · full-height lift-up flap (folds upward)`
-          : `width = ${W} − ${p.doorReveal}` });
-      faces.push({ x: rev, y: 0, w: doorTotal, h: p.doorH, split: 1, kind: "door" });
+          : `width = ${W} − ${p.doorReveal} · height = ${wallDoorH} (full, no top/bottom gap)` });
+      faces.push({ x: rev, y: 0, w: doorTotal, h: wallDoorH, split: 1, kind: "door" });
     }
     else if (cab.doorCount === 2) {
       if (isLU) {
-        // Two flaps stacked vertically, fixed separator between (added above).
-        const eachH = round1((p.doorH - p.doorGap) / 2);
+        const eachH = round1((wallDoorH - p.doorGap) / 2);
         parts.push({ part: "Door (flap, stacked)", qty: 2, a: doorTotal, b: eachH, aLabel: "width", bLabel: "height",
-          note: `full width · each = (${fmt(p.doorH)} − ${p.doorGap} gap) ÷ 2 · lift-up flaps fold upward` });
+          note: `full width · each = (${fmt(wallDoorH)} − ${p.doorGap} gap) ÷ 2 · lift-up flaps fold upward` });
         faces.push({ x: rev, y: 0, w: doorTotal, h: eachH, split: 1, kind: "door" });
         faces.push({ x: rev, y: eachH + p.doorGap, w: doorTotal, h: eachH, split: 1, kind: "door" });
       } else {
         const eachDoorW = round1((doorTotal - p.doorGap) / 2);
-        parts.push({ part: "Door (pair)", qty: 2, a: eachDoorW, b: p.doorH, aLabel: "width", bLabel: "height",
-          note: `each = (${W} − ${p.doorReveal} − ${p.doorGap} gap) ÷ 2` });
-        faces.push({ x: rev, y: 0, w: eachDoorW, h: p.doorH, split: 1, kind: "door" });
-        faces.push({ x: rev + eachDoorW + p.doorGap, y: 0, w: eachDoorW, h: p.doorH, split: 1, kind: "door" });
+        parts.push({ part: "Door (pair)", qty: 2, a: eachDoorW, b: wallDoorH, aLabel: "width", bLabel: "height",
+          note: `each = (${W} − ${p.doorReveal} − ${p.doorGap} gap) ÷ 2 · height = ${wallDoorH} (full, no top/bottom gap)` });
+        faces.push({ x: rev, y: 0, w: eachDoorW, h: wallDoorH, split: 1, kind: "door" });
+        faces.push({ x: rev + eachDoorW + p.doorGap, y: 0, w: eachDoorW, h: wallDoorH, split: 1, kind: "door" });
       }
     }
   } else {
