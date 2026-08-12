@@ -315,7 +315,7 @@ const translations = {
     "Side": "Lado", "Bottom": "Fondo", "Top": "Tapa", "Back": "Espalda",
     "Rail / Support": "Riel / Soporte", "Rail / Support (front)": "Riel / Soporte (frontal)", "Rail / Support (back)": "Riel / Soporte (trasero)", "Shelf": "Estante", "Separator (fixed)": "Separador (fijo)",
     "Door": "Puerta", "Door (pair)": "Puertas (par)", "Door (flap, stacked)": "Puerta (abatible, apilada)",
-    "Blind / filler panel": "Panel ciego / relleno", "Filler piece": "Pieza de relleno", "Filler": "Relleno", "False drawer front": "Frente de gaveta falso",
+    "Blind / filler panel": "Panel ciego / relleno", "Select a cabinet": "Selecciona un gabinete", "Click any cabinet in the list to view and edit it.": "Haz clic en cualquier gabinete de la lista para verlo y editarlo.", "Filler piece": "Pieza de relleno", "Filler": "Relleno", "False drawer front": "Frente de gaveta falso",
     "Drawer front": "Frente de gaveta", "Drawer box side": "Lado de caja de gaveta",
     "Drawer box front/back": "Frente/fondo de caja de gaveta", "Drawer bottom": "Fondo de gaveta",
     "width": "ancho", "depth": "profundidad", "height": "alto", "length": "largo",
@@ -2409,7 +2409,7 @@ export default function CabinetProject() {
   const [cabs, setCabs] = useState([
     { id: 1, name: "Cabinet 1", type: "base", width: "600", doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null, hingeType: "concealed", params: { ...DEFAULTS } },
   ]);
-  const [selectedId, setSelectedId] = useState(1);
+  const [selectedId, setSelectedId] = useState(null);
   const [currentProjectId, setCurrentProjectId] = useState(null);
   const [currentProjectName, setCurrentProjectName] = useState("My Project");
   const [saveStatus, setSaveStatus] = useState(""); // "saving", "saved", "error"
@@ -2568,7 +2568,7 @@ export default function CabinetProject() {
         setCurrentProjectName(project.name);
         setCabs(project.cabs || []);
         if (project.cabs?.length > 0) {
-          setSelectedId(project.cabs[0].id);
+          setSelectedId(null);
         }
       } else {
         setUserProjects([]);
@@ -2593,7 +2593,7 @@ export default function CabinetProject() {
     setCurrentProjectId(newProjectId);
     setCurrentProjectName(newProjectName);
     setCabs(defaultCabs);
-    setSelectedId(1);
+    setSelectedId(null);
     setShowProjectList(false);
     
     await saveProject(newProjectId, newProjectName, defaultCabs);
@@ -2609,7 +2609,7 @@ export default function CabinetProject() {
     setCurrentProjectName(project.name);
     setCabs(project.cabs || []);
     if (project.cabs?.length > 0) {
-      setSelectedId(project.cabs[0].id);
+      setSelectedId(null);
     }
     setShowProjectList(false);
   };
@@ -2807,7 +2807,7 @@ export default function CabinetProject() {
     if (id === selectedId) { const rest = cabs.filter((c) => c.id !== id); setSelectedId(rest.length ? rest[0].id : null); }
   };
 
-  const selectedCab = cabs.find((c) => c.id === selectedId) || cabs[0];
+  const selectedCab = cabs.find((c) => c.id === selectedId) || null;
   const selectedIndex = cabs.indexOf(selectedCab);
 
   const p = selectedCab.params || DEFAULTS;
@@ -3280,9 +3280,19 @@ export default function CabinetProject() {
 
           {/* RIGHT: selected cabinet + totals */}
           <div className="cab-main">
-            {selectedCab && (
+            {selectedCab ? (
               <CabinetCard key={selectedCab.id} index={selectedIndex} cab={selectedCab} t={t} lang={lang} canRemove={cabs.length > 1}
                 onChange={(patch) => updateCab(selectedCab.id, patch)} onRemove={() => removeCab(selectedCab.id)} />
+            ) : (
+              <div style={{ padding: "32px 24px", textAlign: "center", color: C.mut }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>👈</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: C.ink, marginBottom: 6 }}>
+                  {t("Select a cabinet")}
+                </div>
+                <div style={{ fontSize: 13 }}>
+                  {t("Click any cabinet in the list to view and edit it.")}
+                </div>
+              </div>
             )}
         {/* totals + boards */}
         <div style={{ background: C.ink, color: C.card, borderRadius: 12, padding: "16px", marginTop: 4 }}>
