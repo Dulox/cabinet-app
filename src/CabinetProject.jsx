@@ -1006,11 +1006,63 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
         </select>
       </label>
 
+      {cab.type === "filler" && (
+        <div className="cab-noprint">
+          <div style={{ background: "#f9f9f9", borderRadius: 8, padding: "12px", marginBottom: 12 }}>
+            <div style={{ fontSize: 11, color: "#888", marginBottom: 10 }}>Plain panel — no construction, just dimensions</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{t("Height")} (mm)</span>
+                <input type="number" value={cab.fillerH || ""} onChange={e => onChange({ fillerH: e.target.value })}
+                  placeholder="786"
+                  style={{ width: 90, padding: "7px 10px", fontSize: 18, fontWeight: 700,
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
+                    background: "#fff", color: C.ink, outline: "none" }} />
+              </label>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{t("Width")} (mm)</span>
+                <input type="number" value={cab.fillerW || ""} onChange={e => onChange({ fillerW: e.target.value })}
+                  placeholder="100"
+                  style={{ width: 90, padding: "7px 10px", fontSize: 18, fontWeight: 700,
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
+                    background: "#fff", color: C.ink, outline: "none" }} />
+              </label>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>Thickness (mm)</span>
+                <input type="number" value={cab.fillerT || ""} onChange={e => onChange({ fillerT: e.target.value })}
+                  placeholder="18"
+                  style={{ width: 80, padding: "7px 10px", fontSize: 18, fontWeight: 700,
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
+                    background: "#fff", color: C.ink, outline: "none" }} />
+              </label>
+            </div>
+          </div>
+          <div style={{ border: `1px solid ${C.hair}`, borderRadius: 10, overflow: "hidden", background: "#fff", marginBottom: 12 }}>
+            <div style={{ padding: "10px 13px", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14.5 }}>
+                  <span style={{ color: C.rust, fontFamily: "'JetBrains Mono', monospace" }}>{cab.qty || 1}×</span> Filler
+                </div>
+                <div style={{ fontSize: 11, color: C.mut, marginTop: 2 }}>
+                  height = {cab.fillerH || 786}mm · width = {cab.fillerW || "?"}mm · thickness = {cab.fillerT || 18}mm · edge band all 4 edges
+                </div>
+              </div>
+              <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 15.5 }}>
+                  {Math.max(Number(cab.fillerH) || 786, Number(cab.fillerW) || 0)} × {Math.min(Number(cab.fillerH) || 786, Number(cab.fillerW) || 0)}
+                </div>
+                <div style={{ fontSize: 10, color: C.mut }}>height × width</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="cab-printonly" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.mut, marginBottom: 10 }}>
         {TYPES[cab.type] ? t(TYPES[cab.type].label) : t("Cabinet")} · {fmt(W)} mm {t("wide")}
       </div>
 
-      {cab.type === "filler" ? null : <div className="cab-noprint" style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-end", marginBottom: 14 }}>
+      {cab.type !== "filler" && <div className="cab-noprint" style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-end", marginBottom: 14 }}>
         <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           <span style={{ ...labelCss, color: C.mut }}>{t("Width")}</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexDirection: "column" }}>
@@ -1046,55 +1098,6 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
           </label>
         )}
 
-        {cab.type === "filler" && (<>
-          <div style={{ background: "#f9f9f9", borderRadius: 8, padding: "12px", marginBottom: 8 }}>
-            <div style={{ fontSize: 11, color: "#888", marginBottom: 10 }}>Plain panel — no construction, just dimensions</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
-              <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{t("Height")} (mm)</span>
-                <input type="number" value={cab.fillerH || ""} onChange={e => onChange({ fillerH: e.target.value })}
-                  placeholder="786"
-                  style={{ width: 90, padding: "7px 10px", fontSize: 18, fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
-                    background: "#fff", color: C.ink, outline: "none" }} />
-              </label>
-              <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{t("Width")} (mm)</span>
-                <input type="number" value={cab.fillerW || ""} onChange={e => onChange({ fillerW: e.target.value })}
-                  placeholder="100"
-                  style={{ width: 90, padding: "7px 10px", fontSize: 18, fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
-                    background: "#fff", color: C.ink, outline: "none" }} />
-              </label>
-              <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>Thickness (mm)</span>
-                <input type="number" value={cab.fillerT || ""} onChange={e => onChange({ fillerT: e.target.value })}
-                  placeholder="18"
-                  style={{ width: 80, padding: "7px 10px", fontSize: 18, fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
-                    background: "#fff", color: C.ink, outline: "none" }} />
-              </label>
-            </div>
-          </div>
-          <div style={{ border: `1px solid ${C.hair}`, borderRadius: 10, overflow: "hidden", background: "#fff", marginTop: 12 }}>
-            <div style={{ padding: "10px 13px", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 14.5 }}>
-                  <span style={{ color: C.rust, fontFamily: "'JetBrains Mono', monospace" }}>{cab.qty || 1}×</span> Filler
-                </div>
-                <div style={{ fontSize: 11, color: C.mut, marginTop: 2 }}>
-                  height = {cab.fillerH || 786}mm · width = {cab.fillerW || "?"}mm · thickness = {cab.fillerT || 18}mm · edge band all 4 edges
-                </div>
-              </div>
-              <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 15.5 }}>
-                  {Math.max(Number(cab.fillerH) || 786, Number(cab.fillerW) || 0)} × {Math.min(Number(cab.fillerH) || 786, Number(cab.fillerW) || 0)}
-                </div>
-                <div style={{ fontSize: 10, color: C.mut }}>height × width</div>
-              </div>
-            </div>
-          </div>
-        </>)}
         {cab.type === "corner" && (
           <>
             <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
