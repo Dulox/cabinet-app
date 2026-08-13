@@ -558,12 +558,14 @@ function buildCutList(W, p, cab) {
     parts.push({ part: "Filler", qty: 1, a: L, b: A, t: fT, aLabel: "width", bLabel: "height",
       note: `filler piece · ${fW} × ${fH} × ${fT}mm · edge band all 4 edges` });
   } else if (cab.type === "wall" || cab.type === "deepwall") {
-    // wall cabinet - depth configurable for deepwall, fixed 305 for wall
+    // wall cabinet - depth and height configurable for deepwall
     const wallDepth = (cab.type === "deepwall" && cab.customDepth) ? parseFloat(cab.customDepth) : p.sideD;
+    const wallH = (cab.type === "deepwall" && cab.customHeight) ? parseFloat(cab.customHeight) : p.sideH;
     const wallBottomDepth = wallDepth;
     parts.length = 0;
+    const wallBackH = (thinBack ? wallH - 2 * t + 2 * grooveDepth : wallH - 2 * t);
     parts.push(
-      { part: "Side", qty: 2, a: wallDepth, b: p.sideH, aLabel: "depth", bLabel: "height",
+      { part: "Side", qty: 2, a: wallDepth, b: wallH, aLabel: "depth", bLabel: "height",
         note: `Fixed (${wallDepth}mm depth)` },
       { part: "Top", qty: 1, a: carcassW, b: wallBottomDepth, aLabel: "width", bLabel: "depth",
         note: `width = ${W} − ${2 * t} · depth = ${wallDepth} (full)` },
@@ -571,9 +573,9 @@ function buildCutList(W, p, cab) {
         note: `width = ${W} − ${2 * t} · depth = ${wallDepth} (full)` },
       { part: "Rail / Support", qty: 1, a: carcassW, b: p.railH, aLabel: "length", bLabel: "height",
         note: `length = ${W} − ${2 * t} · at top for wall mounting` },
-      { part: thinBack ? `Back — ${backThick} mm hardboard` : "Back", qty: 1, a: thinBack ? hardBackW : backW, b: backH,
+      { part: thinBack ? `Back — ${backThick} mm hardboard` : "Back", qty: 1, a: thinBack ? hardBackW : backW, b: wallBackH,
         aLabel: "width", bLabel: "height", material: thinBack ? "hardboard" : "melamine",
-        note: `${thinBack ? `width ${hardBackW} = ${W} − ${2 * t} + 2×${grooveDepth} groove (sits in grooves all round)` : (p.backBetween ? `width = ${W} − ${2 * t}` : "full width")} · height ${backH}` }
+        note: `${thinBack ? `width ${hardBackW} = ${W} − ${2 * t} + 2×${grooveDepth} groove (sits in grooves all round)` : (p.backBetween ? `width = ${W} − ${2 * t}` : "full width")} · height ${wallBackH}` }
     );
     // Shelves / separator
     const isLiftUp = cab.hingeType === "lift-up";
@@ -594,7 +596,7 @@ function buildCutList(W, p, cab) {
     // two flaps stack vertically with the fixed separator between them.
     const isLU = cab.hingeType === "lift-up";
     // Wall cabinet doors: full height, no top/bottom gap
-    const wallDoorH = p.sideH;
+    const wallDoorH = wallH;
     if (cab.doorCount === 1) {
       parts.push({ part: "Door", qty: 1, a: doorTotal, b: wallDoorH, aLabel: "width", bLabel: "height",
         note: isLU
@@ -1170,6 +1172,19 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
           </>
         )}
 
+        {cab.type === "deepwall" && (
+          <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            <span style={labelCss}>{t("Height")} (mm)</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <input type="number" value={cab.customHeight || ""} onChange={e => onChange({ customHeight: e.target.value })}
+                placeholder={String(p.sideH)}
+                style={{ width: 80, padding: "8px 11px", fontSize: 18, fontWeight: 700,
+                  fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
+                  background: "#fff", color: C.ink, outline: "none" }} />
+              <span style={{ fontSize: 13, color: C.mut, fontFamily: "'JetBrains Mono', monospace" }}>mm</span>
+            </span>
+          </label>
+        )}
         {cab.type === "deepwall" && (
           <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
             <span style={labelCss}>{t("Depth")} (mm)</span>
