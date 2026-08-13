@@ -50,6 +50,7 @@ const TYPES = {
   sink:    { label: "Sink cabinet",            set: { doorCount: 2, shelfQty: 0, falseFront: true, hingeType: "concealed" } },
   stove:   { label: "Stove cabinet",           set: { doorCount: 2, shelfQty: 0, falseFront: true, front: "doors", hingeType: "concealed" } },
   corner:  { label: "Corner cabinet (blind)",  set: { doorCount: 1, shelfQty: 1, hingeType: "concealed" } },
+  deepwall: { label: "Wall cabinet (custom depth)", set: { doorCount: 1, shelfQty: 1, hingeType: "concealed" } },
   filler:  { label: "Filler piece",               set: { doorCount: 0, shelfQty: 0 } },
 };
 
@@ -315,7 +316,7 @@ const translations = {
     "Side": "Lado", "Bottom": "Fondo", "Top": "Tapa", "Back": "Espalda",
     "Rail / Support": "Riel / Soporte", "Rail / Support (front)": "Riel / Soporte (frontal)", "Rail / Support (back)": "Riel / Soporte (trasero)", "Shelf": "Estante", "Separator (fixed)": "Separador (fijo)",
     "Door": "Puerta", "Door (pair)": "Puertas (par)", "Door (flap, stacked)": "Puerta (abatible, apilada)",
-    "Blind / filler panel": "Panel ciego / relleno", "Select a cabinet": "Selecciona un gabinete", "Click any cabinet in the list to view and edit it.": "Haz clic en cualquier gabinete de la lista para verlo y editarlo.", "Filler piece": "Pieza de relleno", "Filler": "Relleno", "False drawer front": "Frente de gaveta falso",
+    "Blind / filler panel": "Panel ciego / relleno", "Select a cabinet": "Selecciona un gabinete", "Click any cabinet in the list to view and edit it.": "Haz clic en cualquier gabinete de la lista para verlo y editarlo.", "Filler piece": "Pieza de relleno", "Wall cabinet (custom depth)": "Armario de pared (profundidad personalizada)", "Filler": "Relleno", "False drawer front": "Frente de gaveta falso",
     "Drawer front": "Frente de gaveta", "Drawer box side": "Lado de caja de gaveta",
     "Drawer box front/back": "Frente/fondo de caja de gaveta", "Drawer bottom": "Fondo de gaveta",
     "width": "ancho", "depth": "profundidad", "height": "alto", "length": "largo",
@@ -401,7 +402,7 @@ function buildCutList(W, p, cab) {
   const backW = p.backBetween ? W - 2 * t : W;
   // Melamine back sits on the bottom (base: −t) or between top+bottom (wall: −2t).
   // Hardboard back reaches INTO the grooves, so it is taller by one groove depth per grooved edge.
-  const isWall = cab.type === "wall";
+  const isWall = cab.type === "wall" || cab.type === "deepwall";
   const backH = isWall
     ? (thinBack ? p.sideH - 2 * t + 2 * grooveDepth : p.sideH - 2 * t)
     : (thinBack ? p.sideH - t + grooveDepth : p.sideH - t);
@@ -594,27 +595,28 @@ function buildCutList(W, p, cab) {
     // Doors. A lift-up flap folds upward. One flap covers the full opening;
     // two flaps stack vertically with the fixed separator between them.
     const isLU = cab.hingeType === "lift-up";
+    // Wall cabinet doors: full height, no top/bottom gap
+    const wallDoorH = p.sideH;
     if (cab.doorCount === 1) {
-      parts.push({ part: "Door", qty: 1, a: doorTotal, b: p.doorH, aLabel: "width", bLabel: "height",
+      parts.push({ part: "Door", qty: 1, a: doorTotal, b: wallDoorH, aLabel: "width", bLabel: "height",
         note: isLU
           ? `width = ${W} − ${p.doorReveal} · full-height lift-up flap (folds upward)`
-          : `width = ${W} − ${p.doorReveal}` });
-      faces.push({ x: rev, y: 0, w: doorTotal, h: p.doorH, split: 1, kind: "door" });
+          : `width = ${W} − ${p.doorReveal} · height = ${wallDoorH} (full, no top/bottom gap)` });
+      faces.push({ x: rev, y: 0, w: doorTotal, h: wallDoorH, split: 1, kind: "door" });
     }
     else if (cab.doorCount === 2) {
       if (isLU) {
-        // Two flaps stacked vertically, fixed separator between (added above).
-        const eachH = round1((p.doorH - p.doorGap) / 2);
+        const eachH = round1((wallDoorH - p.doorGap) / 2);
         parts.push({ part: "Door (flap, stacked)", qty: 2, a: doorTotal, b: eachH, aLabel: "width", bLabel: "height",
-          note: `full width · each = (${fmt(p.doorH)} − ${p.doorGap} gap) ÷ 2 · lift-up flaps fold upward` });
+          note: `full width · each = (${fmt(wallDoorH)} − ${p.doorGap} gap) ÷ 2 · lift-up flaps fold upward` });
         faces.push({ x: rev, y: 0, w: doorTotal, h: eachH, split: 1, kind: "door" });
         faces.push({ x: rev, y: eachH + p.doorGap, w: doorTotal, h: eachH, split: 1, kind: "door" });
       } else {
         const eachDoorW = round1((doorTotal - p.doorGap) / 2);
-        parts.push({ part: "Door (pair)", qty: 2, a: eachDoorW, b: p.doorH, aLabel: "width", bLabel: "height",
-          note: `each = (${W} − ${p.doorReveal} − ${p.doorGap} gap) ÷ 2` });
-        faces.push({ x: rev, y: 0, w: eachDoorW, h: p.doorH, split: 1, kind: "door" });
-        faces.push({ x: rev + eachDoorW + p.doorGap, y: 0, w: eachDoorW, h: p.doorH, split: 1, kind: "door" });
+        parts.push({ part: "Door (pair)", qty: 2, a: eachDoorW, b: wallDoorH, aLabel: "width", bLabel: "height",
+          note: `each = (${W} − ${p.doorReveal} − ${p.doorGap} gap) ÷ 2 · height = ${wallDoorH} (full, no top/bottom gap)` });
+        faces.push({ x: rev, y: 0, w: eachDoorW, h: wallDoorH, split: 1, kind: "door" });
+        faces.push({ x: rev + eachDoorW + p.doorGap, y: 0, w: eachDoorW, h: wallDoorH, split: 1, kind: "door" });
       }
     }
   } else {
@@ -1145,7 +1147,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
           </label>
         )}
 
-        {cab.type === "wall" && (
+        {(cab.type === "wall" || cab.type === "deepwall") && (
           <>
             <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
               <span style={labelCss}>{t("Doors")}</span>
@@ -1170,6 +1172,19 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
           </>
         )}
 
+        {cab.type === "deepwall" && (
+          <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            <span style={labelCss}>{t("Depth")} (mm)</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <input type="number" value={cab.customDepth || ""} onChange={e => onChange({ customDepth: e.target.value })}
+                placeholder={String(p.sideD)}
+                style={{ width: 80, padding: "8px 11px", fontSize: 18, fontWeight: 700,
+                  fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
+                  background: "#fff", color: C.ink, outline: "none" }} />
+              <span style={{ fontSize: 13, color: C.mut, fontFamily: "'JetBrains Mono', monospace" }}>mm</span>
+            </span>
+          </label>
+        )}
         {cab.type !== "drawers" && cab.type !== "filler" && !(cab.type === "wall" && cab.hingeType === "lift-up") && (
           <NumField label={t("Shelves")} value={cab.shelfQty} suffix="" w={64}
             onChange={(v) => onChange({ shelfQty: v === "" ? 0 : Math.max(0, Math.floor(Number(v) || 0)) })} />
@@ -1673,10 +1688,27 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
       }
     };
     (cabsToUse || cabs).forEach((cab) => {
+      const cabQty = cab.qty || 1;
+
+      // Filler piece — completely standalone, not a cabinet
+      if (cab.type === "filler") {
+        const fW = parseFloat(cab.fillerW) || 0;
+        const fH = parseFloat(cab.fillerH) || 0;
+        const fT = parseFloat(cab.fillerT) || 18;
+        if (fW > 0 && fH > 0) {
+          const L = Math.max(fW, fH), A = Math.min(fW, fH);
+          const fakePart = { material: "melamine" };
+          emitPart(map, "Filler", L, A, fT, cabQty, fakePart);
+          // Override grosor since emitPart uses a fixed G — update it after
+          const key = "Filler|" + L + "-" + A + "-" + fT;
+          if (map.has(key)) map.get(key).grosor = fT;
+        }
+        return;
+      }
+
       const W = parseFloat(cab.width);
       const p = cab.params || DEFAULTS;
       if (isNaN(W) || W <= 2 * p.t + 10) return;
-      const cabQty = cab.qty || 1;
       const d = buildCutList(W, p, cab);
       d.parts.forEach((part) => {
         const L = Math.round(Math.max(part.a, part.b));
@@ -1780,7 +1812,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
       "Door": "Puerta",
       "Door (pair)": "Puertas (par)",
       "Door (flap, stacked)": "Puerta (abatible)",
-      "Blind / filler panel": "Panel ciego / relleno", "Filler piece": "Pieza de relleno", "Filler": "Relleno",
+      "Blind / filler panel": "Panel ciego / relleno", "Filler piece": "Pieza de relleno", "Wall cabinet (custom depth)": "Armario de pared (profundidad personalizada)", "Filler": "Relleno",
       "False drawer front": "Frente de gaveta falso",
       "False front": "Frente falso",
       "Drawer front": "Frente de gaveta",
