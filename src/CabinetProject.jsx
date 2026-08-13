@@ -437,7 +437,7 @@ function buildCutList(W, p, cab) {
   // Base cabinets get a build-up strip along the top front edge (for strength /
   // countertop fixing). Doors and drawer fronts must drop below it so they open
   // without friction. buildUp is the height removed from the top of every front.
-  const isWallLiftUp = (cab.type === "wall" && cab.hingeType === "lift-up");
+  const isWallLiftUp = ((cab.type === "wall" || cab.type === "deepwall") && cab.hingeType === "lift-up");
   const buildUp = (cab.type === "wall") ? 0 : (p.baseBuildUp != null ? p.baseBuildUp : 0);
   const frontH = round1(p.doorH - buildUp);
   const buildNote = buildUp ? ` · height = ${p.doorH} − ${buildUp} base build-up` : "";
@@ -557,20 +557,18 @@ function buildCutList(W, p, cab) {
     const L = Math.max(fW, fH), A = Math.min(fW, fH);
     parts.push({ part: "Filler", qty: 1, a: L, b: A, t: fT, aLabel: "width", bLabel: "height",
       note: `filler piece · ${fW} × ${fH} × ${fT}mm · edge band all 4 edges` });
-  } else if (cab.type === "wall") {
-    // wall cabinet - 305mm depth, top + bottom, 1 rail at top for wall mounting
-    const wallDepth = 305;
-    const wallBottomDepth = wallDepth;   // full depth — back grooves in / sits on, never behind
-    // Rebuild the carcass cleanly for a wall cabinet — the shared base parts
-    // (610-deep side, 591-deep bottom) don't apply here.
+  } else if (cab.type === "wall" || cab.type === "deepwall") {
+    // wall cabinet - depth configurable for deepwall, fixed 305 for wall
+    const wallDepth = (cab.type === "deepwall" && cab.customDepth) ? parseFloat(cab.customDepth) : p.sideD;
+    const wallBottomDepth = wallDepth;
     parts.length = 0;
     parts.push(
       { part: "Side", qty: 2, a: wallDepth, b: p.sideH, aLabel: "depth", bLabel: "height",
-        note: "Fixed (305mm depth)" },
+        note: `Fixed (${wallDepth}mm depth)` },
       { part: "Top", qty: 1, a: carcassW, b: wallBottomDepth, aLabel: "width", bLabel: "depth",
-        note: `width = ${W} − ${2 * t} · depth = 305 (full)` },
+        note: `width = ${W} − ${2 * t} · depth = ${wallDepth} (full)` },
       { part: "Bottom", qty: 1, a: carcassW, b: wallBottomDepth, aLabel: "width", bLabel: "depth",
-        note: `width = ${W} − ${2 * t} · depth = 305 (full)` },
+        note: `width = ${W} − ${2 * t} · depth = ${wallDepth} (full)` },
       { part: "Rail / Support", qty: 1, a: carcassW, b: p.railH, aLabel: "length", bLabel: "height",
         note: `length = ${W} − ${2 * t} · at top for wall mounting` },
       { part: thinBack ? `Back — ${backThick} mm hardboard` : "Back", qty: 1, a: thinBack ? hardBackW : backW, b: backH,
