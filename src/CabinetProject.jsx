@@ -2792,6 +2792,15 @@ export default function CabinetProject() {
     }
   };
 
+  const toggleLockProject = async (proj) => {
+    if (!supabase) return;
+    const newLocked = !proj.locked;
+    try {
+      await supabase.from("cabinet_projects").update({ locked: newLocked }).eq("id", proj.id);
+      setUserProjects(prev => prev.map(p => p.id === proj.id ? { ...p, locked: newLocked } : p));
+    } catch (e) {}
+  };
+
   const duplicateProject = async (proj) => {
     if (!supabase) return;
     const newName = proj.name + " (copy)";
@@ -2967,6 +2976,8 @@ export default function CabinetProject() {
   };
 
   const selectedCab = cabs.find((c) => c.id === selectedId) || null;
+  const currentProject = userProjects.find(p => p.id === currentProjectId);
+  const isLocked = currentProject ? !!currentProject.locked : false;
   const selectedIndex = cabs.indexOf(selectedCab);
 
   const p = (selectedCab && selectedCab.params) || DEFAULTS;
@@ -3315,8 +3326,13 @@ export default function CabinetProject() {
                             <button onClick={() => switchProject(proj.id)} style={{ flex: 1, textAlign: "left", border: "none", background: "transparent", cursor: "pointer", fontSize: 13, color: proj.id === currentProjectId ? C.rust : C.ink, fontWeight: proj.id === currentProjectId ? 700 : 400 }}>
                               {proj.name}
                             </button>
+                            <button onClick={() => toggleLockProject(proj)} title={proj.locked ? "Unlock project" : "Lock project"}
+                              style={{ padding: "4px 8px", background: "#f0f0f0", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 13 }}>
+                              {proj.locked ? "🔒" : "🔓"}
+                            </button>
                             <button onClick={() => duplicateProject(proj)} title="Duplicate project" style={{ padding: "4px 8px", background: "#f0f0f0", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 12, color: "#276221", fontWeight: 700 }}>⧉</button>
-                            <button onClick={() => deleteProject(proj.id)} style={{ padding: "4px 8px", background: "#f0f0f0", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 12, color: "#e74c3c" }}>×</button>
+                            <button onClick={() => !proj.locked && deleteProject(proj.id)} title={proj.locked ? "Unlock to delete" : "Delete"}
+                              style={{ padding: "4px 8px", background: "#f0f0f0", border: "none", borderRadius: 4, cursor: proj.locked ? "not-allowed" : "pointer", fontSize: 12, color: proj.locked ? "#ccc" : "#e74c3c" }}>×</button>
                           </div>
                         ))
                       ) : (
@@ -3441,8 +3457,15 @@ export default function CabinetProject() {
           <div className="cab-main">
             {selectedCab ? (
               <CabinetCard key={selectedCab.id} index={selectedIndex} cab={selectedCab} t={t} lang={lang} canRemove={cabs.length > 1}
-                onChange={(patch) => updateCab(selectedCab.id, patch)} onRemove={() => removeCab(selectedCab.id)} />
+                onChange={isLocked ? () => {} : (patch) => updateCab(selectedCab.id, patch)} onRemove={isLocked ? undefined : () => removeCab(selectedCab.id)} />
             ) : (
+              <>
+              {isLocked && (
+                <div style={{ margin: "0 0 12px 0", background: "#FFF3CD", border: "1px solid #FFD700", borderRadius: 8,
+                  padding: "10px 16px", fontSize: 13, fontWeight: 600, color: "#856404", display: "flex", alignItems: "center", gap: 8 }}>
+                  🔒 {t("This project is locked. Unlock it from the project list to make changes.")}
+                </div>
+              )}
               <div style={{ padding: "32px 24px", textAlign: "center", color: C.mut }}>
                 <div style={{ fontSize: 32, marginBottom: 12 }}>👈</div>
                 <div style={{ fontSize: 15, fontWeight: 600, color: C.ink, marginBottom: 6 }}>
@@ -3452,6 +3475,7 @@ export default function CabinetProject() {
                   {t("Click any cabinet in the list to view and edit it.")}
                 </div>
               </div>
+              </>
             )}
         {/* totals + boards */}
         <div style={{ background: C.ink, color: C.card, borderRadius: 12, padding: "16px", marginTop: 4 }}>
