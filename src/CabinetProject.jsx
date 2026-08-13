@@ -1498,6 +1498,94 @@ const newCab = (n) => ({ id: ++SEQ, name: `Cabinet ${n}`, type: "base", width: "
   params: { ...DEFAULTS } });
 
 
+const PORTASOL_MATERIALS = {
+  proyectos: {
+    label: "Proyectos",
+    items: [
+      { code: "8685", name: "Blanco",        texture: "BS",  bg: "#F2EFE9", grain: false },
+      { code: "1700", name: "Gris Claro",    texture: "BS",  bg: "#C0BFBA", grain: false },
+      { code: "0162", name: "Gris Oscuro",   texture: "PE",  bg: "#6B6B6B", grain: false },
+      { code: "0190", name: "Negro",         texture: "PE",  bg: "#1A1A1A", grain: false },
+      { code: "K358", name: "Honey",         texture: "PW",  bg: "#C8922A", grain: true  },
+      { code: "K088", name: "Blanco Madera", texture: "PW",  bg: "#E8DDD0", grain: true  },
+      { code: "5501", name: "Slavonia",      texture: "PW",  bg: "#B09070", grain: true  },
+      { code: "K359", name: "Brandy",        texture: "PW",  bg: "#A0622A", grain: true  },
+      { code: "K004", name: "Tobacco",       texture: "PW",  bg: "#8C6040", grain: true  },
+      { code: "K089", name: "Gris Madera",   texture: "PW",  bg: "#9A9488", grain: true  },
+      { code: "K007", name: "Café",          texture: "PW",  bg: "#7A5038", grain: true  },
+      { code: "3025", name: "Sonoma",        texture: "SN",  bg: "#C4A882", grain: true  },
+      { code: "5194", name: "Vintage",       texture: "SN",  bg: "#B09878", grain: true  },
+      { code: "0729", name: "Walnut",        texture: "PR",  bg: "#5C3C24", grain: true  },
+    ]
+  },
+  amaderados: {
+    label: "Amaderados",
+    items: [
+      { code: "5501", name: "Slavonia",      texture: "PN",  bg: "#B09070", grain: true  },
+      { code: "0381", name: "Bavaria",       texture: "PN",  bg: "#D4B896", grain: true  },
+      { code: "K083", name: "Arte Claro",    texture: "SN",  bg: "#D0B890", grain: true  },
+      { code: "K084", name: "Arte Oscuro",   texture: "SN",  bg: "#7A5830", grain: true  },
+      { code: "K005", name: "Roble Urbano",  texture: "PW",  bg: "#C8A870", grain: true  },
+      { code: "K010", name: "Pino Blanco",   texture: "PW",  bg: "#E8D8B8", grain: true  },
+      { code: "K088", name: "Blanco Madera", texture: "PW",  bg: "#E8DDD0", grain: true  },
+      { code: "5194", name: "Vintage",       texture: "SN",  bg: "#B09878", grain: true  },
+      { code: "3025", name: "Sonoma",        texture: "SN",  bg: "#C4A882", grain: true  },
+      { code: "K107", name: "Elegance",      texture: "PW",  bg: "#C09860", grain: true  },
+      { code: "K004", name: "Tobacco",       texture: "PW",  bg: "#8C6040", grain: true  },
+      { code: "K087", name: "Nogal Oscuro",  texture: "PW",  bg: "#4A3020", grain: true  },
+      { code: "K089", name: "Gris Madera",   texture: "PW",  bg: "#9A9488", grain: true  },
+      { code: "K358", name: "Honey",         texture: "PW",  bg: "#C8922A", grain: true  },
+      { code: "K354", name: "Colonial",      texture: "PW",  bg: "#9A7850", grain: true  },
+      { code: "0729", name: "Walnut",        texture: "PR",  bg: "#5C3C24", grain: true  },
+      { code: "K359", name: "Brandy",        texture: "PW",  bg: "#A0622A", grain: true  },
+      { code: "K003", name: "Gold Craft",    texture: "PW",  bg: "#B89040", grain: true  },
+      { code: "K683", name: "Cajun Cremona", texture: "PD",  bg: "#D4B8A0", grain: true  },
+      { code: "K2737",name: "Roble Cotta",   texture: "PW",  bg: "#C89870", grain: true  },
+      { code: "K2739",name: "Roble Cannolo Cremona", texture: "PW", bg: "#D4C0A0", grain: true },
+      { code: "K694", name: "Roble Seda Primavera Sombra", texture: "PV", bg: "#C0A878", grain: true },
+      { code: "K696", name: "Roble Primavera", texture: "PV", bg: "#D4B880", grain: true },
+      { code: "K697", name: "Roble Cocoa Primavera", texture: "PV", bg: "#A08060", grain: true },
+    ]
+  },
+  colores: {
+    label: "Colores",
+    items: [
+      { code: "8685", name: "Blanco",        texture: "BS",  bg: "#F2EFE9", grain: false },
+      { code: "1700", name: "Gris Claro",    texture: "PE",  bg: "#C0BFBA", grain: false },
+      { code: "7045", name: "Satin",         texture: "SU",  bg: "#E8E0D8", grain: false },
+      { code: "0162", name: "Gris Oscuro",   texture: "PE",  bg: "#6B6B6B", grain: false },
+      { code: "0190", name: "Negro",         texture: "PE",  bg: "#1A1A1A", grain: false },
+      { code: "0134", name: "Amarillo",      texture: "BS",  bg: "#F0C020", grain: false },
+      { code: "7113", name: "Rojo",          texture: "BS",  bg: "#C02020", grain: false },
+      { code: "0125", name: "Azul Royal",    texture: "BS",  bg: "#2040A0", grain: false },
+      { code: "0244", name: "Petrol",        texture: "SU",  bg: "#1E5060", grain: false },
+      { code: "7166", name: "Latté",         texture: "SU",  bg: "#C8A878", grain: false },
+      { code: "K353", name: "Carbón",        texture: "RT",  bg: "#4A4A4A", grain: false },
+      { code: "K351", name: "Óxido",         texture: "RT",  bg: "#A04020", grain: false },
+      { code: "4298", name: "Light Atelier", texture: "PW",  bg: "#D8C8B0", grain: false },
+      { code: "4299", name: "Dark Atelier",  texture: "PW",  bg: "#7A6850", grain: false },
+      { code: "6299", name: "Cobalt Grey",   texture: "SU",  bg: "#6080A0", grain: false },
+      { code: "8984", name: "Azul Marino",   texture: "BS",  bg: "#1A2858", grain: false },
+      { code: "K519", name: "Gris Ratón",    texture: "PW",  bg: "#888888", grain: false },
+      { code: "K521", name: "Verde Humo",    texture: "SU",  bg: "#607868", grain: false },
+      { code: "7063", name: "Verde Pastel",  texture: "SU",  bg: "#8AAE8A", grain: false },
+      { code: "K692", name: "Nube Granada",  texture: "PN",  bg: "#D8C0B8", grain: false },
+      { code: "K684", name: "Trufa Negra",   texture: "PD",  bg: "#3A2820", grain: false },
+    ]
+  },
+  altobrillo: {
+    label: "Alto Brillo",
+    items: [
+      { code: "8685", name: "Blanco MG",     texture: "MG",  bg: "#F8F8F8", grain: false },
+      { code: "5981", name: "Cashmere MG",   texture: "MG",  bg: "#E0D0C0", grain: false },
+      { code: "7166", name: "Latté MG",      texture: "MG",  bg: "#C8A878", grain: false },
+      { code: "6299", name: "Cobalt Grey MG",texture: "MG",  bg: "#6080A0", grain: false },
+      { code: "7045", name: "Satin MG",      texture: "MG",  bg: "#E8E0D8", grain: false },
+      { code: "0190", name: "Negro MG",      texture: "MG",  bg: "#1A1A1A", grain: false },
+    ]
+  }
+};
+
 /* ── INNOVUS MATERIAL CATALOGUE ───────────────────────────────────── */
 const INNOVUS_MATERIALS = {
   maderas: {
@@ -1564,18 +1652,32 @@ const INNOVUS_MATERIALS = {
 
 /* ── MATERIAL PICKER MODAL ────────────────────────────────────────── */
 function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
+  const [activeCatalogue, setActiveCatalogue] = React.useState("innovus");
   const [activeTab, setActiveTab] = React.useState("maderas");
   const [search, setSearch] = React.useState("");
 
+  const CATALOGUES = {
+    innovus: { label: "Innovus (Madesol)", data: INNOVUS_MATERIALS },
+    portasol: { label: "Portasol", data: PORTASOL_MATERIALS },
+  };
+
+  const currentData = CATALOGUES[activeCatalogue].data;
   const allInnovus = Object.entries(INNOVUS_MATERIALS).flatMap(([, cat]) => cat.items);
+  const allPortasol = Object.entries(PORTASOL_MATERIALS).flatMap(([, cat]) => cat.items);
   const allCustom = customMaterials.map(m => ({ ...m, texture: "", grain: false, isCustom: true }));
-  const allItems = [...allInnovus, ...allCustom];
+  const allItems = [...allInnovus, ...allPortasol, ...allCustom];
 
   const filtered = search.trim()
     ? allItems.filter(m => m.name.toLowerCase().includes(search.toLowerCase()) || m.code.toLowerCase().includes(search.toLowerCase()))
     : activeTab === "mis"
       ? allCustom
-      : INNOVUS_MATERIALS[activeTab].items;
+      : (currentData[activeTab] ? currentData[activeTab].items : Object.values(currentData)[0].items);
+
+  // Reset tab when switching catalogues
+  const switchCatalogue = (cat) => {
+    setActiveCatalogue(cat);
+    setActiveTab(Object.keys(CATALOGUES[cat].data)[0]);
+  };
 
   const tabStyle = (key) => ({
     padding: "8px 16px", border: "none", cursor: "pointer", fontSize: 13,
@@ -1604,6 +1706,18 @@ function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
             <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#888" }}>×</button>
           </div>
           {/* Search */}
+          {/* Catalogue selector */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+            {Object.entries(CATALOGUES).map(([key, cat]) => (
+              <button key={key} onClick={() => switchCatalogue(key)}
+                style={{ padding: "5px 14px", border: "none", borderRadius: 6, cursor: "pointer",
+                  fontSize: 12, fontWeight: 700,
+                  background: activeCatalogue === key ? "#E4572E" : "#f0f0f0",
+                  color: activeCatalogue === key ? "#fff" : "#555" }}>
+                {cat.label}
+              </button>
+            ))}
+          </div>
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por nombre o código..."
@@ -1612,8 +1726,8 @@ function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
           />
           {/* Tabs */}
           {!search && (
-            <div style={{ display: "flex", gap: 0 }}>
-              {Object.entries(INNOVUS_MATERIALS).map(([key, cat]) => (
+            <div style={{ display: "flex", gap: 0, flexWrap: "wrap" }}>
+              {Object.entries(currentData).map(([key, cat]) => (
                 <button key={key} style={tabStyle(key)} onClick={() => setActiveTab(key)}>
                   {cat.label} ({cat.items.length})
                 </button>
