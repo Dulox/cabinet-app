@@ -559,7 +559,7 @@ function buildCutList(W, p, cab) {
       note: `filler piece · ${fW} × ${fH} × ${fT}mm · edge band all 4 edges` });
   } else if (cab.type === "wall" || cab.type === "deepwall") {
     // wall cabinet - depth and height configurable for deepwall
-    const wallDepth = (cab.type === "deepwall" && cab.customDepth) ? parseFloat(cab.customDepth) : p.sideD;
+    const wallDepth = (cab.type === "deepwall" && cab.customDepth) ? parseFloat(cab.customDepth) : (cab.type === "wall" ? 305 : p.sideD);
     const wallH = (cab.type === "deepwall" && cab.customHeight) ? parseFloat(cab.customHeight) : p.sideH;
     const wallBottomDepth = wallDepth;
     parts.length = 0;
