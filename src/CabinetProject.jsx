@@ -2725,11 +2725,13 @@ export default function CabinetProject() {
     
     try {
       setSaveStatus("saving");
+      const currentLocked = userProjects.find(p => p.id === projectId)?.locked || false;
       const { error } = await supabase.from("cabinet_projects").upsert({
         id: projectId,
         user_id: authState.user.id,
         name: name,
         cabs: cabinets,
+        locked: currentLocked,
         updated_at: new Date().toISOString(),
       });
       
@@ -2740,7 +2742,7 @@ export default function CabinetProject() {
         // Update the project in userProjects list
         setUserProjects((projects) =>
           projects.map((p) =>
-            p.id === projectId ? { ...p, name: name, cabs: cabinets, updated_at: new Date().toISOString() } : p
+            p.id === projectId ? { ...p, name: name, cabs: cabinets, locked: currentLocked, updated_at: new Date().toISOString() } : p
           )
         );
         setTimeout(() => setSaveStatus(""), 2000);
