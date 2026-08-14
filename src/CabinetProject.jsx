@@ -2384,15 +2384,61 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
         <div className="madesol-noprint" style={{ display: "flex", gap: 10, marginTop: 16, alignItems: "center", flexWrap: "wrap" }}>
           {/* Save row */}
           <div style={{ display: "flex", gap: 6, alignItems: "center", flex: 1 }}>
-            <input value={saveSheetName} onChange={e => setSaveSheetName(e.target.value)}
-              placeholder={`Nombre hoja (ej. ${projectName})`}
-              style={{ border: "1px solid #bbb", borderRadius: 6, padding: "7px 10px", fontSize: 12, width: 200 }} />
-            <button onClick={saveSheet}
+            <select value={saveSheetName}
+              onChange={e => {
+                const val = e.target.value;
+                setSaveSheetName(val);
+                if (val && val !== "__new__") {
+                  const found = savedSheets.find(s => s.name === val);
+                  if (found) loadSheet(found);
+                }
+              }}
+              style={{ border: "1px solid #bbb", borderRadius: 6, padding: "7px 10px", fontSize: 12, width: 220, background: "#fff" }}>
+              <option value="__new__">— Nueva hoja —</option>
+              {savedSheets.map((s, i) => (
+                <option key={i} value={s.name}>{s.name} · {s.date}</option>
+              ))}
+            </select>
+            <button onClick={() => {
+              const name = saveSheetName && saveSheetName !== "__new__" ? saveSheetName : (projectName || "Hoja sin nombre");
+              const now = new Date();
+              const date = now.toLocaleDateString("es-DO") + " " + now.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" });
+              const sheet = { name, date, rows, globalMaterial, factura, nombre, telefono };
+              const existing = savedSheets.findIndex(s => s.name === name);
+              let updated;
+              if (existing >= 0) {
+                updated = [...savedSheets];
+                updated[existing] = sheet;
+              } else {
+                updated = [sheet, ...savedSheets.slice(0, 19)];
+              }
+              setSavedSheets(updated);
+              try { localStorage.setItem("savedMadesolSheets", JSON.stringify(updated)); } catch {}
+              alert("Hoja guardada: " + name);
+            }}
               style={{ padding: "8px 14px", background: "#276221", color: "#fff", border: "none",
                 borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
               💾 Guardar hoja
             </button>
-            <button onClick={() => { if (window.confirm("Rebuild from current cabinets? Unsaved changes will be lost.")) setRows(buildRows(activeCabs)); }}
+            <button onClick={() => {
+              if (window.confirm("Rebuild from current cabinets? Dimension changes will update, your X marks will be kept.")) {
+                const fresh = buildRows(activeCabs);
+                // Preserve user-set X fields from existing rows by matching on part name + dimensions
+                setRows(fresh.map(newRow => {
+                  const existing = rows.find(r => r.nombre === newRow.nombre && r.largo === newRow.largo && r.ancho === newRow.ancho);
+                  if (!existing) return newRow;
+                  return {
+                    ...newRow,
+                    // preserve user-toggled fields
+                    vetas: existing.vetas,
+                    cl1: existing.cl1, cl2: existing.cl2, ca1: existing.ca1, ca2: existing.ca2,
+                    rl: existing.rl, ra: existing.ra, hbl: existing.hbl, hba: existing.hba,
+                    material: existing._matOverride ? existing.material : newRow.material,
+                    _matOverride: existing._matOverride,
+                  };
+                }));
+              }
+            }}
               style={{ padding: "8px 14px", background: "#555", color: "#fff", border: "none",
                 borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
               🔄 Rebuild
