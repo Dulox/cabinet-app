@@ -1677,12 +1677,32 @@ const INNOVUS_MATERIALS = {
 
 /* ── MATERIAL PICKER MODAL ────────────────────────────────────────── */
 function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
-  const [activeCatalogue, setActiveCatalogue] = React.useState("innovus");
-  const [activeTab, setActiveTab] = React.useState("maderas");
+  const [activeCatalogue, setActiveCatalogue] = React.useState("favorites");
+  const [activeTab, setActiveTab] = React.useState("recent");
   const [search, setSearch] = React.useState("");
+  const [recentMaterials, setRecentMaterials] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem("recentMaterials") || "[]"); } catch { return []; }
+  });
+
+  const addToRecent = (mat, source) => {
+    const entry = { ...mat, source };
+    const updated = [entry, ...recentMaterials.filter(m => !(m.code === mat.code && m.source === source))].slice(0, 20);
+    setRecentMaterials(updated);
+    try { localStorage.setItem("recentMaterials", JSON.stringify(updated)); } catch {}
+  };
+
+  const recentInnovus = recentMaterials.filter(m => m.source === "innovus");
+  const recentPortasol = recentMaterials.filter(m => m.source === "portasol");
+
+  const FAVORITES_DATA = {};
+  if (recentInnovus.length > 0) FAVORITES_DATA.recentInnovus = { label: "Innovus recientes", items: recentInnovus };
+  if (recentPortasol.length > 0) FAVORITES_DATA.recentPortasol = { label: "Portasol recientes", items: recentPortasol };
+  if (customMaterials.length > 0) FAVORITES_DATA.mis = { label: "Mis Materiales", items: customMaterials.map(m => ({ ...m, texture: "", grain: false })) };
+  if (Object.keys(FAVORITES_DATA).length === 0) FAVORITES_DATA.empty = { label: "Sin favoritos", items: [] };
 
   const CATALOGUES = {
-    innovus: { label: "Innovus (Madesol)", data: INNOVUS_MATERIALS },
+    favorites: { label: "⭐ Favoritos", data: FAVORITES_DATA },
+    innovus: { label: "Innovus", data: INNOVUS_MATERIALS },
     portasol: { label: "Portasol", data: PORTASOL_MATERIALS },
   };
 
@@ -1694,14 +1714,13 @@ function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
 
   const filtered = search.trim()
     ? allItems.filter(m => m.name.toLowerCase().includes(search.toLowerCase()) || m.code.toLowerCase().includes(search.toLowerCase()))
-    : activeTab === "mis"
-      ? allCustom
-      : (currentData[activeTab] ? currentData[activeTab].items : Object.values(currentData)[0].items);
+    : (currentData[activeTab] ? currentData[activeTab].items : Object.values(currentData)[0]?.items || []);
 
   // Reset tab when switching catalogues
   const switchCatalogue = (cat) => {
     setActiveCatalogue(cat);
-    setActiveTab(Object.keys(CATALOGUES[cat].data)[0]);
+    const keys = Object.keys(CATALOGUES[cat].data);
+    setActiveTab(keys[0] || "");
   };
 
   const tabStyle = (key) => ({
@@ -1757,9 +1776,7 @@ function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
                   {cat.label} ({cat.items.length})
                 </button>
               ))}
-              <button style={tabStyle("mis")} onClick={() => setActiveTab("mis")}>
-                ⭐ Mis Materiales ({customMaterials.length})
-              </button>
+
             </div>
           )}
         </div>
@@ -1769,7 +1786,12 @@ function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 12 }}>
             {filtered.map(mat => (
               <div key={mat.code}
-                onClick={() => { const label = [mat.code, mat.name, mat.texture].filter(Boolean).join(' ').trim(); onSelect(label); }}
+                onClick={() => {
+                  const label = [mat.code, mat.name, mat.texture].filter(Boolean).join(' ').trim();
+                  const source = activeCatalogue === "favorites" ? (mat.source || "custom") : activeCatalogue;
+                  addToRecent(mat, source === "favorites" ? (mat.source || "innovus") : source);
+                  onSelect(label);
+                }}
                 style={{
                   borderRadius: 10, overflow: "hidden", cursor: "pointer",
                   border: "2px solid transparent", transition: "all 0.15s",
@@ -1803,7 +1825,7 @@ function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
           </div>
           {filtered.length === 0 && (
             <div style={{ textAlign: "center", color: "#aaa", padding: 40, fontSize: 14 }}>
-              No se encontraron materiales para "{search}"
+              {search ? 'No se encontraron materiales para "' + search + '"' : 'No hay materiales en esta sección. Selecciona de Innovus o Portasol para agregar favoritos.'}
             </div>
           )}
         </div>
@@ -2095,19 +2117,9 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <div style={{ fontWeight: 700, fontSize: 15 }}>FORMULARIO DE SERVICIO: CORTE Y CANTEADO</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ fontSize: 11, color: "#555", textAlign: "right" }}>
-              <div>Fecha: <strong>{today}</strong></div>
-              <div>Proyecto: <strong>{activeProjectName}</strong></div>
-            </div>
-            <button className="desglose-noprint" onClick={confirmClose} style={{
-              background: "#f0f0f0", border: "none", borderRadius: 6, width: 32, height: 32,
-              fontSize: 18, cursor: "pointer", color: "#555", display: "flex",
-              alignItems: "center", justifyContent: "center", lineHeight: 1, flexShrink: 0,
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = "#e0e0e0"}
-            onMouseLeave={e => e.currentTarget.style.background = "#f0f0f0"}
-            >×</button>
+          <div style={{ fontSize: 11, color: "#555", textAlign: "right" }}>
+            <div>Fecha: <strong>{today}</strong></div>
+            <div>Proyecto: <strong>{activeProjectName}</strong></div>
           </div>
         </div>
 
