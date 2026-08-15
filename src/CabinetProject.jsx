@@ -2130,30 +2130,11 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
               </select>
             </label>
           )}
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
-            {ms("Material (all):", "Material (todos):")}
-            <input value={globalMaterial} onChange={e => setGlobalMaterial(e.target.value)}
-              placeholder={ms("e.g. White Melamine", "ej. Melamina Blanca")}
-              style={{ border: "1px solid #bbb", borderRadius: 4, padding: "4px 8px", fontSize: 12, width: 180 }} />
-            <button onClick={() => setPickerOpen({ target: "global" })}
-              style={{ padding: "5px 12px", background: "#E4572E", color: "#fff", border: "none",
-                borderRadius: 4, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
-              🎨 Seleccionar
-            </button>
-          </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
-            Ancho material (mm):
-            <input value={globalWidth} onChange={e => setGlobalWidth(e.target.value)}
-              placeholder="2440"
-              style={{ border: "1px solid #bbb", borderRadius: 4, padding: "4px 8px", fontSize: 12, width: 80 }} />
-          </label>
-
           <button onClick={() => setMLang(l => l === "en" ? "es" : "en")}
             style={{ padding: "5px 12px", background: "#555", color: "#fff", border: "none",
               borderRadius: 4, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
             {mLang === "en" ? "ES" : "EN"}
           </button>
-          <span style={{ fontSize: 11, color: "#666" }}>{ms("▸ = change material per row · click edging/grooves to mark X", "▸ = cambiar material por fila · clic en canteado/ranuras para marcar X")}</span>
         </div>
 
         {/* Table */}
@@ -2201,17 +2182,9 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
                 <tr key={i} style={{ background: row.isHardboard ? "#fffbe6" : (i % 2 === 0 ? "#fff" : "#f9f9f9") }}>
                   <td style={cellStyle({ color: "#888" })}>{i + 1}</td>
                   {/* Material — editable */}
-                  <td style={cellStyle({ textAlign: "left", minWidth: 100, padding: "1px 3px" })}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      <input value={row.material || globalMaterial} onChange={e => updateRow(row.id, "material", e.target.value)}
-                        style={{ ...inputStyle, textAlign: "left", fontSize: 10, flex: 1 }} placeholder={globalMaterial || "—"} />
-                      <button className="madesol-noprint" onClick={() => setPickerOpen({ target: "row", idx: row.id })}
-                        style={{ flexShrink: 0, padding: "1px 5px", background: "#E4572E", color: "#fff",
-                          border: "none", borderRadius: 3, cursor: "pointer", fontSize: 9, fontWeight: 700,
-                          lineHeight: "14px", whiteSpace: "nowrap" }}>
-                        ▸
-                      </button>
-                    </div>
+                  <td style={cellStyle({ textAlign: "left", minWidth: 100 })}>
+                    <input value={row.material || ""} onChange={e => updateRow(row.id, "material", e.target.value)}
+                      style={{ ...inputStyle, textAlign: "left", fontSize: 10 }} placeholder="—" />
                   </td>
                   {/* Nombre */}
                   <td style={cellStyle({ textAlign: "left", minWidth: 100, fontSize: 10, color: "#555" })}>
