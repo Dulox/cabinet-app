@@ -1814,11 +1814,11 @@ function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
 
 
 /* ================================================================
- * MADESOL SHEET — Formulario de Servicio: Corte y Canteado
+ * DESGLOSE SHEET — Formulario de Servicio: Corte y Canteado
  * Summarises all cabinet cut lists into one editable table
  * matching the Madesol workshop form format.
  * ================================================================ */
-function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProjects = [] }) {
+function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProjects = [] }) {
   const today = new Date().toLocaleDateString("es-DO");
 
   // Build summarised cut list — group same dimensions, multiply by cabinet qty
@@ -1841,7 +1841,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
           // Bisagras: auto-mark on parts touching side panels (same height as side)
           hbl: o.hasBisagra ? "X" : "",
           hba: o.hasBisagra ? "X" : "",
-          material: "", isHardboard: part.material === "hardboard",
+          material: (o && o.cabMaterial) || "", isHardboard: part.material === "hardboard",
         });
       }
     };
@@ -1907,14 +1907,14 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
 
   const [rows, setRows] = React.useState(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem("savedMadesolSheets") || "[]");
+      const saved = JSON.parse(localStorage.getItem("savedDesgloseSheets") || "[]");
       if (saved.length > 0 && saved[0].rows && saved[0].rows.length > 0) return saved[0].rows;
     } catch {}
     return buildRows(cabs);
   });
   const [globalMaterial, setGlobalMaterial] = React.useState(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem("savedMadesolSheets") || "[]");
+      const saved = JSON.parse(localStorage.getItem("savedDesgloseSheets") || "[]");
       return saved.length > 0 ? (saved[0].globalMaterial || "") : "";
     } catch { return ""; }
   });
@@ -1924,7 +1924,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
   const [showCustomMat, setShowCustomMat] = React.useState(false);
   const [showSaved, setShowSaved] = React.useState(false);
   const [savedSheets, setSavedSheets] = React.useState(() => {
-    try { return JSON.parse(localStorage.getItem("savedMadesolSheets") || "[]"); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem("savedDesgloseSheets") || "[]"); } catch { return []; }
   });
   const [saveSheetName, setSaveSheetName] = React.useState("");
   const [mLang, setMLang] = React.useState(initialLang);
@@ -2025,7 +2025,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
     const sheet = { name, date, rows, globalMaterial, factura, nombre, telefono };
     const updated = [sheet, ...savedSheets.slice(0, 19)]; // keep last 20
     setSavedSheets(updated);
-    try { localStorage.setItem("savedMadesolSheets", JSON.stringify(updated)); } catch {}
+    try { localStorage.setItem("savedDesgloseSheets", JSON.stringify(updated)); } catch {}
     setSaveSheetName("");
     alert("Hoja guardada: " + name);
   };
@@ -2042,7 +2042,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
   const deleteSavedSheet = (idx) => {
     const updated = savedSheets.filter((_, i) => i !== idx);
     setSavedSheets(updated);
-    try { localStorage.setItem("savedMadesolSheets", JSON.stringify(updated)); } catch {}
+    try { localStorage.setItem("savedDesgloseSheets", JSON.stringify(updated)); } catch {}
   };
 
   const toggleSort = (field) => {
@@ -2075,17 +2075,17 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
   });
 
   return (
-    <div className="madesol-overlay" style={{
+    <div className="desglose-overlay" style={{
       position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)",
       zIndex: 3000, display: "flex", alignItems: "flex-start",
       justifyContent: "center", overflowY: "auto", padding: "20px 0",
     }}>
-      <div className="madesol-print-area" style={{
+      <div className="desglose-print-area" style={{
         background: "#fff", width: 960, maxWidth: "98vw", borderRadius: 10,
         boxShadow: "0 8px 40px rgba(0,0,0,0.3)", padding: 24, position: "relative",
       }}>
         {/* Close */}
-        <button className="madesol-noprint" onClick={onClose} style={{
+        <button className="desglose-noprint" onClick={onClose} style={{
           position: "absolute", top: 12, right: 14, background: "none",
           border: "none", fontSize: 22, cursor: "pointer", color: "#666",
         }}>×</button>
@@ -2100,7 +2100,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
         </div>
 
         {/* Client info */}
-        <div className="madesol-noprint" style={{ display: "flex", gap: 16, marginBottom: 12, flexWrap: "wrap" }}>
+        <div className="desglose-noprint" style={{ display: "flex", gap: 16, marginBottom: 12, flexWrap: "wrap" }}>
           {[["Factura No.", factura, setFactura, 100], ["Nombre", nombre, setNombre, 200], ["Número tel.", telefono, setTelefono, 140]].map(([label, val, setter, w]) => (
             <label key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
               <span style={{ whiteSpace: "nowrap" }}>{label}</span>
@@ -2111,7 +2111,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
         </div>
 
         {/* Global controls */}
-        <div className="madesol-noprint" style={{ display: "flex", gap: 12, marginBottom: 12, alignItems: "center", flexWrap: "wrap",
+        <div className="desglose-noprint" style={{ display: "flex", gap: 12, marginBottom: 12, alignItems: "center", flexWrap: "wrap",
           background: "#f5f5f5", padding: "10px 14px", borderRadius: 8 }}>
           {allProjects.length > 1 && (
             <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
@@ -2237,7 +2237,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
                     </td>
                   ))}
                   {/* Delete row */}
-                  <td className="madesol-noprint" style={{ border: "none", padding: "0 2px" }}>
+                  <td className="desglose-noprint" style={{ border: "none", padding: "0 2px" }}>
                     <button onClick={() => setRows(rs => rs.filter(r => r.id !== row.id))}
                       style={{ background: "none", border: "none", color: "#ccc", cursor: "pointer",
                         fontSize: 14, padding: "0 2px", lineHeight: 1 }}
@@ -2256,7 +2256,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
         </div>
 
         {/* Add row button */}
-        <div className="madesol-noprint" style={{ marginTop: 8 }}>
+        <div className="desglose-noprint" style={{ marginTop: 8 }}>
           <button onClick={() => {
             const newId = "manual-" + Date.now();
             setRows(rs => [...rs, {
@@ -2271,7 +2271,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
         </div>
 
         {/* Notes */}
-        <div className="madesol-noprint" style={{ marginTop: 14, fontSize: 10, color: "#555", maxWidth: 420,
+        <div className="desglose-noprint" style={{ marginTop: 14, fontSize: 10, color: "#555", maxWidth: 420,
           border: "1px solid #ccc", padding: "8px 12px", borderRadius: 4 }}>
           <strong>NOTAS:</strong><br/>
           1. Sobrantes deben ser retirados con la producción de lo contrario no somos responsables de los mismos.<br/>
@@ -2361,7 +2361,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
         )}
 
         {/* Footer buttons */}
-        <div className="madesol-noprint" style={{ display: "flex", gap: 10, marginTop: 16, alignItems: "center", flexWrap: "wrap" }}>
+        <div className="desglose-noprint" style={{ display: "flex", gap: 10, marginTop: 16, alignItems: "center", flexWrap: "wrap" }}>
           {/* Save row */}
           <div style={{ display: "flex", gap: 6, alignItems: "center", flex: 1 }}>
             <select value={saveSheetName}
@@ -2393,7 +2393,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
                 updated = [sheet, ...savedSheets.slice(0, 19)];
               }
               setSavedSheets(updated);
-              try { localStorage.setItem("savedMadesolSheets", JSON.stringify(updated)); } catch {}
+              try { localStorage.setItem("savedDesgloseSheets", JSON.stringify(updated)); } catch {}
               alert("Hoja guardada: " + name);
             }}
               style={{ padding: "8px 14px", background: "#276221", color: "#fff", border: "none",
@@ -2435,7 +2435,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
               Cerrar
             </button>
             <button onClick={() => {
-              const el = document.querySelector('.madesol-print-area');
+              const el = document.querySelector('.desglose-print-area');
               if (!el) return;
               const win = window.open('', '_blank', 'width=1100,height=800');
               const css = [
@@ -2468,7 +2468,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
                   if (inp.style.textAlign === 'left') sp.className = 'left';
                   inp.parentNode.replaceChild(sp, inp);
                 });
-                clone.querySelectorAll('button,.madesol-noprint').forEach(function(b) { b.remove(); });
+                clone.querySelectorAll('button,.desglose-noprint').forEach(function(b) { b.remove(); });
                 // Remove any inline styles that would override our print CSS
                 clone.querySelectorAll('td,th').forEach(function(cell) {
                   cell.style.cssText = '';
@@ -2496,7 +2496,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
               const headers = ["No","Material","Nombre","Vetas","Largo (mm)","Ancho (mm)","Grosor (mm)","Cant.","L1","L2","A1","A2","R-L","R-A","HB-L","HB-A"];
               const csvRows = sortedRows.map((row, i) => [
                 i + 1,
-                row.material || globalMaterial,
+                row.material || "",
                 mTName(row.nombre),
                 row.vetas || "",
                 row.largo,
@@ -2599,7 +2599,7 @@ export default function CabinetProject() {
   const [saveStatus, setSaveStatus] = useState(""); // "saving", "saved", "error"
   const [userProjects, setUserProjects] = useState([]); // List of all user's projects
   const [showProjectList, setShowProjectList] = useState(false);
-  const [showMadesol, setShowMadesol] = useState(false);
+  const [showDesglose, setShowDesglose] = useState(false);
   
   // Login handler
   const handleLogin = async () => {
@@ -3316,15 +3316,15 @@ export default function CabinetProject() {
           .cab-card{break-inside:avoid;border:1px solid #000!important;background:#fff!important;margin-bottom:12px!important}
           .cab-root input,.cab-root select{border:none!important;background:transparent!important;color:#000!important;padding:0!important;font-weight:700}
           .cab-row:hover{background:transparent!important}
-          /* Madesol sheet print */
-          body > *:not(.madesol-overlay){display:none!important}
-          .madesol-overlay{position:static!important;background:none!important;padding:0!important;display:block!important}
-          .madesol-print-area{box-shadow:none!important;border-radius:0!important;width:100%!important;max-width:100%!important;padding:8mm!important}
-          .madesol-noprint{display:none!important}
-          .madesol-print-area input{border:none!important;background:transparent!important;outline:none!important;font-size:11px!important}
-          .madesol-print-area table{font-size:10px!important;border-collapse:collapse!important;width:100%!important}
-          .madesol-print-area td,.madesol-print-area th{border:1px solid #888!important;padding:2px 3px!important}
-          .madesol-print-area button{display:none!important}
+          /* Desglose print */
+          body > *:not(.desglose-overlay){display:none!important}
+          .desglose-overlay{position:static!important;background:none!important;padding:0!important;display:block!important}
+          .desglose-print-area{box-shadow:none!important;border-radius:0!important;width:100%!important;max-width:100%!important;padding:8mm!important}
+          .desglose-noprint{display:none!important}
+          .desglose-print-area input{border:none!important;background:transparent!important;outline:none!important;font-size:11px!important}
+          .desglose-print-area table{font-size:10px!important;border-collapse:collapse!important;width:100%!important}
+          .desglose-print-area td,.desglose-print-area th{border:1px solid #888!important;padding:2px 3px!important}
+          .desglose-print-area button{display:none!important}
         }
       `}</style>
 
@@ -3397,11 +3397,11 @@ export default function CabinetProject() {
                   onMouseLeave={e => e.currentTarget.style.background="#fff"}>
                   {t("Shop drawing PDF")}
                 </div>
-                <div onClick={() => setShowMadesol(true)} style={{ padding: "10px 16px", cursor: "pointer", fontSize: 13,
+                <div onClick={() => setShowDesglose(true)} style={{ padding: "10px 16px", cursor: "pointer", fontSize: 13,
                   fontWeight: 600, color: C.ink }}
                   onMouseEnter={e => e.currentTarget.style.background=C.card}
                   onMouseLeave={e => e.currentTarget.style.background="#fff"}>
-                  Madesol Sheet
+                  Desglose
                 </div>
               </div>
             </div>
@@ -3663,12 +3663,12 @@ export default function CabinetProject() {
         </div>
       </div>
 
-      {/* ── MADESOL SHEET MODAL ─────────────────────────────── */}
-      {showMadesol && (
-        <MadesolSheet
+      {/* ── DESGLOSE SHEET MODAL ─────────────────────────────── */}
+      {showDesglose && (
+        <DesgloseSheet
           cabs={cabs}
           projectName={currentProjectName}
-          onClose={() => setShowMadesol(false)}
+          onClose={() => setShowDesglose(false)}
           initialLang={lang}
           allProjects={userProjects}
         />
