@@ -1769,7 +1769,7 @@ function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 12 }}>
             {filtered.map(mat => (
               <div key={mat.code}
-                onClick={() => { const label = [mat.code, mat.name, mat.texture].filter(Boolean).join(' ').trim(); onSelect(label); onClose(); }}
+                onClick={() => { const label = [mat.code, mat.name, mat.texture].filter(Boolean).join(' ').trim(); onSelect(label); }}
                 style={{
                   borderRadius: 10, overflow: "hidden", cursor: "pointer",
                   border: "2px solid transparent", transition: "all 0.15s",
