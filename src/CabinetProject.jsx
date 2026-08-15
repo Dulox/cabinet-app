@@ -1820,6 +1820,13 @@ function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
  * ================================================================ */
 function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProjects = [] }) {
   const today = new Date().toLocaleDateString("es-DO");
+  const confirmClose = () => {
+    if (window.confirm(ms("Save your sheet before closing?", "¿Guardar la hoja antes de cerrar?"))) {
+      // Don't close — let them save first
+      return;
+    }
+    onClose();
+  };
 
   // Build summarised cut list — group same dimensions, multiply by cabinet qty
   const buildRows = (cabsToUse) => {
@@ -2079,16 +2086,21 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
       position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)",
       zIndex: 3000, display: "flex", alignItems: "flex-start",
       justifyContent: "center", overflowY: "auto", padding: "20px 0",
-    }}>
+    }} onClick={confirmClose}>
       <div className="desglose-print-area" style={{
         background: "#fff", width: 960, maxWidth: "98vw", borderRadius: 10,
         boxShadow: "0 8px 40px rgba(0,0,0,0.3)", padding: 24, position: "relative",
-      }}>
+      }} onClick={e => e.stopPropagation()}>
         {/* Close */}
-        <button className="desglose-noprint" onClick={onClose} style={{
-          position: "absolute", top: 12, right: 14, background: "none",
-          border: "none", fontSize: 22, cursor: "pointer", color: "#666",
-        }}>×</button>
+        <button className="desglose-noprint" onClick={confirmClose} style={{
+          position: "absolute", top: 8, right: 12, background: "#f0f0f0",
+          border: "none", borderRadius: 6, width: 32, height: 32,
+          fontSize: 18, cursor: "pointer", color: "#555", display: "flex",
+          alignItems: "center", justifyContent: "center", lineHeight: 1,
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = "#e0e0e0"}
+        onMouseLeave={e => e.currentTarget.style.background = "#f0f0f0"}
+        >×</button>
 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
@@ -2429,10 +2441,10 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
             </button>
           </div>
           <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={onClose}
+            <button onClick={confirmClose}
               style={{ padding: "9px 20px", border: "1.5px solid #bbb", borderRadius: 8, background: "#fff",
                 cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-              Cerrar
+              {ms("Close", "Cerrar")}
             </button>
             <button onClick={() => {
               const el = document.querySelector('.desglose-print-area');
