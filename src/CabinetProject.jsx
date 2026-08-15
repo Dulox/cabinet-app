@@ -316,7 +316,7 @@ const translations = {
     "Side": "Lado", "Bottom": "Fondo", "Top": "Tapa", "Back": "Espalda",
     "Rail / Support": "Riel / Soporte", "Rail / Support (front)": "Riel / Soporte (frontal)", "Rail / Support (back)": "Riel / Soporte (trasero)", "Shelf": "Estante", "Separator (fixed)": "Separador (fijo)",
     "Door": "Puerta", "Door (pair)": "Puertas (par)", "Door (flap, stacked)": "Puerta (abatible, apilada)",
-    "Blind / filler panel": "Panel ciego / relleno", "Select a cabinet": "Selecciona un gabinete", "Click any cabinet in the list to view and edit it.": "Haz clic en cualquier gabinete de la lista para verlo y editarlo.", "Filler piece": "Pieza de relleno", "Wall cabinet (custom depth)": "Armario de pared (profundidad personalizada)", "Filler": "Relleno", "False drawer front": "Frente de gaveta falso",
+    "Blind / filler panel": "Panel ciego / relleno", "Select a cabinet": "Selecciona un gabinete", "Select": "Seleccionar", "Click any cabinet in the list to view and edit it.": "Haz clic en cualquier gabinete de la lista para verlo y editarlo.", "Filler piece": "Pieza de relleno", "Wall cabinet (custom depth)": "Armario de pared (profundidad personalizada)", "Filler": "Relleno", "False drawer front": "Frente de gaveta falso",
     "Drawer front": "Frente de gaveta", "Drawer box side": "Lado de caja de gaveta",
     "Drawer box front/back": "Frente/fondo de caja de gaveta", "Drawer bottom": "Fondo de gaveta",
     "width": "ancho", "depth": "profundidad", "height": "alto", "length": "largo",
@@ -985,6 +985,8 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
     onChange({ drawerHeights: scaled });
   }, [effectiveDoorH]);
 
+  const [cabPickerOpen, setCabPickerOpen] = React.useState(false);
+
   return (
     <div className="cab-card" style={{ background: C.card, border: `1px solid ${C.hair}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -1007,6 +1009,29 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
           {Object.entries(TYPES).map(([k, v]) => <option key={k} value={k}>{t(v.label)}</option>)}
         </select>
       </label>
+
+      {/* Material selector */}
+      <div className="cab-noprint" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
+          <span style={{ color: C.mut, whiteSpace: "nowrap" }}>{t("Material")}:</span>
+          <input value={cab.material || ""} onChange={e => onChange({ material: e.target.value })}
+            placeholder="—"
+            style={{ border: `1px solid ${C.hair}`, borderRadius: 6, padding: "6px 10px", fontSize: 13,
+              fontWeight: 600, width: 200, background: "#fff", color: C.ink, outline: "none" }} />
+        </label>
+        <button onClick={() => setCabPickerOpen(true)}
+          style={{ padding: "5px 12px", background: "#E4572E", color: "#fff", border: "none",
+            borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
+          🎨 {t("Select")}
+        </button>
+      </div>
+      {cabPickerOpen && (
+        <MaterialPicker
+          customMaterials={(() => { try { return JSON.parse(localStorage.getItem("customMaterials") || "[]"); } catch { return []; } })()}
+          onClose={() => setCabPickerOpen(false)}
+          onSelect={(val) => { onChange({ material: val }); setCabPickerOpen(false); }}
+        />
+      )}
 
       {cab.type === "filler" && (
         <div className="cab-noprint">
@@ -1831,7 +1856,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
         if (fW > 0 && fH > 0) {
           const L = Math.max(fW, fH), A = Math.min(fW, fH);
           const fakePart = { material: "melamine" };
-          emitPart(map, "Filler", L, A, fT, cabQty, fakePart);
+          emitPart(map, "Filler", L, A, fT, cabQty, fakePart, { cabMaterial: cab.material || "" });
           // Override grosor since emitPart uses a fixed G — update it after
           const key = "Filler|" + L + "-" + A + "-" + fT;
           if (map.has(key)) map.get(key).grosor = fT;
@@ -1843,6 +1868,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
       const p = cab.params || DEFAULTS;
       if (isNaN(W) || W <= 2 * p.t + 10) return;
       const d = buildCutList(W, p, cab);
+      const cabMaterial = cab.material || "";
       d.parts.forEach((part) => {
         const L = Math.round(Math.max(part.a, part.b));
         const A = Math.round(Math.min(part.a, part.b));
@@ -1865,15 +1891,15 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
           const hingeSides = hingeSidesPerCab * cabQty;
           const plainSides = totalSides - hingeSides;
           // Emit plain sides
-          if (plainSides > 0) emitPart(map, "Side", L, A, G, plainSides, part, { hasRanura: true, hasBisagra: false });
+          if (plainSides > 0) emitPart(map, "Side", L, A, G, plainSides, part, { hasRanura: true, hasBisagra: false, cabMaterial });
           // Emit hinge sides
-          if (hingeSides > 0) emitPart(map, "Side (with doors)", L, A, G, hingeSides, part, { hasRanura: true, hasBisagra: true });
+          if (hingeSides > 0) emitPart(map, "Side (with doors)", L, A, G, hingeSides, part, { hasRanura: true, hasBisagra: true, cabMaterial });
           return;
         }
 
         const sideLabel = part.part;
         const totalQty = part.qty * cabQty;
-        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: false });
+        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: false, cabMaterial });
       });
     });
     return Array.from(map.values()).sort((a, b) => b.largo - a.largo || b.ancho - a.ancho);
@@ -1893,8 +1919,8 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
     } catch { return ""; }
   });
   const [pickerOpen, setPickerOpen] = React.useState(null);
-  const [sortField, setSortField] = React.useState(null); // null | "nombre" | "cant"
-  const [sortDir, setSortDir] = React.useState(1); // 1=asc -1=desc
+  const [sortField, setSortField] = React.useState("nombre"); // default sort by name
+  const [sortDir, setSortDir] = React.useState(1); // 1=asc
   const [showCustomMat, setShowCustomMat] = React.useState(false);
   const [showSaved, setShowSaved] = React.useState(false);
   const [savedSheets, setSavedSheets] = React.useState(() => {
@@ -2121,11 +2147,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
               placeholder="2440"
               style={{ border: "1px solid #bbb", borderRadius: 4, padding: "4px 8px", fontSize: 12, width: 80 }} />
           </label>
-          <button onClick={() => setShowCustomMat(true)}
-            style={{ padding: "5px 12px", background: "#444", color: "#fff", border: "none",
-              borderRadius: 4, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
-            ⭐ Mis Materiales
-          </button>
+
           <button onClick={() => setMLang(l => l === "en" ? "es" : "en")}
             style={{ padding: "5px 12px", background: "#555", color: "#fff", border: "none",
               borderRadius: 4, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
