@@ -2092,22 +2092,22 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         boxShadow: "0 8px 40px rgba(0,0,0,0.3)", padding: 24, position: "relative",
       }} onClick={e => e.stopPropagation()}>
         {/* Close */}
-        <button className="desglose-noprint" onClick={confirmClose} style={{
-          position: "absolute", top: 8, right: 12, background: "#f0f0f0",
-          border: "none", borderRadius: 6, width: 32, height: 32,
-          fontSize: 18, cursor: "pointer", color: "#555", display: "flex",
-          alignItems: "center", justifyContent: "center", lineHeight: 1,
-        }}
-        onMouseEnter={e => e.currentTarget.style.background = "#e0e0e0"}
-        onMouseLeave={e => e.currentTarget.style.background = "#f0f0f0"}
-        >×</button>
-
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <div style={{ fontWeight: 700, fontSize: 15 }}>FORMULARIO DE SERVICIO: CORTE Y CANTEADO</div>
-          <div style={{ fontSize: 11, color: "#555", textAlign: "right" }}>
-            <div>Fecha: <strong>{today}</strong></div>
-            <div>Proyecto: <strong>{projectName}</strong></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ fontSize: 11, color: "#555", textAlign: "right" }}>
+              <div>Fecha: <strong>{today}</strong></div>
+              <div>Proyecto: <strong>{activeProjectName}</strong></div>
+            </div>
+            <button className="desglose-noprint" onClick={confirmClose} style={{
+              background: "#f0f0f0", border: "none", borderRadius: 6, width: 32, height: 32,
+              fontSize: 18, cursor: "pointer", color: "#555", display: "flex",
+              alignItems: "center", justifyContent: "center", lineHeight: 1, flexShrink: 0,
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = "#e0e0e0"}
+            onMouseLeave={e => e.currentTarget.style.background = "#f0f0f0"}
+            >×</button>
           </div>
         </div>
 
@@ -2615,9 +2615,23 @@ export default function CabinetProject() {
     { id: 1, name: "Cabinet 1", type: "base", width: "600", doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null, hingeType: "concealed", params: { ...DEFAULTS } },
   ]);
   const [selectedId, setSelectedId] = useState(null);
-  const [currentProjectId, setCurrentProjectId] = useState(null);
+  const [currentProjectId, setCurrentProjectId] = useState(() => {
+    try { return localStorage.getItem("lastProjectId") || null; } catch { return null; }
+  });
   const [currentProjectName, setCurrentProjectName] = useState("My Project");
-  const [saveStatus, setSaveStatus] = useState(""); // "saving", "saved", "error"
+  const [saveStatus, setSaveStatus] = useState("");
+
+  // Persist current project selection
+  React.useEffect(() => {
+    if (currentProjectId) {
+      try { localStorage.setItem("lastProjectId", currentProjectId); } catch {}
+    }
+  }, [currentProjectId]);
+  React.useEffect(() => {
+    if (currentProjectName) {
+      try { localStorage.setItem("lastProjectName", currentProjectName); } catch {}
+    }
+  }, [currentProjectName]); // "saving", "saved", "error"
   const [userProjects, setUserProjects] = useState([]); // List of all user's projects
   const [showProjectList, setShowProjectList] = useState(false);
   const [showDesglose, setShowDesglose] = useState(false);
@@ -2769,8 +2783,9 @@ export default function CabinetProject() {
       
       if (data && data.length > 0) {
         setUserProjects(data);
-        // Load the most recent project
-        const project = data[0];
+        // Load saved project (from last session) or most recent
+        const savedProjId = currentProjectId;
+        const project = (savedProjId && data.find(p => p.id === savedProjId)) || data[0];
         setCurrentProjectId(project.id);
         setCurrentProjectName(project.name);
         setCabs(project.cabs || []);
