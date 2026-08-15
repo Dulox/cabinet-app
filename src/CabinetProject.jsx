@@ -1800,16 +1800,22 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
   const buildRows = (cabsToUse) => {
     const map = new Map();
     // Helper: add a part to the map, merging by name+dimensions
-    const emitPart = (map, name, L, A, G, qty, part) => {
+    const emitPart = (map, name, L, A, G, qty, part, opts) => {
       const key = `${name}|${L}-${A}-${G}`;
       if (map.has(key)) {
         map.get(key).cant += qty;
       } else {
-        const bandAll = new Set(["Door", "Door (pair)", "Door (flap, stacked)", "False front", "False drawer front", "Drawer front", "Blind / filler panel"]);
+        const o = opts || {};
         map.set(key, {
           id: key, largo: L, ancho: A, grosor: G, cant: qty, nombre: name,
           cl1: "X", cl2: "X", ca1: "X", ca2: "X",
-          vetas: "", rl: "", ra: "", hbl: "", hba: "",
+          vetas: "",
+          // Ranuras: auto-mark on parts whose height matches cabinet height (back panel groove)
+          rl: o.hasRanura ? "X" : "",
+          ra: o.hasRanura ? "X" : "",
+          // Bisagras: auto-mark on parts touching side panels (same height as side)
+          hbl: o.hasBisagra ? "X" : "",
+          hba: o.hasBisagra ? "X" : "",
           material: "", isHardboard: part.material === "hardboard",
         });
       }
@@ -1842,6 +1848,10 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
         const A = Math.round(Math.min(part.a, part.b));
         const G = part.material === "hardboard" ? Math.round(p.grooveDepth || 5.5) : p.t;
 
+        // Auto-detect ranura (back panel groove) and bisagra (hinge drilling)
+        const ranuraParts = new Set(["Side", "Bottom", "Top"]);
+        const hasRanura = ranuraParts.has(part.part);
+
         // Side panels: split into "with doors" (needs hinge holes) vs plain.
         // Corner cabinet: hinges go on the hinge stile, so NO side panel needs holes.
         // Otherwise: number of sides needing holes = doorCount (1 door → 1 side, 2 doors → 2 sides).
@@ -1855,40 +1865,15 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
           const hingeSides = hingeSidesPerCab * cabQty;
           const plainSides = totalSides - hingeSides;
           // Emit plain sides
-          if (plainSides > 0) emitPart(map, "Side", L, A, G, plainSides, part);
+          if (plainSides > 0) emitPart(map, "Side", L, A, G, plainSides, part, { hasRanura: true, hasBisagra: false });
           // Emit hinge sides
-          if (hingeSides > 0) emitPart(map, "Side (with doors)", L, A, G, hingeSides, part);
+          if (hingeSides > 0) emitPart(map, "Side (with doors)", L, A, G, hingeSides, part, { hasRanura: true, hasBisagra: true });
           return;
         }
 
         const sideLabel = part.part;
-        const key = `${sideLabel}|${L}-${A}-${G}`;
         const totalQty = part.qty * cabQty;
-        if (map.has(key)) {
-          map.get(key).cant += totalQty;
-        } else {
-          const bandAll = new Set(["Door", "Door (pair)", "Door (flap, stacked)", "False front", "False drawer front", "Drawer front", "Blind / filler panel"]);
-          const bandFront = new Set(["Side", "Top", "Bottom", "Shelf", "Separator (fixed)", "Rail / Support", "Rail / Support (front)", "Rail / Support (back)"]);
-          const hasAllEdges = bandAll.has(part.part);
-          const hasFrontEdge = bandFront.has(part.part) || hasAllEdges;
-          map.set(key, {
-            id: key,
-            largo: L,
-            ancho: A,
-            grosor: G,
-            cant: totalQty,
-            nombre: sideLabel,
-            // Canteado: all 4 edges X by default — user can click to remove
-            cl1: "X",
-            cl2: "X",
-            ca1: "X",
-            ca2: "X",
-            // Ranuras, Bisagras
-            vetas: "", rl: "", ra: "", hbl: "", hba: "",
-            material: "",
-            isHardboard: part.material === "hardboard",
-          });
-        }
+        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: false });
       });
     });
     return Array.from(map.values()).sort((a, b) => b.largo - a.largo || b.ancho - a.ancho);
@@ -2421,15 +2406,13 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
               💾 Guardar hoja
             </button>
             <button onClick={() => {
-              if (window.confirm("Rebuild from current cabinets? Dimension changes will update, your X marks will be kept.")) {
+              if (window.confirm("Rebuild? Your X marks, material, and client info will be kept.")) {
                 const fresh = buildRows(activeCabs);
-                // Preserve user-set X fields from existing rows by matching on part name + dimensions
                 setRows(fresh.map(newRow => {
                   const existing = rows.find(r => r.nombre === newRow.nombre && r.largo === newRow.largo && r.ancho === newRow.ancho);
                   if (!existing) return newRow;
                   return {
                     ...newRow,
-                    // preserve user-toggled fields
                     vetas: existing.vetas,
                     cl1: existing.cl1, cl2: existing.cl2, ca1: existing.ca1, ca2: existing.ca2,
                     rl: existing.rl, ra: existing.ra, hbl: existing.hbl, hba: existing.hba,
@@ -2437,6 +2420,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
                     _matOverride: existing._matOverride,
                   };
                 }));
+                // preserve client info — don't touch nombre, telefono, factura, globalMaterial
               }
             }}
               style={{ padding: "8px 14px", background: "#555", color: "#fff", border: "none",
@@ -2565,7 +2549,7 @@ function MadesolSheet({ cabs, projectName, onClose, initialLang = "en", allProje
                     No hay hojas guardadas aún.
                   </div>
                 )}
-                {savedSheets.map((s, i) => (
+                {[...savedSheets].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((s, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 10,
                     padding: "10px 4px", borderBottom: "1px solid #f0f0f0" }}>
                     <div style={{ flex: 1 }}>
