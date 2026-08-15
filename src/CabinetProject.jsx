@@ -2492,34 +2492,43 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
               🖨 Imprimir / Guardar PDF
             </button>
-            <button onClick={() => {
+            <button onClick={async () => {
+              // Load SheetJS from CDN if not already loaded
+              if (!window.XLSX) {
+                const script = document.createElement("script");
+                script.src = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
+                document.head.appendChild(script);
+                await new Promise((r) => { script.onload = r; });
+              }
+              const XLSX = window.XLSX;
               const headers = ["No","Material","Nombre","Vetas","Largo (mm)","Ancho (mm)","Grosor (mm)","Cant.","L1","L2","A1","A2","R-L","R-A","HB-L","HB-A"];
-              const csvRows = sortedRows.map((row, i) => [
-                i + 1,
-                row.material || "",
-                mTName(row.nombre),
-                row.vetas || "",
-                row.largo,
-                row.ancho,
-                row.grosor,
-                row.cant,
-                row.cl1 || "", row.cl2 || "", row.ca1 || "", row.ca2 || "",
-                row.rl || "", row.ra || "", row.hbl || "", row.hba || "",
-              ]);
-              const csv = [headers, ...csvRows]
-                .map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(','))
-                .join('\r\n');
-              const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = (projectName || 'corte') + '_madesol.csv';
-              a.click();
-              setTimeout(() => URL.revokeObjectURL(url), 2000);
+              const data = sortedRows.map((row, i) => ({
+                "No": i + 1,
+                "Material": row.material || "",
+                "Nombre": mTName(row.nombre),
+                "Vetas": row.vetas || "",
+                "Largo (mm)": row.largo,
+                "Ancho (mm)": row.ancho,
+                "Grosor (mm)": row.grosor,
+                "Cant.": row.cant,
+                "L1": row.cl1 || "", "L2": row.cl2 || "",
+                "A1": row.ca1 || "", "A2": row.ca2 || "",
+                "R-L": row.rl || "", "R-A": row.ra || "",
+                "HB-L": row.hbl || "", "HB-A": row.hba || "",
+              }));
+              const ws = XLSX.utils.json_to_sheet(data, { header: headers });
+              // Set column widths
+              ws["!cols"] = [
+                {wch:4},{wch:24},{wch:22},{wch:6},{wch:10},{wch:10},{wch:9},{wch:6},
+                {wch:4},{wch:4},{wch:4},{wch:4},{wch:4},{wch:4},{wch:5},{wch:5}
+              ];
+              const wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, "Desglose");
+              XLSX.writeFile(wb, (activeProjectName || "desglose") + ".xlsx");
             }}
               style={{ padding: "9px 20px", border: "none", borderRadius: 8, background: "#1D6F42",
                 color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
-              📊 Excel / CSV
+              📊 Excel
             </button>
           </div>
         </div>
