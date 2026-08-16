@@ -2611,6 +2611,7 @@ export default function CabinetProject() {
   const [signupMode, setSignupMode] = useState(false);
   const [authError, setAuthError] = useState("");
   const [pendingUsers, setPendingUsers] = useState([]);
+  const [adminViewActive, setAdminViewActive] = useState(true);
   
   const [lang, setLang] = useState("en");
   const t = (key) => (translations[lang] && translations[lang][key]) || key;
@@ -2957,7 +2958,7 @@ export default function CabinetProject() {
 
   // Load projects when user logs in
   useEffect(() => {
-    if (authState?.user?.id && currentProjectId === null) {
+    if (authState?.user?.id) {
       loadUserProjects();
     }
   }, [authState?.user?.id]);
@@ -3329,8 +3330,19 @@ export default function CabinetProject() {
     return <PendingScreen authState={authState} handleLogout={handleLogout} />;
   }
 
-  if (authState.isAdmin) {
-    return <AdminPanel pendingUsers={pendingUsers} handleApprove={handleApprove} authState={authState} handleLogout={handleLogout} />;
+  if (authState.isAdmin && adminViewActive) {
+    return (
+      <div>
+        <div style={{ background: "#1a1a1a", padding: "8px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, letterSpacing: "0.1em" }}>ADMIN</span>
+          <button onClick={() => { setAdminViewActive(false); loadUserProjects(); }}
+            style={{ padding: "5px 14px", background: "#e4572e", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            → My Projects
+          </button>
+        </div>
+        <AdminPanel pendingUsers={pendingUsers} handleApprove={handleApprove} authState={authState} handleLogout={handleLogout} />
+      </div>
+    );
   }
 
   return (
@@ -3476,6 +3488,10 @@ export default function CabinetProject() {
                 color: C.ink, cursor: "pointer", fontSize: 12, fontWeight: 700, letterSpacing: "0.04em" }}>
               {lang === "en" ? "ES" : "EN"}
             </button>
+            {authState?.isAdmin && (
+              <button className="cab-btn" onClick={() => setAdminViewActive(true)}
+                style={btn("#1a1a1a", "#fff", "1.5px solid #1a1a1a")}>Admin</button>
+            )}
             <button className="cab-btn" onClick={handleLogout} style={btn(C.ink, C.card, `1.5px solid ${C.ink}`)}>{t("Log out")}</button>
           </div>
         </div>
