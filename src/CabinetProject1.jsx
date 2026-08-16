@@ -3355,21 +3355,6 @@ export default function CabinetProject() {
         .cab-main{flex:1;min-width:0}
         .cab-nav{transition:background .15s,border-color .15s}
         @media (max-width:900px){.cab-wb{flex-direction:column}.cab-side{width:100%}}
-        @media (max-width:640px){
-          .projects-dropdown-menu{
-            position:fixed!important;
-            top:auto!important;
-            left:12px!important;
-            right:12px!important;
-            bottom:auto!important;
-            margin-top:8px!important;
-            min-width:0!important;
-            width:auto!important;
-            max-width:none!important;
-            max-height:70vh!important;
-            overflow-y:auto!important;
-          }
-        }
         @media print{
           @page{margin:10mm}
           .cab-root{background:#fff!important;padding:0!important}
@@ -3406,7 +3391,7 @@ export default function CabinetProject() {
                 {userProjects.length} {t("Projects")} ▼
               </button>
               {showProjectList && (
-                <div className="projects-dropdown-menu" style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, background: C.card, border: `1px solid ${C.hair}`, borderRadius: 10, minWidth: 250, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", zIndex: 1000 }}>
+                <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, background: C.card, border: `1px solid ${C.hair}`, borderRadius: 10, minWidth: 250, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", zIndex: 1000 }}>
                   <div style={{ padding: 12 }}>
                     <button onClick={createNewProject} style={{ width: "100%", padding: 10, background: C.rust, color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 12 }}>{t("+ New Project")}</button>
                     <div style={{ maxHeight: 300, overflowY: "auto" }}>
