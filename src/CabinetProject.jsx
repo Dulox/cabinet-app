@@ -2405,7 +2405,8 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 <option key={i} value={s.name}>{s.name} · {s.date}</option>
               ))}
             </select>
-            <button onClick={() => {
+            <button onClick={(e) => {
+              e.stopPropagation();
               const name = saveSheetName && saveSheetName !== "__new__" ? saveSheetName : (projectName || "Hoja sin nombre");
               const now = new Date();
               const date = now.toLocaleDateString("es-DO") + " " + now.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" });
