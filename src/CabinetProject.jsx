@@ -1907,28 +1907,20 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         const ranuraParts = new Set(["Side", "Bottom", "Top"]);
         const hasRanura = ranuraParts.has(part.part);
 
-        // Side panels: split into "with doors" (needs hinge holes) vs plain.
-        // Corner cabinet: hinges go on the hinge stile, so NO side panel needs holes.
-        // Otherwise: number of sides needing holes = doorCount (1 door → 1 side, 2 doors → 2 sides).
+        // Side panels: all sides are plain (no "with doors" variant).
+        // Doors will be marked with X in HB-L/HB-A to show they're fixed to the side.
         if (part.part === "Side") {
           const totalSides = part.qty * cabQty;      // usually 2 × cabQty
-          const perCab = part.qty;                    // sides per single cabinet (2)
-          let hingeSidesPerCab = 0;
-          if (cab.type !== "drawers" && cab.type !== "corner") {
-            hingeSidesPerCab = Math.min(cab.doorCount || 0, perCab);
-          }
-          const hingeSides = hingeSidesPerCab * cabQty;
-          const plainSides = totalSides - hingeSides;
-          // Emit plain sides
-          if (plainSides > 0) emitPart(map, "Side", L, A, G, plainSides, part, { hasRanura: true, hasBisagra: false, cabMaterial });
-          // Emit hinge sides
-          if (hingeSides > 0) emitPart(map, "Side (with doors)", L, A, G, hingeSides, part, { hasRanura: true, hasBisagra: true, cabMaterial });
+          // Emit all sides as plain, no hinge marking
+          emitPart(map, "Side", L, A, G, totalSides, part, { hasRanura: true, hasBisagra: false, cabMaterial });
           return;
         }
 
         const sideLabel = part.part;
         const totalQty = part.qty * cabQty;
-        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: false, cabMaterial });
+        // Mark door parts with hasBisagra so they show X in HB-L/HB-A (fixed to side of cabinet)
+        const isDoorPart = sideLabel.includes("Door");
+        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: isDoorPart, cabMaterial });
       });
     });
     return Array.from(map.values()).sort((a, b) => b.largo - a.largo || b.ancho - a.ancho);
@@ -1963,7 +1955,6 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
   const mTName = (name) => {
     if (mLang !== "es") return name;
     const map = {
-      "Side (with doors)": "Lateral (con puertas)",
       "Side": "Lateral",
       "Bottom Panel": "Panel de fondo",
       "Bottom": "Fondo",
