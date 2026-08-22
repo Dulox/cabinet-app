@@ -1856,10 +1856,20 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
     // Helper: add a part to the map, merging by name+dimensions
     const emitPart = (map, name, L, A, G, qty, part, opts) => {
       const key = `${name}|${L}-${A}-${G}`;
+      const o = opts || {};
       if (map.has(key)) {
-        map.get(key).cant += qty;
+        const existing = map.get(key);
+        existing.cant += qty;
+        // Update flags when merging: if this variant should have the flag, mark it
+        if (o.hasBisagra && o.sideH) {
+          // Mark on the dimension closest to cabinet height
+          const distL = Math.abs(o.doorL - o.sideH);
+          const distA = Math.abs(o.doorA - o.sideH);
+          if (distL <= distA) { existing.hbl = "X"; }  // doorL is closer to sideH
+          else { existing.hba = "X"; }  // doorA is closer to sideH
+        }
+        if (o.hasRanura) { existing.rl = "X"; existing.ra = "X"; }
       } else {
-        const o = opts || {};
         map.set(key, {
           id: key, largo: L, ancho: A, grosor: G, cant: qty, nombre: name,
           cl1: "X", cl2: "X", ca1: "X", ca2: "X",
@@ -1867,9 +1877,9 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
           // Ranuras: auto-mark on parts whose height matches cabinet height (back panel groove)
           rl: o.hasRanura ? "X" : "",
           ra: o.hasRanura ? "X" : "",
-          // Bisagras: auto-mark on parts touching side panels (same height as side)
-          hbl: o.hasBisagra ? "X" : "",
-          hba: o.hasBisagra ? "X" : "",
+          // Bisagras: mark on dimension closest to cabinet height (where hinge attaches)
+          hbl: (o.hasBisagra && o.sideH && Math.abs(L - o.sideH) <= Math.abs(A - o.sideH)) ? "X" : "",
+          hba: (o.hasBisagra && o.sideH && Math.abs(A - o.sideH) < Math.abs(L - o.sideH)) ? "X" : "",
           material: (o && o.cabMaterial) || "", isHardboard: part.material === "hardboard",
         });
       }
@@ -1918,9 +1928,10 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
 
         const sideLabel = part.part;
         const totalQty = part.qty * cabQty;
-        // Mark door parts with hasBisagra so they show X in HB-L/HB-A (fixed to side of cabinet)
+        // Mark door parts: bisagra attaches on whichever dimension is closer to cabinet height
         const isDoorPart = sideLabel.includes("Door");
-        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: isDoorPart, cabMaterial });
+        const sideH = p.sideH;  // cabinet's side panel height
+        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: isDoorPart, cabMaterial, sideH, doorL: L, doorA: A });
       });
     });
     return Array.from(map.values()).sort((a, b) => b.largo - a.largo || b.ancho - a.ancho);
