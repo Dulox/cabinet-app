@@ -1907,28 +1907,20 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         const ranuraParts = new Set(["Side", "Bottom", "Top"]);
         const hasRanura = ranuraParts.has(part.part);
 
-        // Side panels: split into "with doors" (needs hinge holes) vs plain.
-        // Corner cabinet: hinges go on the hinge stile, so NO side panel needs holes.
-        // Otherwise: number of sides needing holes = doorCount (1 door → 1 side, 2 doors → 2 sides).
+        // Side panels: all sides are plain (no "with doors" variant).
+        // Doors will be marked with X in HB-L/HB-A to show they're fixed to the side.
         if (part.part === "Side") {
           const totalSides = part.qty * cabQty;      // usually 2 × cabQty
-          const perCab = part.qty;                    // sides per single cabinet (2)
-          let hingeSidesPerCab = 0;
-          if (cab.type !== "drawers" && cab.type !== "corner") {
-            hingeSidesPerCab = Math.min(cab.doorCount || 0, perCab);
-          }
-          const hingeSides = hingeSidesPerCab * cabQty;
-          const plainSides = totalSides - hingeSides;
-          // Emit plain sides
-          if (plainSides > 0) emitPart(map, "Side", L, A, G, plainSides, part, { hasRanura: true, hasBisagra: false, cabMaterial });
-          // Emit hinge sides
-          if (hingeSides > 0) emitPart(map, "Side (with doors)", L, A, G, hingeSides, part, { hasRanura: true, hasBisagra: true, cabMaterial });
+          // Emit all sides as plain, no hinge marking
+          emitPart(map, "Side", L, A, G, totalSides, part, { hasRanura: true, hasBisagra: false, cabMaterial });
           return;
         }
 
         const sideLabel = part.part;
         const totalQty = part.qty * cabQty;
-        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: false, cabMaterial });
+        // Mark door parts with hasBisagra so they show X in HB-L/HB-A (fixed to side of cabinet)
+        const isDoorPart = sideLabel.includes("Door");
+        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: isDoorPart, cabMaterial });
       });
     });
     return Array.from(map.values()).sort((a, b) => b.largo - a.largo || b.ancho - a.ancho);
@@ -1963,7 +1955,6 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
   const mTName = (name) => {
     if (mLang !== "es") return name;
     const map = {
-      "Side (with doors)": "Lateral (con puertas)",
       "Side": "Lateral",
       "Bottom Panel": "Panel de fondo",
       "Bottom": "Fondo",
@@ -2611,6 +2602,7 @@ export default function CabinetProject() {
   const [signupMode, setSignupMode] = useState(false);
   const [authError, setAuthError] = useState("");
   const [pendingUsers, setPendingUsers] = useState([]);
+  const [adminViewActive, setAdminViewActive] = useState(true);
   
   const [lang, setLang] = useState("en");
   const t = (key) => (translations[lang] && translations[lang][key]) || key;
@@ -2957,7 +2949,7 @@ export default function CabinetProject() {
 
   // Load projects when user logs in
   useEffect(() => {
-    if (authState?.user?.id && currentProjectId === null) {
+    if (authState?.user?.id) {
       loadUserProjects();
     }
   }, [authState?.user?.id]);
@@ -3329,8 +3321,19 @@ export default function CabinetProject() {
     return <PendingScreen authState={authState} handleLogout={handleLogout} />;
   }
 
-  if (authState.isAdmin) {
-    return <AdminPanel pendingUsers={pendingUsers} handleApprove={handleApprove} authState={authState} handleLogout={handleLogout} />;
+  if (authState.isAdmin && adminViewActive) {
+    return (
+      <div>
+        <div style={{ background: "#1a1a1a", padding: "8px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, letterSpacing: "0.1em" }}>ADMIN</span>
+          <button onClick={() => { setAdminViewActive(false); loadUserProjects(); }}
+            style={{ padding: "5px 14px", background: "#e4572e", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            → My Projects
+          </button>
+        </div>
+        <AdminPanel pendingUsers={pendingUsers} handleApprove={handleApprove} authState={authState} handleLogout={handleLogout} />
+      </div>
+    );
   }
 
   return (
@@ -3355,6 +3358,21 @@ export default function CabinetProject() {
         .cab-main{flex:1;min-width:0}
         .cab-nav{transition:background .15s,border-color .15s}
         @media (max-width:900px){.cab-wb{flex-direction:column}.cab-side{width:100%}}
+        @media (max-width:640px){
+          .projects-dropdown-menu{
+            position:fixed!important;
+            top:auto!important;
+            left:12px!important;
+            right:12px!important;
+            bottom:auto!important;
+            margin-top:8px!important;
+            min-width:0!important;
+            width:auto!important;
+            max-width:none!important;
+            max-height:70vh!important;
+            overflow-y:auto!important;
+          }
+        }
         @media print{
           @page{margin:10mm}
           .cab-root{background:#fff!important;padding:0!important}
@@ -3391,7 +3409,7 @@ export default function CabinetProject() {
                 {userProjects.length} {t("Projects")} ▼
               </button>
               {showProjectList && (
-                <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, background: C.card, border: `1px solid ${C.hair}`, borderRadius: 10, minWidth: 250, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", zIndex: 1000 }}>
+                <div className="projects-dropdown-menu" style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, background: C.card, border: `1px solid ${C.hair}`, borderRadius: 10, minWidth: 250, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", zIndex: 1000 }}>
                   <div style={{ padding: 12 }}>
                     <button onClick={createNewProject} style={{ width: "100%", padding: 10, background: C.rust, color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 12 }}>{t("+ New Project")}</button>
                     <div style={{ maxHeight: 300, overflowY: "auto" }}>
@@ -3461,6 +3479,10 @@ export default function CabinetProject() {
                 color: C.ink, cursor: "pointer", fontSize: 12, fontWeight: 700, letterSpacing: "0.04em" }}>
               {lang === "en" ? "ES" : "EN"}
             </button>
+            {authState?.isAdmin && (
+              <button className="cab-btn" onClick={() => setAdminViewActive(true)}
+                style={btn("#1a1a1a", "#fff", "1.5px solid #1a1a1a")}>Admin</button>
+            )}
             <button className="cab-btn" onClick={handleLogout} style={btn(C.ink, C.card, `1.5px solid ${C.ink}`)}>{t("Log out")}</button>
           </div>
         </div>
