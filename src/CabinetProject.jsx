@@ -1844,10 +1844,24 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
   const today = new Date().toLocaleDateString("es-DO");
   const confirmClose = () => {
     if (window.confirm(ms("Save your sheet before closing?", "¿Guardar la hoja antes de cerrar?"))) {
-      // Don't close — let them save first
-      return;
+      // User clicked OK — save the sheet then close
+      const name = saveSheetName && saveSheetName !== "__new__" ? saveSheetName : (projectName || "Hoja sin nombre");
+      const now = new Date();
+      const date = now.toLocaleDateString("es-DO") + " " + now.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" });
+      const sheet = { name, date, rows, globalMaterial, factura, nombre, telefono };
+      const existing = savedSheets.findIndex(s => s.name === name);
+      let updated;
+      if (existing >= 0) {
+        updated = [...savedSheets];
+        updated[existing] = sheet;
+      } else {
+        updated = [sheet, ...savedSheets.slice(0, 19)];
+      }
+      setSavedSheets(updated);
+      try { localStorage.setItem("savedDesgloseSheets", JSON.stringify(updated)); } catch {}
+      onClose();
     }
-    onClose();
+    // If user clicks Cancel, do nothing (just return)
   };
 
   // Build summarised cut list — group same dimensions, multiply by cabinet qty
@@ -2406,7 +2420,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               ))}
             </select>
             <button onClick={(e) => {
-              e.stopPropagation();
+              e.stopPropagation();  // prevent click from bubbling to overlay
               const name = saveSheetName && saveSheetName !== "__new__" ? saveSheetName : (projectName || "Hoja sin nombre");
               const now = new Date();
               const date = now.toLocaleDateString("es-DO") + " " + now.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" });
@@ -2422,6 +2436,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               setSavedSheets(updated);
               try { localStorage.setItem("savedDesgloseSheets", JSON.stringify(updated)); } catch {}
               alert("Hoja guardada: " + name);
+              onClose();
             }}
               style={{ padding: "8px 14px", background: "#276221", color: "#fff", border: "none",
                 borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
