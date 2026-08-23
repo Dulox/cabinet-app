@@ -44,14 +44,14 @@ const THEME_COLORS = {
     inputBg: "#FFFFFF", inputBorder: "rgba(32,35,42,0.15)",
   },
   dark: {
-    paper: "#1A1A1A", card: "#222222", ink: "#111111", mut: "#888888",
-    hair: "rgba(255,255,255,0.08)", amber: "#FF6B35", rust: "#FF6B35",
-    mat: "#2A2A2A", matLine: "rgba(255,107,53,0.12)",
+    paper: "#1A1A1A", card: "#222222", ink: "#FFFFFF", mut: "#E0E0E0",
+    hair: "rgba(255,255,255,0.12)", amber: "#FF6B35", rust: "#FF6B35",
+    mat: "#2A2A2A", matLine: "rgba(255,107,53,0.15)",
     panel: "#2D2D2D", panelEdge: "#404040",
     bgPrimary: "#1A1A1A", bgSecondary: "#222222",
-    textPrimary: "#FFFFFF", textSecondary: "#AAAAAA",
-    border: "rgba(255,255,255,0.08)", buttonBg: "#FF6B35", buttonText: "#000000",
-    inputBg: "#2A2A2A", inputBorder: "rgba(255,255,255,0.1)",
+    textPrimary: "#FFFFFF", textSecondary: "#D8D8D8",
+    border: "rgba(255,255,255,0.12)", buttonBg: "#FF6B35", buttonText: "#000000",
+    inputBg: "#2A2A2A", inputBorder: "rgba(255,255,255,0.15)",
   }
 };
 
@@ -3549,9 +3549,12 @@ export default function CabinetProject() {
               {copied ? t("Copied ✓") : t("Copy text")}</button>
             <span style={{ width: 1, height: 22, background: getColors().hair, margin: "0 2px" }} />
             <button className="cab-btn" onClick={toggleTheme}
-              style={{ padding: "7px 11px", borderRadius: 8, border: `1.5px solid ${getColors().amber}`, background: theme === "dark" ? "rgba(228,87,46,0.12)" : "rgba(228,87,46,0.06)",
-                color: getColors().amber, cursor: "pointer", fontSize: 12, fontWeight: 700, letterSpacing: "0.04em" }}>
-              {theme === "dark" ? "🌙 Dark" : "☀️ Light"}
+              style={{ padding: "8px 14px", borderRadius: 8, border: "none", 
+                background: theme === "dark" ? "#FF6B35" : "#FFF8F5",
+                color: theme === "dark" ? "#000" : "#FF6B35", 
+                cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: "0.04em",
+                boxShadow: `0 2px 8px rgba(255,107,53,0.25)` }}>
+              {theme === "dark" ? "☀️ LIGHT" : "🌙 DARK"}
             </button>
             <span style={{ width: 1, height: 22, background: getColors().hair, margin: "0 2px" }} />
             <button className="cab-btn" onClick={() => setLang(lang === "en" ? "es" : "en")}
