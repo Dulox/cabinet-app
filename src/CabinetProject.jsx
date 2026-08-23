@@ -33,17 +33,8 @@ const C = {
 
 // Theme definitions
 const THEME_COLORS = {
-  light: {
-    paper: "#EAEAE7", card: "#FBFBF9", ink: "#20232A", mut: "#6B6F76",
-    hair: "rgba(32,35,42,0.13)", amber: "#E4572E", rust: "#E4572E",
-    mat: "#24272E", matLine: "rgba(228,87,46,0.13)",
-    panel: "#DEDEDA", panelEdge: "#B7B7B1",
-    bgPrimary: "#FBFBF9", bgSecondary: "#F5F5F3",
-    textPrimary: "#20232A", textSecondary: "#6B6F76",
-    border: "rgba(32,35,42,0.1)", buttonBg: "#20232A", buttonText: "#FBFBF9",
-    inputBg: "#FFFFFF", inputBorder: "rgba(32,35,42,0.15)",
-  },
   dark: {
+    // Dark Mode: #1A1A1A background, orange accent #FF6B35, white text
     paper: "#1A1A1A", card: "#222222", ink: "#FFFFFF", mut: "#E0E0E0",
     hair: "rgba(255,255,255,0.12)", amber: "#FF6B35", rust: "#FF6B35",
     mat: "#2A2A2A", matLine: "rgba(255,107,53,0.15)",
@@ -52,8 +43,31 @@ const THEME_COLORS = {
     textPrimary: "#FFFFFF", textSecondary: "#D8D8D8",
     border: "rgba(255,255,255,0.12)", buttonBg: "#FF6B35", buttonText: "#000000",
     inputBg: "#2A2A2A", inputBorder: "rgba(255,255,255,0.15)",
+  },
+  glass: {
+    // Glass Morphism: Gradient bg, purple accent #667eea, frosted glass effect
+    paper: "linear-gradient(135deg, #e8f4f8 0%, #f0e8f8 100%)", 
+    card: "rgba(255,255,255,0.4)", 
+    ink: "#2c3e50", 
+    mut: "#667eea",
+    hair: "rgba(255,255,255,0.3)", 
+    amber: "#667eea", 
+    rust: "#667eea",
+    mat: "rgba(255,255,255,0.5)", 
+    matLine: "rgba(102,126,234,0.2)",
+    panel: "rgba(255,255,255,0.3)", 
+    panelEdge: "rgba(102,126,234,0.3)",
+    bgPrimary: "linear-gradient(135deg, #e8f4f8 0%, #f0e8f8 100%)", 
+    bgSecondary: "rgba(255,255,255,0.4)",
+    textPrimary: "#2c3e50", 
+    textSecondary: "#555",
+    border: "rgba(255,255,255,0.4)", 
+    buttonBg: "#667eea", 
+    buttonText: "#FFFFFF",
+    inputBg: "rgba(255,255,255,0.6)", 
+    inputBorder: "rgba(255,255,255,0.4)",
   }
-};
+}
 
 // Global colors variable - will be updated by main component
 let currentTheme = "dark";
@@ -3550,11 +3564,11 @@ export default function CabinetProject() {
             <span style={{ width: 1, height: 22, background: getColors().hair, margin: "0 2px" }} />
             <button className="cab-btn" onClick={toggleTheme}
               style={{ padding: "8px 14px", borderRadius: 8, border: "none", 
-                background: theme === "dark" ? "#FF6B35" : "#FFF8F5",
-                color: theme === "dark" ? "#000" : "#FF6B35", 
+                background: theme === "dark" ? "#FF6B35" : "rgba(102,126,234,0.8)",
+                color: theme === "dark" ? "#000" : "#FFF", 
                 cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: "0.04em",
-                boxShadow: `0 2px 8px rgba(255,107,53,0.25)` }}>
-              {theme === "dark" ? "☀️ LIGHT" : "🌙 DARK"}
+                boxShadow: theme === "dark" ? `0 2px 8px rgba(255,107,53,0.25)` : `0 2px 8px rgba(102,126,234,0.25)` }}>
+              {theme === "dark" ? "🌙 DARK" : "✨ GLASS"}
             </button>
             <span style={{ width: 1, height: 22, background: getColors().hair, margin: "0 2px" }} />
             <button className="cab-btn" onClick={() => setLang(lang === "en" ? "es" : "en")}
