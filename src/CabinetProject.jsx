@@ -3570,10 +3570,10 @@ export default function CabinetProject() {
             <span style={{ width: 1, height: 22, background: getColors().hair, margin: "0 2px" }} />
             <button className="cab-btn" onClick={toggleTheme}
               style={{ padding: "8px 14px", borderRadius: 8, border: "none", 
-                background: theme === "dark" ? "#FF6B35" : "rgba(102,126,234,0.8)",
-                color: theme === "dark" ? "#000" : "#FFF", 
+                background: getColors().buttonBg,
+                color: getColors().buttonText, 
                 cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: "0.04em",
-                boxShadow: theme === "dark" ? `0 2px 8px rgba(255,107,53,0.25)` : `0 2px 8px rgba(102,126,234,0.25)` }}>
+                boxShadow: `0 2px 8px rgba(0,0,0,0.15)` }}>
               {theme === "dark" ? "🌙 DARK" : "✨ GLASS"}
             </button>
             <span style={{ width: 1, height: 22, background: getColors().hair, margin: "0 2px" }} />
