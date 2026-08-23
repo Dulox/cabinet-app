@@ -34,23 +34,23 @@ const C = {
 // Theme definitions
 const THEME_COLORS = {
   dark: {
-    // Dark Mode: #1A1A1A background, orange accent #FF6B35, white text
-    paper: "#1A1A1A", card: "#222222", ink: "#FFFFFF", mut: "#E0E0E0",
+    // Dark Mode: Purple-tinted background, orange accent #FF6B35, white text
+    paper: "rgba(102, 126, 234, 0.6)", card: "#222222", ink: "#FFFFFF", mut: "#E0E0E0",
     hair: "rgba(255,255,255,0.12)", amber: "#FF6B35", rust: "#FF6B35",
     mat: "#2A2A2A", matLine: "rgba(255,107,53,0.15)",
     panel: "#2D2D2D", panelEdge: "#404040",
-    bgPrimary: "#1A1A1A", bgSecondary: "#222222",
+    bgPrimary: "rgba(102, 126, 234, 0.6)", bgSecondary: "#222222",
     textPrimary: "#FFFFFF", textSecondary: "#D8D8D8",
     border: "rgba(255,255,255,0.12)", buttonBg: "#FF6B35", buttonText: "#000000",
     inputBg: "#2A2A2A", inputBorder: "rgba(255,255,255,0.15)",
   },
   glass: {
-    // Glass Morphism: Light professional, purple accent #667eea
+    // Glass Morphism: Light professional, purple accent #667eea, HIGH CONTRAST text
     paper: "#F8F9FB", 
     card: "#FFFFFF", 
     ink: "#1A1A2E", 
-    mut: "#667eea",
-    hair: "rgba(102,126,234,0.1)", 
+    mut: "#333333",  // Dark grey for secondary text (was purple, too faint)
+    hair: "rgba(51,51,51,0.08)", 
     amber: "#667eea", 
     rust: "#667eea",
     mat: "#F0F2F7", 
@@ -60,7 +60,7 @@ const THEME_COLORS = {
     bgPrimary: "#F8F9FB", 
     bgSecondary: "#F0F2F7",
     textPrimary: "#1A1A2E", 
-    textSecondary: "#667eea",
+    textSecondary: "#555555",  // Dark grey instead of purple
     border: "rgba(102,126,234,0.15)", 
     buttonBg: "#667eea", 
     buttonText: "#FFFFFF",
