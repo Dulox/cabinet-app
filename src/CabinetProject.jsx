@@ -851,7 +851,7 @@ function NumField({ label, value, onChange, suffix = "mm", w = 92 }) {
       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
         <input type="number" value={value} onChange={(e) => onChange(e.target.value)}
           style={{ width: w, padding: "7px 9px", border: `1px solid ${getColors().hair}`, borderRadius: 7,
-            background: "#fff", color: getColors().ink, fontFamily: "'JetBrains Mono', monospace",
+            background: "#fff", color: "#111", fontFamily: "'JetBrains Mono', monospace",
             fontWeight: 500, fontSize: 15, outline: "none" }} />
         {suffix && <span style={{ fontSize: 12, color: getColors().mut, fontFamily: "'JetBrains Mono', monospace" }}>{suffix}</span>}
       </span>
@@ -866,7 +866,7 @@ const navMini = (off) => ({ padding: 0, width: 22, minWidth: 22, border: `1px so
 const btn = (bg, color, border) => ({ padding: "8px 14px", background: bg, color, border, borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Archivo', sans-serif" });
 const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 const selCss = { padding: "9px 9px", border: `1px solid ${getColors().hair}`, borderRadius: 7, background: "#fff",
-  fontFamily: "'JetBrains Mono', monospace", fontSize: 14 };
+  fontFamily: "'JetBrains Mono', monospace", fontSize: 14, color: "#111" };
 
 /* --------------------------- cabinet card ------------------------- */
 /* Copy text to the clipboard with fallbacks. Returns true on success.
@@ -1065,8 +1065,8 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
       <label className="cab-noprint" style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 14 }}>
         <span style={labelCss}>{t("Cabinet type")}</span>
         <select value={cab.type} onChange={pickType}
-          style={{ padding: "10px 11px", border: `1.5px solid ${getColors().ink}`, borderRadius: 8, background: "#fff",
-            fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: 15, color: getColors().ink }}>
+          style={{ padding: "10px 11px", border: `1.5px solid ${getColors().canvasBorder}`, borderRadius: 8, background: "#fff",
+            fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: 15, color: "#111" }}>
           {Object.entries(TYPES).map(([k, v]) => <option key={k} value={k}>{t(v.label)}</option>)}
         </select>
       </label>
@@ -1078,10 +1078,10 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
           <input value={cab.material || ""} onChange={e => onChange({ material: e.target.value })}
             placeholder="—"
             style={{ border: `1px solid ${getColors().hair}`, borderRadius: 6, padding: "6px 10px", fontSize: 13,
-              fontWeight: 600, width: 200, background: "#fff", color: getColors().ink, outline: "none" }} />
+              fontWeight: 600, width: 200, background: "#fff", color: "#111", outline: "none" }} />
         </label>
         <button onClick={() => setCabPickerOpen(true)}
-          style={{ padding: "5px 12px", background: "#E4572E", color: "#fff", border: "none",
+          style={{ padding: "5px 12px", background: getColors().buttonBg, color: getColors().buttonText, border: "none",
             borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
           🎨 {t("Select")}
         </button>
@@ -1104,24 +1104,24 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
                 <input type="number" value={cab.fillerH || ""} onChange={e => onChange({ fillerH: e.target.value })}
                   placeholder="786"
                   style={{ width: 90, padding: "7px 10px", fontSize: 18, fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
-                    background: "#fff", color: getColors().ink, outline: "none" }} />
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().canvasBorder}`, borderRadius: 8,
+                    background: "#fff", color: "#111", outline: "none" }} />
               </label>
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{t("Width")} (mm)</span>
                 <input type="number" value={cab.fillerW || ""} onChange={e => onChange({ fillerW: e.target.value })}
                   placeholder="100"
                   style={{ width: 90, padding: "7px 10px", fontSize: 18, fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
-                    background: "#fff", color: getColors().ink, outline: "none" }} />
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().canvasBorder}`, borderRadius: 8,
+                    background: "#fff", color: "#111", outline: "none" }} />
               </label>
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>Thickness (mm)</span>
                 <input type="number" value={cab.fillerT || ""} onChange={e => onChange({ fillerT: e.target.value })}
                   placeholder="18"
                   style={{ width: 80, padding: "7px 10px", fontSize: 18, fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
-                    background: "#fff", color: getColors().ink, outline: "none" }} />
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().canvasBorder}`, borderRadius: 8,
+                    background: "#fff", color: "#111", outline: "none" }} />
               </label>
             </div>
           </div>
@@ -1157,8 +1157,8 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
               <input type="number" value={cab.width} onChange={(e) => onChange({ width: e.target.value })}
                 style={{ width: 110, padding: "8px 11px", fontSize: 22, fontWeight: 700,
-                  fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
-                  background: "#fff", color: getColors().ink, outline: "none" }} />
+                  fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().canvasBorder}`, borderRadius: 8,
+                  background: "#fff", color: "#111", outline: "none" }} />
               <span style={{ fontSize: 13, color: getColors().mut, fontFamily: "'JetBrains Mono', monospace" }}>mm</span>
             </span>
           </span>
@@ -1170,8 +1170,8 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
             <input type="number" min="1" max="99" value={cab.qty || 1}
               onChange={(e) => onChange({ qty: Math.max(1, Number(e.target.value)) })}
               style={{ width: 64, padding: "8px 11px", fontSize: 22, fontWeight: 700,
-                fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`,
-                borderRadius: 8, background: "#fff", color: getColors().ink, outline: "none" }} />
+                fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().canvasBorder}`,
+                borderRadius: 8, background: "#fff", color: "#111", outline: "none" }} />
           </span>
         </label>
 
@@ -1265,8 +1265,8 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
               <input type="number" value={cab.customHeight || ""} onChange={e => onChange({ customHeight: e.target.value })}
                 placeholder={String(p.sideH)}
                 style={{ width: 80, padding: "8px 11px", fontSize: 18, fontWeight: 700,
-                  fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
-                  background: "#fff", color: getColors().ink, outline: "none" }} />
+                  fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().canvasBorder}`, borderRadius: 8,
+                  background: "#fff", color: "#111", outline: "none" }} />
               <span style={{ fontSize: 13, color: getColors().mut, fontFamily: "'JetBrains Mono', monospace" }}>mm</span>
             </span>
           </label>
@@ -1278,8 +1278,8 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
               <input type="number" value={cab.customDepth || ""} onChange={e => onChange({ customDepth: e.target.value })}
                 placeholder={String(p.sideD)}
                 style={{ width: 80, padding: "8px 11px", fontSize: 18, fontWeight: 700,
-                  fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
-                  background: "#fff", color: getColors().ink, outline: "none" }} />
+                  fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().canvasBorder}`, borderRadius: 8,
+                  background: "#fff", color: "#111", outline: "none" }} />
               <span style={{ fontSize: 13, color: getColors().mut, fontFamily: "'JetBrains Mono', monospace" }}>mm</span>
             </span>
           </label>
@@ -1392,24 +1392,24 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
                 <input type="number" value={cab.fillerH || ""} onChange={e => onChange({ fillerH: e.target.value })}
                   placeholder="786"
                   style={{ width: 90, padding: "7px 10px", fontSize: 18, fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
-                    background: "#fff", color: getColors().ink, outline: "none" }} />
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().canvasBorder}`, borderRadius: 8,
+                    background: "#fff", color: "#111", outline: "none" }} />
               </label>
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{t("Width")} (mm)</span>
                 <input type="number" value={cab.fillerW || ""} onChange={e => onChange({ fillerW: e.target.value })}
                   placeholder="100"
                   style={{ width: 90, padding: "7px 10px", fontSize: 18, fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
-                    background: "#fff", color: getColors().ink, outline: "none" }} />
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().canvasBorder}`, borderRadius: 8,
+                    background: "#fff", color: "#111", outline: "none" }} />
               </label>
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>Thickness (mm)</span>
                 <input type="number" value={cab.fillerT || ""} onChange={e => onChange({ fillerT: e.target.value })}
                   placeholder="18"
                   style={{ width: 80, padding: "7px 10px", fontSize: 18, fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
-                    background: "#fff", color: getColors().ink, outline: "none" }} />
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().canvasBorder}`, borderRadius: 8,
+                    background: "#fff", color: "#111", outline: "none" }} />
               </label>
             </div>
           </div>
@@ -1487,18 +1487,18 @@ function LoginScreen({ signupMode, setSignupMode, loginEmail, setLoginEmail, log
         <div style={{ textAlign: "center", color: getColors().mut, fontSize: 13, marginTop: 20 }}>
           {signupMode ? (
             <>
-              Already have an account? <button onClick={() => { setSignupMode(false); setAuthError(""); }} style={{ background: "none", border: "none", color: getColors().rust, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Log in</button>
+              Already have an account? <button onClick={() => { setSignupMode(false); setAuthError(""); }} style={{ background: "none", border: "none", color: "#ccc", fontWeight: 700, cursor: "pointer", fontSize: 13, textDecoration: "underline" }}>Log in</button>
             </>
           ) : (
             <>
-              No account? <button onClick={() => { setSignupMode(true); setAuthError(""); }} style={{ background: "none", border: "none", color: getColors().rust, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Request access</button>
+              No account? <button onClick={() => { setSignupMode(true); setAuthError(""); }} style={{ background: "none", border: "none", color: "#ccc", fontWeight: 700, cursor: "pointer", fontSize: 13, textDecoration: "underline" }}>Request access</button>
             </>
           )}
         </div>
 
         {!signupMode && (
-          <div style={{ marginTop: 20, background: "#FCE7DE", border: `1px solid ${getColors().hair}`, borderRadius: 10, padding: "11px 13px", fontSize: 12, color: getColors().mut, textAlign: "center", lineHeight: 1.5 }}>
-            New accounts are <strong>reviewed by the owner</strong> before access is granted.
+          <div style={{ marginTop: 20, background: "rgba(255,255,255,0.06)", border: `1px solid rgba(255,255,255,0.1)`, borderRadius: 10, padding: "11px 13px", fontSize: 12, color: "#9a9ba2", textAlign: "center", lineHeight: 1.5 }}>
+            New accounts are <strong style={{ color: "#ccc" }}>reviewed by the owner</strong> before access is granted.
           </div>
         )}
       </div>
@@ -1523,7 +1523,7 @@ function PendingScreen({ authState, handleLogout }) {
         <div style={{ display: "inline-block", background: "#F2F2EF", border: `1px solid ${getColors().hair}`, borderRadius: 8, padding: "7px 12px", fontSize: 13, fontWeight: 700, fontFamily: "'Courier New', monospace", marginBottom: 24 }}>
           {authState?.user?.email}
         </div><br />
-        <button onClick={() => { const sess = supabase.auth.getSession(); if (sess) { supabase.db.getProfile(sess.access_token, authState.user.id).then((prof) => { if (prof?.approved) window.location.reload(); }); } }} style={{ padding: "8px 16px", border: `1.5px solid ${getColors().ink}`, background: "transparent", color: getColors().ink, borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer", marginRight: 8 }}>
+        <button onClick={() => { const sess = supabase.auth.getSession(); if (sess) { supabase.db.getProfile(sess.access_token, authState.user.id).then((prof) => { if (prof?.approved) window.location.reload(); }); } }} style={{ padding: "8px 16px", border: `1.5px solid ${getColors().canvasBorder}`, background: "transparent", color: getColors().ink, borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer", marginRight: 8 }}>
           Check again
         </button>
         <button onClick={handleLogout} style={{ padding: "8px 16px", border: "none", background: "transparent", color: getColors().mut, borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
