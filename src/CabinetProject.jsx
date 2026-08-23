@@ -3548,6 +3548,12 @@ export default function CabinetProject() {
             <button onClick={copyAll} className="cab-btn" style={btn(copied ? getColors().ink : "transparent", copied ? getColors().card : getColors().mut, `1px solid ${getColors().hair}`)}>
               {copied ? t("Copied ✓") : t("Copy text")}</button>
             <span style={{ width: 1, height: 22, background: getColors().hair, margin: "0 2px" }} />
+            <button className="cab-btn" onClick={toggleTheme}
+              style={{ padding: "7px 11px", borderRadius: 8, border: `1.5px solid ${getColors().amber}`, background: theme === "dark" ? "rgba(228,87,46,0.12)" : "rgba(228,87,46,0.06)",
+                color: getColors().amber, cursor: "pointer", fontSize: 12, fontWeight: 700, letterSpacing: "0.04em" }}>
+              {theme === "dark" ? "🌙 Dark" : "☀️ Light"}
+            </button>
+            <span style={{ width: 1, height: 22, background: getColors().hair, margin: "0 2px" }} />
             <button className="cab-btn" onClick={() => setLang(lang === "en" ? "es" : "en")}
               style={{ padding: "7px 11px", borderRadius: 8, border: `1.5px solid ${getColors().ink}`, background: "transparent",
                 color: getColors().ink, cursor: "pointer", fontSize: 12, fontWeight: 700, letterSpacing: "0.04em" }}>
