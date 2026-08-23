@@ -1535,41 +1535,60 @@ function PendingScreen({ authState, handleLogout }) {
 }
 
 function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout }) {
+  const c = getColors();
   return (
-    <div style={{ minHeight: "100vh", background: getColors().paper, padding: "20px", fontFamily: "'Archivo', sans-serif" }}>
-      <div style={{ maxWidth: 1240, margin: "0 auto" }}>
-        <div style={{ marginBottom: 24, paddingBottom: 16, borderBottom: `2px solid ${getColors().ink}` }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.22em", color: getColors().rust, textTransform: "uppercase" }}>Admin panel</div>
-          <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.01em", marginTop: 2, color: getColors().ink }}>Pending signups</div>
-          <div style={{ fontSize: 13, color: getColors().mut, marginTop: 8 }}>{authState?.user?.email}</div>
+    <div>
+      {/* header */}
+      <div style={{ marginBottom: 22, paddingBottom: 14, borderBottom: `1px solid ${c.canvasBorder}` }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: c.canvasMut, textTransform: "uppercase" }}>Admin panel</div>
+        <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.02em", marginTop: 4, color: c.canvasText }}>User management</div>
+      </div>
+
+      {/* stat cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12, marginBottom: 24 }}>
+        <div style={{ background: c.card, borderRadius: 14, padding: "18px 16px" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.mut, marginBottom: 10 }}>Pending</div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: c.ink, fontFamily: "'JetBrains Mono', monospace" }}>{pendingUsers.length}</div>
+          <div style={{ fontSize: 11, color: c.mut, marginTop: 4 }}>awaiting approval</div>
         </div>
-
-        {pendingUsers.length === 0 ? (
-          <div style={{ textAlign: "center", color: getColors().mut, padding: "40px 20px", fontSize: 14 }}>
-            No pending approvals. All users are approved! ✓
-          </div>
-        ) : (
-          <div>
-            {pendingUsers.map((user) => (
-              <div key={user.id} style={{ background: getColors().card, border: `1px solid ${getColors().hair}`, borderRadius: 12, padding: 16, marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: getColors().ink }}>{user.email}</div>
-                  <div style={{ fontSize: 12, color: getColors().mut, marginTop: 4, fontFamily: "'Courier New', monospace" }}>{user.id}</div>
-                </div>
-                <button onClick={() => handleApprove(user.id)} style={{ padding: "8px 16px", background: getColors().rust, color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>
-                  Approve
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div style={{ marginTop: 40, textAlign: "center" }}>
-          <button onClick={handleLogout} style={{ padding: "8px 16px", background: "transparent", border: `1.5px solid ${getColors().mut}`, color: getColors().mut, borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-            Log out
-          </button>
+        <div style={{ background: c.canvasBtn, border: `1px solid ${c.canvasBorder}`, borderRadius: 14, padding: "18px 16px" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.canvasMut, marginBottom: 10 }}>Signed in as</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: c.canvasText, wordBreak: "break-all" }}>{authState?.user?.email || "—"}</div>
+          <div style={{ fontSize: 11, color: c.canvasMut, marginTop: 4 }}>Admin account</div>
         </div>
       </div>
+
+      {/* pending users list */}
+      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.canvasMut, marginBottom: 12 }}>Pending signups</div>
+
+      {pendingUsers.length === 0 ? (
+        <div style={{ background: c.card, borderRadius: 14, padding: "32px 20px", textAlign: "center" }}>
+          <div style={{ fontSize: 28, marginBottom: 10 }}>✓</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: c.ink }}>All clear</div>
+          <div style={{ fontSize: 12, color: c.mut, marginTop: 4 }}>No pending approvals. All users are approved.</div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {pendingUsers.map((user) => (
+            <div key={user.id} style={{
+              background: c.card, border: `1px solid ${c.hair}`, borderRadius: 14,
+              padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16
+            }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: c.ink }}>{user.email}</div>
+                <div style={{ fontSize: 11, color: c.mut, marginTop: 4, fontFamily: "'JetBrains Mono', monospace", opacity: 0.7 }}>{user.id}</div>
+              </div>
+              <button onClick={() => handleApprove(user.id)} style={{
+                padding: "9px 18px", background: c.buttonBg, color: c.buttonText,
+                border: "none", borderRadius: 10, fontWeight: 700, fontSize: 13,
+                cursor: "pointer", whiteSpace: "nowrap", transition: "opacity .15s"
+              }}>
+                Approve
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -3431,20 +3450,6 @@ export default function CabinetProject() {
     return <PendingScreen authState={authState} handleLogout={handleLogout} />;
   }
 
-  if (authState.isAdmin && adminViewActive) {
-    return (
-      <div>
-        <div style={{ background: "#1a1a1a", padding: "8px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, letterSpacing: "0.1em" }}>ADMIN</span>
-          <button onClick={() => { setAdminViewActive(false); loadUserProjects(); }}
-            style={{ padding: "5px 14px", background: "#e4572e", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-            → My Projects
-          </button>
-        </div>
-        <AdminPanel pendingUsers={pendingUsers} handleApprove={handleApprove} authState={authState} handleLogout={handleLogout} />
-      </div>
-    );
-  }
 
   return (
     <div className="cab-root" style={{ background: getColors().paper, color: getColors().ink, minHeight: "100%",
@@ -3530,7 +3535,7 @@ export default function CabinetProject() {
           <button className="rail-item" onClick={()=>setShowDesglose(true)} style={{ color:getColors().mut }}>Madesol</button>
           <div style={{ height:1, background:getColors().hair, margin:"12px 8px" }} />
           {authState?.isAdmin && (
-            <button className="rail-item" onClick={()=>setAdminViewActive(true)} style={{ color:getColors().mut }}>Admin</button>
+            <button className="rail-item" onClick={()=>setActiveView("admin")} style={{ color: activeView==="admin"?getColors().buttonText:getColors().mut, background: activeView==="admin"?getColors().buttonBg:"transparent" }}>Admin</button>
           )}
           <button className="rail-item" onClick={handleLogout} style={{ color:getColors().mut }}>{t("Log out")}</button>
           <div style={{ marginTop:"auto", display:"flex", alignItems:"center", gap:10, padding:10, borderRadius:12, background:getColors().mat }}>
@@ -3847,6 +3852,10 @@ export default function CabinetProject() {
           )}
         </div>
             </div>
+          )}
+
+          {activeView === "admin" && authState?.isAdmin && (
+            <AdminPanel pendingUsers={pendingUsers} handleApprove={handleApprove} authState={authState} handleLogout={handleLogout} />
           )}
 
           </div>
