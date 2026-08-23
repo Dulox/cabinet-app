@@ -24,14 +24,8 @@ loadSupabase();
  * board-count estimate (2800 x 2070), and a downloadable PDF.
  * ------------------------------------------------------------------ */
 
-const C = {
-  paper: "#EAEAE7", card: "#FBFBF9", ink: "#20232A", mut: "#6B6F76",
-  hair: "rgba(32,35,42,0.13)", amber: "#E4572E", rust: "#E4572E",
-  mat: "#24272E", matLine: "rgba(228,87,46,0.13)",
-  panel: "#DEDEDA", panelEdge: "#B7B7B1",
-};
 
-// Theme definitions
+// Theme definitions (all colors are dynamic, no hardcoded C object)
 const THEME_COLORS = {
   dark: {
     // Dark Aesthetic: Deep navy, warm amber accent, pure white text - HIGH CONTRAST
