@@ -27,56 +27,56 @@ loadSupabase();
 
 // Theme definitions (all colors are dynamic, no hardcoded C object)
 const THEME_COLORS = {
-  dark: {
-    // Dark Luxury: Deep navy background, white text, gold accent
-    paper: "#0f1419", 
-    card: "#1a2332", 
-    ink: "#ffffff", 
-    mut: "#b0b8c1",
-    hair: "rgba(255,255,255,0.08)", 
-    amber: "#d4af37", 
-    rust: "#d4af37",
-    mat: "#252f3f", 
-    matLine: "rgba(212,175,55,0.12)",
-    panel: "#1a2332", 
-    panelEdge: "#2a3a4f",
-    bgPrimary: "#0f1419", 
-    bgSecondary: "#1a2332",
-    textPrimary: "#ffffff", 
-    textSecondary: "#d0d8e0",
-    border: "rgba(255,255,255,0.08)", 
-    buttonBg: "#d4af37", 
-    buttonText: "#0f1419",
-    inputBg: "#1a2332", 
-    inputBorder: "rgba(212,175,55,0.2)",
-  },
+  // LIGHT (default): off-white canvas, near-black cards, black accent — pure monochrome
   light: {
-    // Light Luxury: Off-white background, DARK cards with white text, gold accent (like reference)
-    paper: "#f5f3f0", 
-    card: "#1a1a2e", 
-    ink: "#ffffff", 
-    mut: "#d0d0d0",
-    hair: "rgba(255,255,255,0.1)", 
-    amber: "#d4af37", 
-    rust: "#d4af37",
-    mat: "#252f3f", 
-    matLine: "rgba(212,175,55,0.12)",
-    panel: "#1a1a2e", 
-    panelEdge: "#2a3a4f",
-    bgPrimary: "#f5f3f0", 
-    bgSecondary: "#e8e4df",
-    textPrimary: "#ffffff", 
-    textSecondary: "#d0d0d0",
-    border: "rgba(255,255,255,0.1)", 
-    buttonBg: "#d4af37", 
-    buttonText: "#1a1a2e",
-    inputBg: "#2a3a4f", 
-    inputBorder: "rgba(212,175,55,0.2)",
+    paper: "#efece6",        // soft off-white canvas
+    card: "#17181c",         // near-black cards
+    ink: "#ffffff",          // text on cards = white
+    mut: "#9a9ba2",          // muted grey on dark cards
+    hair: "rgba(255,255,255,0.09)",
+    amber: "#ffffff",        // "accent" on dark cards = white
+    rust: "#111214",         // "accent" on light surfaces = near-black
+    mat: "#1e2026",          // input/inset on dark cards
+    matLine: "rgba(255,255,255,0.10)",
+    panel: "#17181c",
+    panelEdge: "rgba(255,255,255,0.10)",
+    bgPrimary: "#efece6",
+    bgSecondary: "#e6e2da",
+    textPrimary: "#ffffff",
+    textSecondary: "#c3c4ca",
+    border: "rgba(17,18,20,0.10)",   // hairline on light canvas
+    buttonBg: "#111214",             // black button on light
+    buttonText: "#ffffff",
+    inputBg: "#1e2026",
+    inputBorder: "rgba(255,255,255,0.12)",
+  },
+  // DARK: true black/grey inverse, white accent
+  dark: {
+    paper: "#0c0d10",        // near-black canvas
+    card: "#17181c",         // dark grey cards
+    ink: "#ffffff",
+    mut: "#8b8c93",
+    hair: "rgba(255,255,255,0.08)",
+    amber: "#ffffff",
+    rust: "#ffffff",
+    mat: "#1e2026",
+    matLine: "rgba(255,255,255,0.10)",
+    panel: "#17181c",
+    panelEdge: "rgba(255,255,255,0.10)",
+    bgPrimary: "#0c0d10",
+    bgSecondary: "#141519",
+    textPrimary: "#ffffff",
+    textSecondary: "#c3c4ca",
+    border: "rgba(255,255,255,0.10)",
+    buttonBg: "#ffffff",             // white button on black
+    buttonText: "#0c0d10",
+    inputBg: "#1e2026",
+    inputBorder: "rgba(255,255,255,0.12)",
   }
 }
 
 // Global colors variable - will be updated by main component
-let currentTheme = "dark";
+let currentTheme = "light";
 let getColors = () => THEME_COLORS[currentTheme];
 
 
@@ -2689,11 +2689,11 @@ export default function CabinetProject() {
   const [adminViewActive, setAdminViewActive] = useState(true);
   
   const [theme, setTheme] = useState(() => {
-    try { 
-      let stored = localStorage.getItem("cabinetTheme") || "dark";
-      if (stored === "glass") stored = "light"; // Convert old theme name
+    try {
+      let stored = localStorage.getItem("cabinetTheme") || "light";
+      if (!THEME_COLORS[stored]) stored = "light"; // guard old/invalid names
       return stored;
-    } catch { return "dark"; }
+    } catch { return "light"; }
   });
   const colors = THEME_COLORS[theme];
   const toggleTheme = () => {
