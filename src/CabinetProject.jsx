@@ -3519,7 +3519,7 @@ export default function CabinetProject() {
         <aside className="app-rail cab-noprint" style={{ background: getColors().card }}>
           <div style={{ display:"flex", alignItems:"center", gap:10, padding:"4px 8px 16px" }}>
             <div style={{ width:34, height:34, borderRadius:9, background:getColors().buttonBg, display:"grid", placeItems:"center", flexShrink:0, color:getColors().buttonText, fontWeight:800 }}>▣</div>
-            <div><div style={{ color:getColors().ink, fontWeight:700, fontSize:14 }}>Ventanero</div><div style={{ color:getColors().mut, fontSize:11 }}>Cabinet Studio</div></div>
+            <div><div style={{ color:getColors().ink, fontWeight:700, fontSize:14 }}>Cabinet APP</div><div style={{ color:getColors().mut, fontSize:11 }}>Cut-list Calculator</div></div>
           </div>
           {[
             ["workbench", t("Workbench") || "Workbench"],
