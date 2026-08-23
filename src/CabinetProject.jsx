@@ -3650,39 +3650,39 @@ export default function CabinetProject() {
               </>
             )}
         {/* totals + boards */}
-        <div style={{ background: getColors().ink, color: getColors().card, borderRadius: 12, padding: "16px", marginTop: 4 }}>
+        <div style={{ background: getColors().card, color: getColors().ink, borderRadius: 12, padding: "16px", marginTop: 4 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
             <span style={{ fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 700, color: getColors().amber }}>
               {t("Material total")} · {summary.n} {t(summary.n === 1 ? "cabinet" : "cabinets")}</span>
             <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 700 }}>
               {summary.pieces} {t("pieces")} · {summary.area.toFixed(2)} m²</span>
           </div>
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.18)", marginTop: 12, paddingTop: 12,
+          <div style={{ borderTop: `1px solid ${getColors().hair}`, marginTop: 12, paddingTop: 12,
             display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8 }}>
-            <span style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "#CFD2C7" }}>
+            <span style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut }}>
               {t("Boards needed")} · {p.boardW} × {p.boardH} mm</span>
             <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 28, fontWeight: 700, color: getColors().amber }}>
               ≈ {summary.board.boards}</span>
           </div>
-          <div style={{ fontSize: 11.5, color: "#B9BCB1", marginTop: 6, fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ fontSize: 11.5, color: getColors().mut, marginTop: 6, fontFamily: "'JetBrains Mono', monospace" }}>
             {t("est.")} {Math.round(summary.board.utilization * 100)}% {t("used")} · {t("incl.")} {p.kerf}mm {t("kerf")}{p.allowRotate ? ` · ${t("parts may rotate")}` : ` · ${t("grain fixed")}`}
             {summary.board.oversize > 0 ? ` · ${summary.board.oversize} ${t("part(s) bigger than a board!")}` : ""}
           </div>
-          <div style={{ fontSize: 11, color: "#9DA095", marginTop: 4 }}>
+          <div style={{ fontSize: 11, color: getColors().mut, marginTop: 4, opacity: 0.7 }}>
             {t("Layout estimate — real nesting varies. Buy at least one spare board for offcuts and mistakes.")}
           </div>
           {summary.hbPieces > 0 && (
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.18)", marginTop: 12, paddingTop: 12,
+            <div style={{ borderTop: `1px solid ${getColors().hair}`, marginTop: 12, paddingTop: 12,
               display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8 }}>
-              <span style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "#CFD2C7" }}>
+              <span style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut }}>
                 {t("Hardboard backs (separate sheet)")}</span>
               <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 700 }}>
                 {summary.hbPieces} {t("pcs")} · {summary.hbArea.toFixed(2)} m²</span>
             </div>
           )}
           {(summary.shelfPins > 0 || summary.hinges > 0 || summary.slides > 0 || summary.handles > 0) && (
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.18)", marginTop: 12, paddingTop: 12 }}>
-              <div style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "#CFD2C7", marginBottom: 8 }}>
+            <div style={{ borderTop: `1px solid ${getColors().hair}`, marginTop: 12, paddingTop: 12 }}>
+              <div style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 8 }}>
                 {t("Hardware total")}</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontFamily: "'JetBrains Mono', monospace", fontSize: 13 }}>
                 {summary.shelfPins > 0 && <div><span style={{ fontWeight: 700 }}>{summary.shelfPins}</span> {t("shelf pins")}</div>}
