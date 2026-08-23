@@ -2689,7 +2689,11 @@ export default function CabinetProject() {
   const [adminViewActive, setAdminViewActive] = useState(true);
   
   const [theme, setTheme] = useState(() => {
-    try { return localStorage.getItem("cabinetTheme") || "dark"; } catch { return "dark"; }
+    try { 
+      let stored = localStorage.getItem("cabinetTheme") || "dark";
+      if (stored === "glass") stored = "light"; // Convert old theme name
+      return stored;
+    } catch { return "dark"; }
   });
   const colors = THEME_COLORS[theme];
   const toggleTheme = () => {
