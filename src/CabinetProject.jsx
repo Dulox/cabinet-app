@@ -28,50 +28,50 @@ loadSupabase();
 // Theme definitions (all colors are dynamic, no hardcoded C object)
 const THEME_COLORS = {
   dark: {
-    // Dark Aesthetic: Deep navy, warm amber accent, pure white text - HIGH CONTRAST
-    paper: "#0f172a", 
-    card: "#1e293b", 
+    // Dark Luxury: Deep navy background, white text, gold accent
+    paper: "#0f1419", 
+    card: "#1a2332", 
     ink: "#ffffff", 
-    mut: "#cbd5e1",
-    hair: "rgba(255,255,255,0.1)", 
-    amber: "#f59e0b", 
-    rust: "#f59e0b",
-    mat: "#334155", 
-    matLine: "rgba(245,158,11,0.15)",
-    panel: "#1e293b", 
-    panelEdge: "#475569",
-    bgPrimary: "#0f172a", 
-    bgSecondary: "#1e293b",
+    mut: "#b0b8c1",
+    hair: "rgba(255,255,255,0.08)", 
+    amber: "#d4af37", 
+    rust: "#d4af37",
+    mat: "#252f3f", 
+    matLine: "rgba(212,175,55,0.12)",
+    panel: "#1a2332", 
+    panelEdge: "#2a3a4f",
+    bgPrimary: "#0f1419", 
+    bgSecondary: "#1a2332",
     textPrimary: "#ffffff", 
-    textSecondary: "#e2e8f0",
-    border: "rgba(255,255,255,0.1)", 
-    buttonBg: "#f59e0b", 
-    buttonText: "#000000",
-    inputBg: "#1e293b", 
-    inputBorder: "rgba(245,158,11,0.25)",
+    textSecondary: "#d0d8e0",
+    border: "rgba(255,255,255,0.08)", 
+    buttonBg: "#d4af37", 
+    buttonText: "#0f1419",
+    inputBg: "#1a2332", 
+    inputBorder: "rgba(212,175,55,0.2)",
   },
-  glass: {
-    // Light Aesthetic: Warm cream, teal accent, dark charcoal text - HIGH CONTRAST
-    paper: "#faf8f3", 
+  light: {
+    // Light Luxury: Off-white background, dark cards, gold accent
+    paper: "#f9f7f4", 
     card: "#ffffff", 
-    ink: "#0f172a", 
-    mut: "#475569",
-    hair: "rgba(15,23,42,0.08)", 
-    amber: "#0891b2", 
-    rust: "#0891b2",
-    mat: "#f1f5f9", 
-    matLine: "rgba(8,145,178,0.15)",
+    ink: "#1a1a2e", 
+    mut: "#666666",
+    hair: "rgba(26,26,46,0.08)", 
+    amber: "#d4af37", 
+    rust: "#d4af37",
+    mat: "#f0ede9", 
+    matLine: "rgba(212,175,55,0.12)",
     panel: "#ffffff", 
-    panelEdge: "#e2e8f0",
-    bgPrimary: "#faf8f3", 
-    bgSecondary: "#f1f5f9",
-    textPrimary: "#0f172a", 
-    textSecondary: "#475569",
-    border: "rgba(15,23,42,0.1)", 
-    buttonBg: "#0891b2", 
-    buttonText: "#ffffff",
+    panelEdge: "#e8e4df",
+    bgPrimary: "#f9f7f4", 
+    bgSecondary: "#f0ede9",
+    textPrimary: "#1a1a2e", 
+    textSecondary: "#666666",
+    border: "rgba(26,26,46,0.08)", 
+    buttonBg: "#d4af37", 
+    buttonText: "#1a1a2e",
     inputBg: "#ffffff", 
-    inputBorder: "rgba(8,145,178,0.2)",
+    inputBorder: "rgba(212,175,55,0.15)",
   }
 }
 
@@ -2693,7 +2693,7 @@ export default function CabinetProject() {
   });
   const colors = THEME_COLORS[theme];
   const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "glass" : "dark";
+    const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme); currentTheme = newTheme;
     try { localStorage.setItem("cabinetTheme", newTheme); } catch {}
   };
@@ -3574,7 +3574,7 @@ export default function CabinetProject() {
                 color: getColors().buttonText, 
                 cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: "0.04em",
                 boxShadow: `0 2px 8px rgba(0,0,0,0.15)` }}>
-              {theme === "dark" ? "🌙 DARK" : "✨ GLASS"}
+              {theme === "dark" ? "☀️ LIGHT" : "🌙 DARK"}
             </button>
             <span style={{ width: 1, height: 22, background: getColors().hair, margin: "0 2px" }} />
             <button className="cab-btn" onClick={() => setLang(lang === "en" ? "es" : "en")}
