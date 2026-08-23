@@ -1895,6 +1895,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
           hbl: (o.hasBisagra && o.sideH && Math.abs(L - o.sideH) <= Math.abs(A - o.sideH)) ? "X" : "",
           hba: (o.hasBisagra && o.sideH && Math.abs(A - o.sideH) < Math.abs(L - o.sideH)) ? "X" : "",
           material: (o && o.cabMaterial) || "", isHardboard: part.material === "hardboard",
+          cabType: o.cabType || "",
         });
       }
     };
@@ -1936,7 +1937,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         if (part.part === "Side") {
           const totalSides = part.qty * cabQty;      // usually 2 × cabQty
           // Emit all sides as plain, no hinge marking
-          emitPart(map, "Side", L, A, G, totalSides, part, { hasRanura: true, hasBisagra: false, cabMaterial });
+          emitPart(map, "Side", L, A, G, totalSides, part, { hasRanura: true, hasBisagra: false, cabMaterial, cabType: cab.type });
           return;
         }
 
@@ -1945,7 +1946,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         // Mark door parts: bisagra attaches on whichever dimension is closer to cabinet height
         const isDoorPart = sideLabel.includes("Door");
         const sideH = p.sideH;  // cabinet's side panel height
-        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: isDoorPart, cabMaterial, sideH, doorL: L, doorA: A });
+        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: isDoorPart, cabMaterial, cabType: cab.type, sideH, doorL: L, doorA: A });
       });
     });
     return Array.from(map.values()).sort((a, b) => b.largo - a.largo || b.ancho - a.ancho);
@@ -2185,6 +2186,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               <tr>
                 <th style={hdrStyle({ width: 30 })} rowSpan={2}>No</th>
                 <th style={hdrStyle({ minWidth: 80 })} rowSpan={2}>Material</th>
+                <th style={hdrStyle({ minWidth: 60 })} rowSpan={2}>Type</th>
                 <th style={{ ...hdrStyle({ minWidth: 100 }), cursor: "pointer" }} rowSpan={2}
                   onClick={() => toggleSort("nombre")}>
                   Nombre {sortField === "nombre" ? (sortDir === 1 ? "▲" : "▼") : "↕"}
@@ -2225,6 +2227,10 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                   <td style={cellStyle({ textAlign: "left", minWidth: 100 })}>
                     <input value={row.material || ""} onChange={e => updateRow(row.id, "material", e.target.value)}
                       style={{ ...inputStyle, textAlign: "left", fontSize: 10 }} placeholder="—" />
+                  </td>
+                  {/* Type (Base/Wall) */}
+                  <td style={cellStyle({ textAlign: "center", minWidth: 60, fontSize: 10, color: "#666", fontWeight: 500 })}>
+                    {row.cabType || "—"}
                   </td>
                   {/* Nombre */}
                   <td style={cellStyle({ textAlign: "left", minWidth: 100, fontSize: 10, color: "#555" })}>
@@ -2543,10 +2549,11 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 await new Promise((r) => { script.onload = r; });
               }
               const XLSX = window.XLSX;
-              const headers = ["No","Material","Nombre","Vetas","Largo (mm)","Ancho (mm)","Grosor (mm)","Cant.","L1","L2","A1","A2","R-L","R-A","HB-L","HB-A"];
+              const headers = ["No","Material","Type","Nombre","Vetas","Largo (mm)","Ancho (mm)","Grosor (mm)","Cant.","L1","L2","A1","A2","R-L","R-A","HB-L","HB-A"];
               const data = sortedRows.map((row, i) => ({
                 "No": i + 1,
                 "Material": row.material || "",
+                "Type": row.cabType || "",
                 "Nombre": mTName(row.nombre),
                 "Vetas": row.vetas || "",
                 "Largo (mm)": row.largo,
@@ -2561,7 +2568,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               const ws = XLSX.utils.json_to_sheet(data, { header: headers });
               // Set column widths
               ws["!cols"] = [
-                {wch:4},{wch:24},{wch:22},{wch:6},{wch:10},{wch:10},{wch:9},{wch:6},
+                {wch:4},{wch:24},{wch:12},{wch:22},{wch:6},{wch:10},{wch:10},{wch:9},{wch:6},
                 {wch:4},{wch:4},{wch:4},{wch:4},{wch:4},{wch:4},{wch:5},{wch:5}
               ];
               const wb = XLSX.utils.book_new();
