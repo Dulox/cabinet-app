@@ -1844,24 +1844,10 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
   const today = new Date().toLocaleDateString("es-DO");
   const confirmClose = () => {
     if (window.confirm(ms("Save your sheet before closing?", "¿Guardar la hoja antes de cerrar?"))) {
-      // User clicked OK — save the sheet then close
-      const name = saveSheetName && saveSheetName !== "__new__" ? saveSheetName : (projectName || "Hoja sin nombre");
-      const now = new Date();
-      const date = now.toLocaleDateString("es-DO") + " " + now.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" });
-      const sheet = { name, date, rows, globalMaterial, factura, nombre, telefono };
-      const existing = savedSheets.findIndex(s => s.name === name);
-      let updated;
-      if (existing >= 0) {
-        updated = [...savedSheets];
-        updated[existing] = sheet;
-      } else {
-        updated = [sheet, ...savedSheets.slice(0, 19)];
-      }
-      setSavedSheets(updated);
-      try { localStorage.setItem("savedDesgloseSheets", JSON.stringify(updated)); } catch {}
-      onClose();
+      // Don't close — let them save first
+      return;
     }
-    // If user clicks Cancel, do nothing (just return)
+    onClose();
   };
 
   // Build summarised cut list — group same dimensions, multiply by cabinet qty
@@ -1870,20 +1856,10 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
     // Helper: add a part to the map, merging by name+dimensions
     const emitPart = (map, name, L, A, G, qty, part, opts) => {
       const key = `${name}|${L}-${A}-${G}`;
-      const o = opts || {};
       if (map.has(key)) {
-        const existing = map.get(key);
-        existing.cant += qty;
-        // Update flags when merging: if this variant should have the flag, mark it
-        if (o.hasBisagra && o.sideH) {
-          // Mark on the dimension closest to cabinet height
-          const distL = Math.abs(o.doorL - o.sideH);
-          const distA = Math.abs(o.doorA - o.sideH);
-          if (distL <= distA) { existing.hbl = "X"; }  // doorL is closer to sideH
-          else { existing.hba = "X"; }  // doorA is closer to sideH
-        }
-        if (o.hasRanura) { existing.rl = "X"; existing.ra = "X"; }
+        map.get(key).cant += qty;
       } else {
+        const o = opts || {};
         map.set(key, {
           id: key, largo: L, ancho: A, grosor: G, cant: qty, nombre: name,
           cl1: "X", cl2: "X", ca1: "X", ca2: "X",
@@ -1891,11 +1867,10 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
           // Ranuras: auto-mark on parts whose height matches cabinet height (back panel groove)
           rl: o.hasRanura ? "X" : "",
           ra: o.hasRanura ? "X" : "",
-          // Bisagras: mark on dimension closest to cabinet height (where hinge attaches)
-          hbl: (o.hasBisagra && o.sideH && Math.abs(L - o.sideH) <= Math.abs(A - o.sideH)) ? "X" : "",
-          hba: (o.hasBisagra && o.sideH && Math.abs(A - o.sideH) < Math.abs(L - o.sideH)) ? "X" : "",
+          // Bisagras: auto-mark on parts touching side panels (same height as side)
+          hbl: o.hasBisagra ? "X" : "",
+          hba: o.hasBisagra ? "X" : "",
           material: (o && o.cabMaterial) || "", isHardboard: part.material === "hardboard",
-          cabType: o.cabType || "",
         });
       }
     };
@@ -1937,16 +1912,15 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         if (part.part === "Side") {
           const totalSides = part.qty * cabQty;      // usually 2 × cabQty
           // Emit all sides as plain, no hinge marking
-          emitPart(map, "Side", L, A, G, totalSides, part, { hasRanura: true, hasBisagra: false, cabMaterial, cabType: cab.type });
+          emitPart(map, "Side", L, A, G, totalSides, part, { hasRanura: true, hasBisagra: false, cabMaterial });
           return;
         }
 
         const sideLabel = part.part;
         const totalQty = part.qty * cabQty;
-        // Mark door parts: bisagra attaches on whichever dimension is closer to cabinet height
+        // Mark door parts with hasBisagra so they show X in HB-L/HB-A (fixed to side of cabinet)
         const isDoorPart = sideLabel.includes("Door");
-        const sideH = p.sideH;  // cabinet's side panel height
-        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: isDoorPart, cabMaterial, cabType: cab.type, sideH, doorL: L, doorA: A });
+        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: isDoorPart, cabMaterial });
       });
     });
     return Array.from(map.values()).sort((a, b) => b.largo - a.largo || b.ancho - a.ancho);
@@ -2186,7 +2160,6 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               <tr>
                 <th style={hdrStyle({ width: 30 })} rowSpan={2}>No</th>
                 <th style={hdrStyle({ minWidth: 80 })} rowSpan={2}>Material</th>
-                <th style={hdrStyle({ minWidth: 60 })} rowSpan={2}>Type</th>
                 <th style={{ ...hdrStyle({ minWidth: 100 }), cursor: "pointer" }} rowSpan={2}
                   onClick={() => toggleSort("nombre")}>
                   Nombre {sortField === "nombre" ? (sortDir === 1 ? "▲" : "▼") : "↕"}
@@ -2227,10 +2200,6 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                   <td style={cellStyle({ textAlign: "left", minWidth: 100 })}>
                     <input value={row.material || ""} onChange={e => updateRow(row.id, "material", e.target.value)}
                       style={{ ...inputStyle, textAlign: "left", fontSize: 10 }} placeholder="—" />
-                  </td>
-                  {/* Type (Base/Wall) */}
-                  <td style={cellStyle({ textAlign: "center", minWidth: 60, fontSize: 10, color: "#666", fontWeight: 500 })}>
-                    {row.cabType || "—"}
                   </td>
                   {/* Nombre */}
                   <td style={cellStyle({ textAlign: "left", minWidth: 100, fontSize: 10, color: "#555" })}>
@@ -2425,8 +2394,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 <option key={i} value={s.name}>{s.name} · {s.date}</option>
               ))}
             </select>
-            <button onClick={(e) => {
-              e.stopPropagation();  // prevent click from bubbling to overlay
+            <button onClick={() => {
               const name = saveSheetName && saveSheetName !== "__new__" ? saveSheetName : (projectName || "Hoja sin nombre");
               const now = new Date();
               const date = now.toLocaleDateString("es-DO") + " " + now.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" });
@@ -2442,7 +2410,6 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               setSavedSheets(updated);
               try { localStorage.setItem("savedDesgloseSheets", JSON.stringify(updated)); } catch {}
               alert("Hoja guardada: " + name);
-              onClose();
             }}
               style={{ padding: "8px 14px", background: "#276221", color: "#fff", border: "none",
                 borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
@@ -2549,11 +2516,10 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 await new Promise((r) => { script.onload = r; });
               }
               const XLSX = window.XLSX;
-              const headers = ["No","Material","Type","Nombre","Vetas","Largo (mm)","Ancho (mm)","Grosor (mm)","Cant.","L1","L2","A1","A2","R-L","R-A","HB-L","HB-A"];
+              const headers = ["No","Material","Nombre","Vetas","Largo (mm)","Ancho (mm)","Grosor (mm)","Cant.","L1","L2","A1","A2","R-L","R-A","HB-L","HB-A"];
               const data = sortedRows.map((row, i) => ({
                 "No": i + 1,
                 "Material": row.material || "",
-                "Type": row.cabType || "",
                 "Nombre": mTName(row.nombre),
                 "Vetas": row.vetas || "",
                 "Largo (mm)": row.largo,
@@ -2568,7 +2534,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               const ws = XLSX.utils.json_to_sheet(data, { header: headers });
               // Set column widths
               ws["!cols"] = [
-                {wch:4},{wch:24},{wch:12},{wch:22},{wch:6},{wch:10},{wch:10},{wch:9},{wch:6},
+                {wch:4},{wch:24},{wch:22},{wch:6},{wch:10},{wch:10},{wch:9},{wch:6},
                 {wch:4},{wch:4},{wch:4},{wch:4},{wch:4},{wch:4},{wch:5},{wch:5}
               ];
               const wb = XLSX.utils.book_new();
