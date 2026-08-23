@@ -45,27 +45,27 @@ const THEME_COLORS = {
     inputBg: "#2A2A2A", inputBorder: "rgba(255,255,255,0.15)",
   },
   glass: {
-    // Glass Morphism: Gradient bg, purple accent #667eea, frosted glass effect
-    paper: "linear-gradient(135deg, #e8f4f8 0%, #f0e8f8 100%)", 
-    card: "rgba(255,255,255,0.4)", 
+    // Glass Morphism: Light pastels, purple accent, frosted glass effect via CSS
+    paper: "#F5F9FB", 
+    card: "rgba(255,255,255,0.7)", 
     ink: "#2c3e50", 
     mut: "#667eea",
-    hair: "rgba(255,255,255,0.3)", 
+    hair: "rgba(102,126,234,0.15)", 
     amber: "#667eea", 
     rust: "#667eea",
-    mat: "rgba(255,255,255,0.5)", 
+    mat: "rgba(255,255,255,0.6)", 
     matLine: "rgba(102,126,234,0.2)",
-    panel: "rgba(255,255,255,0.3)", 
+    panel: "rgba(255,255,255,0.5)", 
     panelEdge: "rgba(102,126,234,0.3)",
-    bgPrimary: "linear-gradient(135deg, #e8f4f8 0%, #f0e8f8 100%)", 
-    bgSecondary: "rgba(255,255,255,0.4)",
+    bgPrimary: "#F5F9FB", 
+    bgSecondary: "rgba(255,255,255,0.6)",
     textPrimary: "#2c3e50", 
-    textSecondary: "#555",
-    border: "rgba(255,255,255,0.4)", 
+    textSecondary: "#667eea",
+    border: "rgba(102,126,234,0.2)", 
     buttonBg: "#667eea", 
     buttonText: "#FFFFFF",
-    inputBg: "rgba(255,255,255,0.6)", 
-    inputBorder: "rgba(255,255,255,0.4)",
+    inputBg: "rgba(255,255,255,0.7)", 
+    inputBorder: "rgba(102,126,234,0.3)",
   }
 }
 
@@ -3425,7 +3425,7 @@ export default function CabinetProject() {
   }
 
   return (
-    <div className="cab-root" style={{ background: getColors().paper, color: getColors().ink, minHeight: "100%",
+    <div className="cab-root" data-theme={theme} style={{ background: getColors().paper, color: getColors().ink, minHeight: "100%",
       padding: "18px 14px 44px", fontFamily: "'Archivo', sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
@@ -3439,6 +3439,16 @@ export default function CabinetProject() {
         .cab-row{transition:background .15s}
         .cab-row:hover{background:rgba(228,87,46,.06)}
         .cab-printonly{display:none}
+        /* Glass Morphism effects */
+        .cab-root[data-theme="glass"] {
+          background: linear-gradient(135deg, #e8f4f8 0%, #f0e8f8 100%) !important;
+        }
+        .cab-root[data-theme="glass"] .cab-card,
+        .cab-root[data-theme="glass"] input,
+        .cab-root[data-theme="glass"] select {
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+        }
         @media (prefers-reduced-motion: reduce){.cab-panels rect,.cab-btn,.cab-row{transition:none}}
         @media (min-width:760px){.cab-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}.cab-card{margin-bottom:0}}
         .cab-wb{display:flex;gap:22px;align-items:flex-start}
