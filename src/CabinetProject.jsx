@@ -2687,7 +2687,7 @@ export default function CabinetProject() {
   });
   const colors = THEME_COLORS[theme];
   const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
+    const newTheme = theme === "dark" ? "glass" : "dark";
     setTheme(newTheme); currentTheme = newTheme;
     try { localStorage.setItem("cabinetTheme", newTheme); } catch {}
   };
