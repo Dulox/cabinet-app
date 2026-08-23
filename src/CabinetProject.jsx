@@ -31,6 +31,36 @@ const C = {
   panel: "#DEDEDA", panelEdge: "#B7B7B1",
 };
 
+// Theme definitions
+const THEME_COLORS = {
+  light: {
+    paper: "#EAEAE7", card: "#FBFBF9", ink: "#20232A", mut: "#6B6F76",
+    hair: "rgba(32,35,42,0.13)", amber: "#E4572E", rust: "#E4572E",
+    mat: "#24272E", matLine: "rgba(228,87,46,0.13)",
+    panel: "#DEDEDA", panelEdge: "#B7B7B1",
+    bgPrimary: "#FBFBF9", bgSecondary: "#F5F5F3",
+    textPrimary: "#20232A", textSecondary: "#6B6F76",
+    border: "rgba(32,35,42,0.1)", buttonBg: "#20232A", buttonText: "#FBFBF9",
+    inputBg: "#FFFFFF", inputBorder: "rgba(32,35,42,0.15)",
+  },
+  dark: {
+    paper: "#1A1A1A", card: "#222222", ink: "#111111", mut: "#888888",
+    hair: "rgba(255,255,255,0.08)", amber: "#FF6B35", rust: "#FF6B35",
+    mat: "#2A2A2A", matLine: "rgba(255,107,53,0.12)",
+    panel: "#2D2D2D", panelEdge: "#404040",
+    bgPrimary: "#1A1A1A", bgSecondary: "#222222",
+    textPrimary: "#FFFFFF", textSecondary: "#AAAAAA",
+    border: "rgba(255,255,255,0.08)", buttonBg: "#FF6B35", buttonText: "#000000",
+    inputBg: "#2A2A2A", inputBorder: "rgba(255,255,255,0.1)",
+  }
+};
+
+// Global colors variable - will be updated by main component
+let currentTheme = "dark";
+let getColors = () => THEME_COLORS[currentTheme];
+
+
+
 const DEFAULTS = {
   t: 19, sideH: 786, sideD: 610,
   railH: 100, railQty: 2, frontRailH: 50,
@@ -714,32 +744,32 @@ function Elevation({ W, p, shelfQty, faces }) {
 
   const tick = (x, y) => {
     const s = fs * 0.5;
-    return <line x1={x - s} y1={y - s} x2={x + s} y2={y + s} stroke={C.amber} strokeWidth={fs * 0.07} />;
+    return <line x1={x - s} y1={y - s} x2={x + s} y2={y + s} stroke={getColors().amber} strokeWidth={fs * 0.07} />;
   };
   const shelves = [];
   for (let i = 1; i <= shelfQty; i++) {
     const y = openTop + ((openBot - openTop) * i) / (shelfQty + 1);
     shelves.push(<rect key={i} x={ox + t} y={y - t / 2} width={W - 2 * t} height={t}
-      fill={C.panel} stroke={C.panelEdge} strokeWidth="1.5" />);
+      fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />);
   }
 
   return (
     <svg viewBox={`0 0 ${vbW} ${vbH}`} width="100%" preserveAspectRatio="xMidYMid meet"
       style={{ display: "block", borderRadius: 10 }} role="img"
       aria-label={`Front elevation of a ${W} mm cabinet`}>
-      <rect x="0" y="0" width={vbW} height={vbH} fill={C.mat} />
+      <rect x="0" y="0" width={vbW} height={vbH} fill={getColors().mat} />
       <defs>
         <pattern id="g" width="50" height="50" patternUnits="userSpaceOnUse">
-          <path d="M50 0H0V50" fill="none" stroke={C.matLine} strokeWidth="1.2" />
+          <path d="M50 0H0V50" fill="none" stroke={getColors().matLine} strokeWidth="1.2" />
         </pattern>
       </defs>
       <rect x="0" y="0" width={vbW} height={vbH} fill="url(#g)" />
       <rect x={ox + t} y={openTop} width={W - 2 * t} height={openBot - openTop} fill="rgba(216,208,189,0.06)" />
       <g className="cab-panels">
-        <rect x={ox} y={oy} width={t} height={H} fill={C.panel} stroke={C.panelEdge} strokeWidth="1.5" />
-        <rect x={ox + W - t} y={oy} width={t} height={H} fill={C.panel} stroke={C.panelEdge} strokeWidth="1.5" />
-        <rect x={ox + t} y={oy + H - t} width={W - 2 * t} height={t} fill={C.panel} stroke={C.panelEdge} strokeWidth="1.5" />
-        <rect x={ox + t} y={oy} width={W - 2 * t} height={p.railH} fill={C.panel} stroke={C.panelEdge} strokeWidth="1.5" />
+        <rect x={ox} y={oy} width={t} height={H} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
+        <rect x={ox + W - t} y={oy} width={t} height={H} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
+        <rect x={ox + t} y={oy + H - t} width={W - 2 * t} height={t} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
+        <rect x={ox + t} y={oy} width={W - 2 * t} height={p.railH} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
         {shelves}
       </g>
 
@@ -747,30 +777,30 @@ function Elevation({ W, p, shelfQty, faces }) {
       {faces.map((f, i) => (
         <g key={i}>
           <rect x={ox + f.x} y={oy + f.y} width={f.w} height={f.h} fill={f.kind === "blind" ? "rgba(194,70,40,0.08)" : "none"}
-            stroke={f.kind === "blind" ? C.rust : C.amber} strokeWidth={fs * 0.09} strokeDasharray={dash} />
+            stroke={f.kind === "blind" ? getColors().rust : getColors().amber} strokeWidth={fs * 0.09} strokeDasharray={dash} />
           {f.split === 2 && (
             <line x1={ox + f.x + f.w / 2} y1={oy + f.y} x2={ox + f.x + f.w / 2} y2={oy + f.y + f.h}
-              stroke={C.amber} strokeWidth={fs * 0.09} strokeDasharray={dash} />
+              stroke={getColors().amber} strokeWidth={fs * 0.09} strokeDasharray={dash} />
           )}
           {f.kind === "door" && (
-            <circle cx={ox + f.x + (f.split === 2 ? f.w / 2 - 36 : f.w - 40)} cy={oy + f.y + f.h * 0.5} r={fs * 0.18} fill={C.amber} />
+            <circle cx={ox + f.x + (f.split === 2 ? f.w / 2 - 36 : f.w - 40)} cy={oy + f.y + f.h * 0.5} r={fs * 0.18} fill={getColors().amber} />
           )}
         </g>
       ))}
 
       {/* width dim */}
-      <line x1={ox} y1={oy + H + 70} x2={ox + W} y2={oy + H + 70} stroke={C.amber} strokeWidth={fs * 0.06} />
-      <line x1={ox} y1={oy + H} x2={ox} y2={oy + H + 86} stroke={C.amber} strokeWidth={fs * 0.05} opacity="0.7" />
-      <line x1={ox + W} y1={oy + H} x2={ox + W} y2={oy + H + 86} stroke={C.amber} strokeWidth={fs * 0.05} opacity="0.7" />
+      <line x1={ox} y1={oy + H + 70} x2={ox + W} y2={oy + H + 70} stroke={getColors().amber} strokeWidth={fs * 0.06} />
+      <line x1={ox} y1={oy + H} x2={ox} y2={oy + H + 86} stroke={getColors().amber} strokeWidth={fs * 0.05} opacity="0.7" />
+      <line x1={ox + W} y1={oy + H} x2={ox + W} y2={oy + H + 86} stroke={getColors().amber} strokeWidth={fs * 0.05} opacity="0.7" />
       {tick(ox, oy + H + 70)}{tick(ox + W, oy + H + 70)}
-      <text x={ox + W / 2} y={oy + H + 70 + fs * 1.5} fill={C.amber} fontSize={fs} textAnchor="middle"
+      <text x={ox + W / 2} y={oy + H + 70 + fs * 1.5} fill={getColors().amber} fontSize={fs} textAnchor="middle"
         style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{W} mm</text>
       {/* height dim */}
-      <line x1={ox - 70} y1={oy} x2={ox - 70} y2={oy + H} stroke={C.amber} strokeWidth={fs * 0.06} />
-      <line x1={ox - 86} y1={oy} x2={ox} y2={oy} stroke={C.amber} strokeWidth={fs * 0.05} opacity="0.7" />
-      <line x1={ox - 86} y1={oy + H} x2={ox} y2={oy + H} stroke={C.amber} strokeWidth={fs * 0.05} opacity="0.7" />
+      <line x1={ox - 70} y1={oy} x2={ox - 70} y2={oy + H} stroke={getColors().amber} strokeWidth={fs * 0.06} />
+      <line x1={ox - 86} y1={oy} x2={ox} y2={oy} stroke={getColors().amber} strokeWidth={fs * 0.05} opacity="0.7" />
+      <line x1={ox - 86} y1={oy + H} x2={ox} y2={oy + H} stroke={getColors().amber} strokeWidth={fs * 0.05} opacity="0.7" />
       {tick(ox - 70, oy)}{tick(ox - 70, oy + H)}
-      <text x={ox - 70 - fs * 0.7} y={oy + H / 2} fill={C.amber} fontSize={fs} textAnchor="middle"
+      <text x={ox - 70 - fs * 0.7} y={oy + H / 2} fill={getColors().amber} fontSize={fs} textAnchor="middle"
         transform={`rotate(-90 ${ox - 70 - fs * 0.7} ${oy + H / 2})`}
         style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{H} mm</text>
       <line x1={ox + t} y1={oy - 34} x2={ox + W - t} y2={oy - 34} stroke="#EDEDE6" strokeWidth={fs * 0.045} opacity="0.65" />
@@ -785,26 +815,26 @@ function Elevation({ W, p, shelfQty, faces }) {
 function NumField({ label, value, onChange, suffix = "mm", w = 92 }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <span style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.mut,
+      <span style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: getColors().mut,
         fontFamily: "'Archivo', sans-serif", fontWeight: 600 }}>{label}</span>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
         <input type="number" value={value} onChange={(e) => onChange(e.target.value)}
-          style={{ width: w, padding: "7px 9px", border: `1px solid ${C.hair}`, borderRadius: 7,
-            background: "#fff", color: C.ink, fontFamily: "'JetBrains Mono', monospace",
+          style={{ width: w, padding: "7px 9px", border: `1px solid ${getColors().hair}`, borderRadius: 7,
+            background: "#fff", color: getColors().ink, fontFamily: "'JetBrains Mono', monospace",
             fontWeight: 500, fontSize: 15, outline: "none" }} />
-        {suffix && <span style={{ fontSize: 12, color: C.mut, fontFamily: "'JetBrains Mono', monospace" }}>{suffix}</span>}
+        {suffix && <span style={{ fontSize: 12, color: getColors().mut, fontFamily: "'JetBrains Mono', monospace" }}>{suffix}</span>}
       </span>
     </label>
   );
 }
 
-const labelCss = { fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.mut, fontWeight: 600 };
-const navMini = (off) => ({ padding: 0, width: 22, minWidth: 22, border: `1px solid ${C.hair}`,
-  borderRadius: 5, background: C.card, color: off ? C.hair : C.mut, fontSize: 10, lineHeight: 1,
+const labelCss = { fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: getColors().mut, fontWeight: 600 };
+const navMini = (off) => ({ padding: 0, width: 22, minWidth: 22, border: `1px solid ${getColors().hair}`,
+  borderRadius: 5, background: getColors().card, color: off ? getColors().hair : getColors().mut, fontSize: 10, lineHeight: 1,
   cursor: off ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" });
 const btn = (bg, color, border) => ({ padding: "8px 14px", background: bg, color, border, borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Archivo', sans-serif" });
 const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-const selCss = { padding: "9px 9px", border: `1px solid ${C.hair}`, borderRadius: 7, background: "#fff",
+const selCss = { padding: "9px 9px", border: `1px solid ${getColors().hair}`, borderRadius: 7, background: "#fff",
   fontFamily: "'JetBrains Mono', monospace", fontSize: 14 };
 
 /* --------------------------- cabinet card ------------------------- */
@@ -988,15 +1018,15 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
   const [cabPickerOpen, setCabPickerOpen] = React.useState(false);
 
   return (
-    <div className="cab-card" style={{ background: C.card, border: `1px solid ${C.hair}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
+    <div className="cab-card" style={{ background: getColors().card, border: `1px solid ${getColors().hair}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <div style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: 17, color: C.ink,
+        <div style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: 17, color: getColors().ink,
           fontFamily: "'Archivo', sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {cabLabel(cab, index, t)}
         </div>
         {canRemove && (
           <button className="cab-noprint" onClick={onRemove}
-            style={{ border: `1px solid ${C.hair}`, background: "transparent", color: C.rust, borderRadius: 7,
+            style={{ border: `1px solid ${getColors().hair}`, background: "transparent", color: getColors().rust, borderRadius: 7,
               padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>{t("Remove")}</button>
         )}
       </div>
@@ -1004,8 +1034,8 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
       <label className="cab-noprint" style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 14 }}>
         <span style={labelCss}>{t("Cabinet type")}</span>
         <select value={cab.type} onChange={pickType}
-          style={{ padding: "10px 11px", border: `1.5px solid ${C.ink}`, borderRadius: 8, background: "#fff",
-            fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: 15, color: C.ink }}>
+          style={{ padding: "10px 11px", border: `1.5px solid ${getColors().ink}`, borderRadius: 8, background: "#fff",
+            fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: 15, color: getColors().ink }}>
           {Object.entries(TYPES).map(([k, v]) => <option key={k} value={k}>{t(v.label)}</option>)}
         </select>
       </label>
@@ -1013,11 +1043,11 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
       {/* Material selector */}
       <div className="cab-noprint" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600 }}>
-          <span style={{ color: C.mut, whiteSpace: "nowrap" }}>{t("Material")}:</span>
+          <span style={{ color: getColors().mut, whiteSpace: "nowrap" }}>{t("Material")}:</span>
           <input value={cab.material || ""} onChange={e => onChange({ material: e.target.value })}
             placeholder="—"
-            style={{ border: `1px solid ${C.hair}`, borderRadius: 6, padding: "6px 10px", fontSize: 13,
-              fontWeight: 600, width: 200, background: "#fff", color: C.ink, outline: "none" }} />
+            style={{ border: `1px solid ${getColors().hair}`, borderRadius: 6, padding: "6px 10px", fontSize: 13,
+              fontWeight: 600, width: 200, background: "#fff", color: getColors().ink, outline: "none" }} />
         </label>
         <button onClick={() => setCabPickerOpen(true)}
           style={{ padding: "5px 12px", background: "#E4572E", color: "#fff", border: "none",
@@ -1043,34 +1073,34 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
                 <input type="number" value={cab.fillerH || ""} onChange={e => onChange({ fillerH: e.target.value })}
                   placeholder="786"
                   style={{ width: 90, padding: "7px 10px", fontSize: 18, fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
-                    background: "#fff", color: C.ink, outline: "none" }} />
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
+                    background: "#fff", color: getColors().ink, outline: "none" }} />
               </label>
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{t("Width")} (mm)</span>
                 <input type="number" value={cab.fillerW || ""} onChange={e => onChange({ fillerW: e.target.value })}
                   placeholder="100"
                   style={{ width: 90, padding: "7px 10px", fontSize: 18, fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
-                    background: "#fff", color: C.ink, outline: "none" }} />
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
+                    background: "#fff", color: getColors().ink, outline: "none" }} />
               </label>
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>Thickness (mm)</span>
                 <input type="number" value={cab.fillerT || ""} onChange={e => onChange({ fillerT: e.target.value })}
                   placeholder="18"
                   style={{ width: 80, padding: "7px 10px", fontSize: 18, fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
-                    background: "#fff", color: C.ink, outline: "none" }} />
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
+                    background: "#fff", color: getColors().ink, outline: "none" }} />
               </label>
             </div>
           </div>
-          <div style={{ border: `1px solid ${C.hair}`, borderRadius: 10, overflow: "hidden", background: "#fff", marginBottom: 12 }}>
+          <div style={{ border: `1px solid ${getColors().hair}`, borderRadius: 10, overflow: "hidden", background: "#fff", marginBottom: 12 }}>
             <div style={{ padding: "10px 13px", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 14.5 }}>
-                  <span style={{ color: C.rust, fontFamily: "'JetBrains Mono', monospace" }}>{cab.qty || 1}×</span> Filler
+                  <span style={{ color: getColors().rust, fontFamily: "'JetBrains Mono', monospace" }}>{cab.qty || 1}×</span> Filler
                 </div>
-                <div style={{ fontSize: 11, color: C.mut, marginTop: 2 }}>
+                <div style={{ fontSize: 11, color: getColors().mut, marginTop: 2 }}>
                   height = {cab.fillerH || 786}mm · width = {cab.fillerW || "?"}mm · thickness = {cab.fillerT || 18}mm · edge band all 4 edges
                 </div>
               </div>
@@ -1078,27 +1108,27 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
                 <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 15.5 }}>
                   {Math.max(Number(cab.fillerH) || 786, Number(cab.fillerW) || 0)} × {Math.min(Number(cab.fillerH) || 786, Number(cab.fillerW) || 0)}
                 </div>
-                <div style={{ fontSize: 10, color: C.mut }}>height × width</div>
+                <div style={{ fontSize: 10, color: getColors().mut }}>height × width</div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      <div className="cab-printonly" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.mut, marginBottom: 10 }}>
+      <div className="cab-printonly" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: getColors().mut, marginBottom: 10 }}>
         {TYPES[cab.type] ? t(TYPES[cab.type].label) : t("Cabinet")} · {fmt(W)} mm {t("wide")}
       </div>
 
       {cab.type !== "filler" && <div className="cab-noprint" style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-end", marginBottom: 14 }}>
         <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          <span style={{ ...labelCss, color: C.mut }}>{t("Width")}</span>
+          <span style={{ ...labelCss, color: getColors().mut }}>{t("Width")}</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexDirection: "column" }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
               <input type="number" value={cab.width} onChange={(e) => onChange({ width: e.target.value })}
                 style={{ width: 110, padding: "8px 11px", fontSize: 22, fontWeight: 700,
-                  fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
-                  background: "#fff", color: C.ink, outline: "none" }} />
-              <span style={{ fontSize: 13, color: C.mut, fontFamily: "'JetBrains Mono', monospace" }}>mm</span>
+                  fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
+                  background: "#fff", color: getColors().ink, outline: "none" }} />
+              <span style={{ fontSize: 13, color: getColors().mut, fontFamily: "'JetBrains Mono', monospace" }}>mm</span>
             </span>
           </span>
         </label>
@@ -1109,8 +1139,8 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
             <input type="number" min="1" max="99" value={cab.qty || 1}
               onChange={(e) => onChange({ qty: Math.max(1, Number(e.target.value)) })}
               style={{ width: 64, padding: "8px 11px", fontSize: 22, fontWeight: 700,
-                fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`,
-                borderRadius: 8, background: "#fff", color: C.ink, outline: "none" }} />
+                fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`,
+                borderRadius: 8, background: "#fff", color: getColors().ink, outline: "none" }} />
           </span>
         </label>
 
@@ -1153,12 +1183,12 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
             <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
               <span style={labelCss}>{t("Front")}</span>
               <select value={cab.front || "doors"} onChange={(e) => { const f = e.target.value; onChange({ front: f, doorCount: f === "doors" ? 2 : 0 }); }}
-                style={{ ...selCss, fontFamily: "'Archivo', sans-serif", fontWeight: 700, color: C.ink }}>
+                style={{ ...selCss, fontFamily: "'Archivo', sans-serif", fontWeight: 700, color: getColors().ink }}>
                 <option value="doors">{t("2 doors")}</option>
                 <option value="falsefront">{t("False front")}</option>
               </select>
             </label>
-            <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: C.ink, paddingBottom: 6 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: getColors().ink, paddingBottom: 6 }}>
               <input type="checkbox" checked={!!cab.falseFront} onChange={(e) => onChange({ falseFront: e.target.checked })} />
               {t("False drawer")}
             </label>
@@ -1166,7 +1196,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
         )}
 
         {cab.type === "sink" && (
-          <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: C.ink, paddingBottom: 6 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: getColors().ink, paddingBottom: 6 }}>
             <input type="checkbox" checked={!!cab.falseFront} onChange={(e) => onChange({ falseFront: e.target.checked })} />
             {t("False drawer face")}
           </label>
@@ -1204,9 +1234,9 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
               <input type="number" value={cab.customHeight || ""} onChange={e => onChange({ customHeight: e.target.value })}
                 placeholder={String(p.sideH)}
                 style={{ width: 80, padding: "8px 11px", fontSize: 18, fontWeight: 700,
-                  fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
-                  background: "#fff", color: C.ink, outline: "none" }} />
-              <span style={{ fontSize: 13, color: C.mut, fontFamily: "'JetBrains Mono', monospace" }}>mm</span>
+                  fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
+                  background: "#fff", color: getColors().ink, outline: "none" }} />
+              <span style={{ fontSize: 13, color: getColors().mut, fontFamily: "'JetBrains Mono', monospace" }}>mm</span>
             </span>
           </label>
         )}
@@ -1217,9 +1247,9 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
               <input type="number" value={cab.customDepth || ""} onChange={e => onChange({ customDepth: e.target.value })}
                 placeholder={String(p.sideD)}
                 style={{ width: 80, padding: "8px 11px", fontSize: 18, fontWeight: 700,
-                  fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
-                  background: "#fff", color: C.ink, outline: "none" }} />
-              <span style={{ fontSize: 13, color: C.mut, fontFamily: "'JetBrains Mono', monospace" }}>mm</span>
+                  fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
+                  background: "#fff", color: getColors().ink, outline: "none" }} />
+              <span style={{ fontSize: 13, color: getColors().mut, fontFamily: "'JetBrains Mono', monospace" }}>mm</span>
             </span>
           </label>
         )}
@@ -1238,30 +1268,30 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
         </div>
       )}
 
-      {!valid && cab.type !== "filler" && <div style={{ color: C.rust, fontSize: 13 }}>Enter a width over {2 * p.t + 10} mm.</div>}
+      {!valid && cab.type !== "filler" && <div style={{ color: getColors().rust, fontSize: 13 }}>Enter a width over {2 * p.t + 10} mm.</div>}
 
       {data && cab.type !== "filler" && (
         <>
           <div className="cab-mat cab-noprint" style={{ marginBottom: 12, maxWidth: 380 }}>
             <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces} />
           </div>
-          <div style={{ border: `1px solid ${C.hair}`, borderRadius: 10, overflow: "hidden", background: "#fff" }}>
+          <div style={{ border: `1px solid ${getColors().hair}`, borderRadius: 10, overflow: "hidden", background: "#fff" }}>
             {data.parts.map((x, i) => (
-              <div key={i} className="cab-row" style={{ padding: "10px 13px", borderTop: i ? `1px solid ${C.hair}` : "none",
+              <div key={i} className="cab-row" style={{ padding: "10px 13px", borderTop: i ? `1px solid ${getColors().hair}` : "none",
                 display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 14.5 }}>
-                    <span style={{ color: C.rust, fontFamily: "'JetBrains Mono', monospace" }}>{x.qty * (cab.qty || 1)}×</span> {tName(x.part, t)}
+                    <span style={{ color: getColors().rust, fontFamily: "'JetBrains Mono', monospace" }}>{x.qty * (cab.qty || 1)}×</span> {tName(x.part, t)}
                   </div>
-                  <div style={{ fontSize: 11, color: C.mut, marginTop: 2 }}>{trNote(x.note, lang)}</div>
+                  <div style={{ fontSize: 11, color: getColors().mut, marginTop: 2 }}>{trNote(x.note, lang)}</div>
                 </div>
                 <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                   <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 15.5 }}>{fmt(x.a)} × {fmt(x.b)}</div>
-                  <div style={{ fontSize: 10, color: C.mut, letterSpacing: "0.04em" }}>{t(x.aLabel)} × {t(x.bLabel)}</div>
+                  <div style={{ fontSize: 10, color: getColors().mut, letterSpacing: "0.04em" }}>{t(x.aLabel)} × {t(x.bLabel)}</div>
                 </div>
               </div>
             ))}
-            <div style={{ padding: "10px 13px", borderTop: `2px solid ${C.ink}`, display: "flex",
+            <div style={{ padding: "10px 13px", borderTop: `2px solid ${getColors().ink}`, display: "flex",
               justifyContent: "space-between", fontFamily: "'JetBrains Mono', monospace", fontSize: 12.5 }}>
               <span>{data.pieces + data.hbPieces} pieces</span><span>{data.area.toFixed(2)} m² melamine</span>
             </div>
@@ -1269,30 +1299,30 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
 
           {/* Hardware & holes */}
           {(data.hardware.shelfPins > 0 || data.hardware.hinges > 0 || data.hardware.drawerSlides > 0 || data.hardware.handles > 0) && (
-            <div style={{ border: `1px solid ${C.hair}`, borderRadius: 10, overflow: "hidden", background: "#fff", marginTop: 12 }}>
-              <div style={{ padding: "10px 13px", background: "rgba(224,161,26,0.06)", borderBottom: `1px solid ${C.hair}`, fontWeight: 700, fontSize: 13 }}>{t("Hardware & fasteners")}</div>
+            <div style={{ border: `1px solid ${getColors().hair}`, borderRadius: 10, overflow: "hidden", background: "#fff", marginTop: 12 }}>
+              <div style={{ padding: "10px 13px", background: "rgba(224,161,26,0.06)", borderBottom: `1px solid ${getColors().hair}`, fontWeight: 700, fontSize: 13 }}>{t("Hardware & fasteners")}</div>
               {data.hardware.shelfPins > 0 && (
-                <div style={{ padding: "10px 13px", borderBottom: `1px solid ${C.hair}` }}>
-                  <div style={{ fontWeight: 700, fontSize: 14.5 }}><span style={{ color: C.rust, fontFamily: "'JetBrains Mono', monospace" }}>{data.hardware.shelfPins}</span> {t("Shelf pins")}</div>
-                  <div style={{ fontSize: 11, color: C.mut, marginTop: 2 }}>{t("4 per shelf · 32mm spacing from")} {shelfPinHoles(p.sideH)[0]}mm</div>
+                <div style={{ padding: "10px 13px", borderBottom: `1px solid ${getColors().hair}` }}>
+                  <div style={{ fontWeight: 700, fontSize: 14.5 }}><span style={{ color: getColors().rust, fontFamily: "'JetBrains Mono', monospace" }}>{data.hardware.shelfPins}</span> {t("Shelf pins")}</div>
+                  <div style={{ fontSize: 11, color: getColors().mut, marginTop: 2 }}>{t("4 per shelf · 32mm spacing from")} {shelfPinHoles(p.sideH)[0]}mm</div>
                 </div>
               )}
               {data.hardware.hinges > 0 && (
-                <div style={{ padding: "10px 13px", borderBottom: `1px solid ${C.hair}` }}>
-                  <div style={{ fontWeight: 700, fontSize: 14.5 }}><span style={{ color: C.rust, fontFamily: "'JetBrains Mono', monospace" }}>{data.hardware.hinges}</span> {t("Hinges")}</div>
-                  <div style={{ fontSize: 11, color: C.mut, marginTop: 2 }}>{t("2 per door · 35mm cup hinges")}</div>
+                <div style={{ padding: "10px 13px", borderBottom: `1px solid ${getColors().hair}` }}>
+                  <div style={{ fontWeight: 700, fontSize: 14.5 }}><span style={{ color: getColors().rust, fontFamily: "'JetBrains Mono', monospace" }}>{data.hardware.hinges}</span> {t("Hinges")}</div>
+                  <div style={{ fontSize: 11, color: getColors().mut, marginTop: 2 }}>{t("2 per door · 35mm cup hinges")}</div>
                 </div>
               )}
               {data.hardware.drawerSlides > 0 && (
-                <div style={{ padding: "10px 13px", borderBottom: `1px solid ${C.hair}` }}>
-                  <div style={{ fontWeight: 700, fontSize: 14.5 }}><span style={{ color: C.rust, fontFamily: "'JetBrains Mono', monospace" }}>{data.hardware.drawerSlides}</span> {t("Drawer slide pairs")}</div>
-                  <div style={{ fontSize: 11, color: C.mut, marginTop: 2 }}>{t("1 pair per drawer ·")} {p.drawerBoxDepth}mm {t("depth")}</div>
+                <div style={{ padding: "10px 13px", borderBottom: `1px solid ${getColors().hair}` }}>
+                  <div style={{ fontWeight: 700, fontSize: 14.5 }}><span style={{ color: getColors().rust, fontFamily: "'JetBrains Mono', monospace" }}>{data.hardware.drawerSlides}</span> {t("Drawer slide pairs")}</div>
+                  <div style={{ fontSize: 11, color: getColors().mut, marginTop: 2 }}>{t("1 pair per drawer ·")} {p.drawerBoxDepth}mm {t("depth")}</div>
                 </div>
               )}
               {data.hardware.handles > 0 && (
                 <div style={{ padding: "10px 13px" }}>
-                  <div style={{ fontWeight: 700, fontSize: 14.5 }}><span style={{ color: C.rust, fontFamily: "'JetBrains Mono', monospace" }}>{data.hardware.handles}</span> {t("Handles / knobs")}</div>
-                  <div style={{ fontSize: 11, color: C.mut, marginTop: 2 }}>{t("1 per door & drawer")}</div>
+                  <div style={{ fontWeight: 700, fontSize: 14.5 }}><span style={{ color: getColors().rust, fontFamily: "'JetBrains Mono', monospace" }}>{data.hardware.handles}</span> {t("Handles / knobs")}</div>
+                  <div style={{ fontSize: 11, color: getColors().mut, marginTop: 2 }}>{t("1 per door & drawer")}</div>
                 </div>
               )}
             </div>
@@ -1300,23 +1330,23 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
 
           {/* Shelf hole positions — collapsed by default */}
           {cab.shelfQty > 0 && (
-            <div style={{ background: "rgba(224,161,26,0.06)", border: `1px solid ${C.hair}`, borderRadius: 10, marginTop: 12, fontSize: 11 }}>
+            <div style={{ background: "rgba(224,161,26,0.06)", border: `1px solid ${getColors().hair}`, borderRadius: 10, marginTop: 12, fontSize: 11 }}>
               <button onClick={() => setPinsOpen((o) => !o)} className="cab-noprint"
                 style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
                   background: "transparent", border: "none", cursor: "pointer", padding: "10px 13px",
-                  fontWeight: 700, fontSize: 11, color: C.ink, fontFamily: "inherit", textAlign: "left" }}>
+                  fontWeight: 700, fontSize: 11, color: getColors().ink, fontFamily: "inherit", textAlign: "left" }}>
                 <span>{t("Shelf pin hole positions (on each side)")}</span>
                 <span aria-hidden style={{ display: "inline-block", transition: "transform .15s ease",
-                  transform: pinsOpen ? "rotate(90deg)" : "rotate(0deg)", color: C.mut, fontSize: 13 }}>▸</span>
+                  transform: pinsOpen ? "rotate(90deg)" : "rotate(0deg)", color: getColors().mut, fontSize: 13 }}>▸</span>
               </button>
               {pinsOpen && (
                 <div style={{ padding: "0 13px 11px" }}>
-                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.mut, lineHeight: 1.6 }}>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: getColors().mut, lineHeight: 1.6 }}>
                     {shelfPinHoles(p.sideH).map((y, i) => (
                       <div key={i}>{i + 1}: {y}mm from top</div>
                     ))}
                   </div>
-                  <div style={{ fontSize: 10, color: C.mut, marginTop: 6 }}>{t("32mm spacing · drill 5mm diameter holes")}</div>
+                  <div style={{ fontSize: 10, color: getColors().mut, marginTop: 6 }}>{t("32mm spacing · drill 5mm diameter holes")}</div>
                 </div>
               )}
             </div>
@@ -1331,34 +1361,34 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
                 <input type="number" value={cab.fillerH || ""} onChange={e => onChange({ fillerH: e.target.value })}
                   placeholder="786"
                   style={{ width: 90, padding: "7px 10px", fontSize: 18, fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
-                    background: "#fff", color: C.ink, outline: "none" }} />
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
+                    background: "#fff", color: getColors().ink, outline: "none" }} />
               </label>
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{t("Width")} (mm)</span>
                 <input type="number" value={cab.fillerW || ""} onChange={e => onChange({ fillerW: e.target.value })}
                   placeholder="100"
                   style={{ width: 90, padding: "7px 10px", fontSize: 18, fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
-                    background: "#fff", color: C.ink, outline: "none" }} />
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
+                    background: "#fff", color: getColors().ink, outline: "none" }} />
               </label>
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>Thickness (mm)</span>
                 <input type="number" value={cab.fillerT || ""} onChange={e => onChange({ fillerT: e.target.value })}
                   placeholder="18"
                   style={{ width: 80, padding: "7px 10px", fontSize: 18, fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${C.ink}`, borderRadius: 8,
-                    background: "#fff", color: C.ink, outline: "none" }} />
+                    fontFamily: "'JetBrains Mono', monospace", border: `1.5px solid ${getColors().ink}`, borderRadius: 8,
+                    background: "#fff", color: getColors().ink, outline: "none" }} />
               </label>
             </div>
           </div>
-          <div style={{ border: `1px solid ${C.hair}`, borderRadius: 10, overflow: "hidden", background: "#fff", marginTop: 12 }}>
+          <div style={{ border: `1px solid ${getColors().hair}`, borderRadius: 10, overflow: "hidden", background: "#fff", marginTop: 12 }}>
             <div style={{ padding: "10px 13px", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 14.5 }}>
-                  <span style={{ color: C.rust, fontFamily: "'JetBrains Mono', monospace" }}>{cab.qty || 1}×</span> Filler
+                  <span style={{ color: getColors().rust, fontFamily: "'JetBrains Mono', monospace" }}>{cab.qty || 1}×</span> Filler
                 </div>
-                <div style={{ fontSize: 11, color: C.mut, marginTop: 2 }}>
+                <div style={{ fontSize: 11, color: getColors().mut, marginTop: 2 }}>
                   height = {cab.fillerH || 786}mm · width = {cab.fillerW || "?"}mm · thickness = {cab.fillerT || 18}mm · edge band all 4 edges
                 </div>
               </div>
@@ -1366,13 +1396,13 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
                 <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 15.5 }}>
                   {Math.max(Number(cab.fillerH) || 786, Number(cab.fillerW) || 0)} × {Math.min(Number(cab.fillerH) || 786, Number(cab.fillerW) || 0)}
                 </div>
-                <div style={{ fontSize: 10, color: C.mut }}>height × width</div>
+                <div style={{ fontSize: 10, color: getColors().mut }}>height × width</div>
               </div>
             </div>
           </div>
         </>)}
         {cab.type === "corner" && (
-            <div style={{ fontSize: 11.5, color: C.rust, marginTop: 8 }}>
+            <div style={{ fontSize: 11.5, color: getColors().rust, marginTop: 8 }}>
               {t("Corner = blind-corner approximation (one door + a blind/filler panel). Tell me how you build corners to refine it.")}
             </div>
           )}
@@ -1392,51 +1422,51 @@ function LoginScreen({ signupMode, setSignupMode, loginEmail, setLoginEmail, log
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: C.paper, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'Archivo', sans-serif" }}>
-      <div style={{ width: "100%", maxWidth: 420, background: C.card, border: `1px solid ${C.hair}`, borderRadius: 18, padding: 36, boxShadow: "0 18px 50px rgba(0,0,0,0.1)" }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: C.rust, textAlign: "center" }}>
+    <div style={{ minHeight: "100vh", background: getColors().paper, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'Archivo', sans-serif" }}>
+      <div style={{ width: "100%", maxWidth: 420, background: getColors().card, border: `1px solid ${getColors().hair}`, borderRadius: 18, padding: 36, boxShadow: "0 18px 50px rgba(0,0,0,0.1)" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: getColors().rust, textAlign: "center" }}>
           Private · Invite only
         </div>
-        <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.5px", textAlign: "center", marginTop: 3, color: C.ink }}>
+        <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.5px", textAlign: "center", marginTop: 3, color: getColors().ink }}>
           {signupMode ? "Create account" : "Welcome back"}
         </div>
-        <div style={{ fontSize: 13, color: C.mut, textAlign: "center", marginTop: 8, marginBottom: 26 }}>
+        <div style={{ fontSize: 13, color: getColors().mut, textAlign: "center", marginTop: 8, marginBottom: 26 }}>
           {signupMode ? "Sign up for cabinet access" : "Log in to open your projects"}
         </div>
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 14 }}>
-            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: C.mut, marginBottom: 5 }}>Email</label>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>Email</label>
             <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} placeholder="you@email.com"
-              style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${C.hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: C.ink, background: "#fff" }} />
+              style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${getColors().hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: getColors().ink, background: "#fff" }} />
           </div>
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: C.mut, marginBottom: 5 }}>Password</label>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>Password</label>
             <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} placeholder="••••••••"
-              style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${C.hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: C.ink, background: "#fff" }} />
+              style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${getColors().hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: getColors().ink, background: "#fff" }} />
           </div>
 
-          {authError && <div style={{ fontSize: 13, color: C.rust, marginBottom: 14, textAlign: "center" }}>{authError}</div>}
+          {authError && <div style={{ fontSize: 13, color: getColors().rust, marginBottom: 14, textAlign: "center" }}>{authError}</div>}
 
-          <button type="submit" disabled={loading} style={{ width: "100%", padding: 12, background: C.rust, color: "#fff", border: "none", borderRadius: 9, fontSize: 14, fontWeight: 800, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1 }}>
+          <button type="submit" disabled={loading} style={{ width: "100%", padding: 12, background: getColors().rust, color: "#fff", border: "none", borderRadius: 9, fontSize: 14, fontWeight: 800, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1 }}>
             {loading ? "Please wait..." : (signupMode ? "Sign up" : "Log in")}
           </button>
         </form>
 
-        <div style={{ textAlign: "center", color: C.mut, fontSize: 13, marginTop: 20 }}>
+        <div style={{ textAlign: "center", color: getColors().mut, fontSize: 13, marginTop: 20 }}>
           {signupMode ? (
             <>
-              Already have an account? <button onClick={() => { setSignupMode(false); setAuthError(""); }} style={{ background: "none", border: "none", color: C.rust, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Log in</button>
+              Already have an account? <button onClick={() => { setSignupMode(false); setAuthError(""); }} style={{ background: "none", border: "none", color: getColors().rust, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Log in</button>
             </>
           ) : (
             <>
-              No account? <button onClick={() => { setSignupMode(true); setAuthError(""); }} style={{ background: "none", border: "none", color: C.rust, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Request access</button>
+              No account? <button onClick={() => { setSignupMode(true); setAuthError(""); }} style={{ background: "none", border: "none", color: getColors().rust, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Request access</button>
             </>
           )}
         </div>
 
         {!signupMode && (
-          <div style={{ marginTop: 20, background: "#FCE7DE", border: `1px solid ${C.hair}`, borderRadius: 10, padding: "11px 13px", fontSize: 12, color: C.mut, textAlign: "center", lineHeight: 1.5 }}>
+          <div style={{ marginTop: 20, background: "#FCE7DE", border: `1px solid ${getColors().hair}`, borderRadius: 10, padding: "11px 13px", fontSize: 12, color: getColors().mut, textAlign: "center", lineHeight: 1.5 }}>
             New accounts are <strong>reviewed by the owner</strong> before access is granted.
           </div>
         )}
@@ -1447,25 +1477,25 @@ function LoginScreen({ signupMode, setSignupMode, loginEmail, setLoginEmail, log
 
 function PendingScreen({ authState, handleLogout }) {
   return (
-    <div style={{ minHeight: "100vh", background: C.paper, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'Archivo', sans-serif" }}>
-      <div style={{ width: "100%", maxWidth: 470, background: C.card, border: `1px solid ${C.hair}`, borderRadius: 18, padding: 40, textAlign: "center", boxShadow: "0 18px 50px rgba(0,0,0,0.1)" }}>
+    <div style={{ minHeight: "100vh", background: getColors().paper, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'Archivo', sans-serif" }}>
+      <div style={{ width: "100%", maxWidth: 470, background: getColors().card, border: `1px solid ${getColors().hair}`, borderRadius: 18, padding: 40, textAlign: "center", boxShadow: "0 18px 50px rgba(0,0,0,0.1)" }}>
         <div style={{ width: 66, height: 66, borderRadius: "50%", background: "#FCE7DE", margin: "0 auto 20px", lineHeight: "66px", fontSize: 30 }}>⏱</div>
-        <div style={{ display: "inline-block", background: "#FCE7DE", color: C.rust, borderRadius: 20, padding: "6px 14px", fontSize: 12, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 26 }}>
+        <div style={{ display: "inline-block", background: "#FCE7DE", color: getColors().rust, borderRadius: 20, padding: "6px 14px", fontSize: 12, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 26 }}>
           Pending approval
         </div>
-        <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 12, color: C.ink }}>
+        <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 12, color: getColors().ink }}>
           You're on the list
         </div>
-        <div style={{ color: C.mut, fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
+        <div style={{ color: getColors().mut, fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
           Thanks for signing up. Your account is waiting for the owner to approve access — you'll be able to log in as soon as it's approved.
         </div>
-        <div style={{ display: "inline-block", background: "#F2F2EF", border: `1px solid ${C.hair}`, borderRadius: 8, padding: "7px 12px", fontSize: 13, fontWeight: 700, fontFamily: "'Courier New', monospace", marginBottom: 24 }}>
+        <div style={{ display: "inline-block", background: "#F2F2EF", border: `1px solid ${getColors().hair}`, borderRadius: 8, padding: "7px 12px", fontSize: 13, fontWeight: 700, fontFamily: "'Courier New', monospace", marginBottom: 24 }}>
           {authState?.user?.email}
         </div><br />
-        <button onClick={() => { const sess = supabase.auth.getSession(); if (sess) { supabase.db.getProfile(sess.access_token, authState.user.id).then((prof) => { if (prof?.approved) window.location.reload(); }); } }} style={{ padding: "8px 16px", border: `1.5px solid ${C.ink}`, background: "transparent", color: C.ink, borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer", marginRight: 8 }}>
+        <button onClick={() => { const sess = supabase.auth.getSession(); if (sess) { supabase.db.getProfile(sess.access_token, authState.user.id).then((prof) => { if (prof?.approved) window.location.reload(); }); } }} style={{ padding: "8px 16px", border: `1.5px solid ${getColors().ink}`, background: "transparent", color: getColors().ink, borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer", marginRight: 8 }}>
           Check again
         </button>
-        <button onClick={handleLogout} style={{ padding: "8px 16px", border: "none", background: "transparent", color: C.mut, borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+        <button onClick={handleLogout} style={{ padding: "8px 16px", border: "none", background: "transparent", color: getColors().mut, borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
           Log out
         </button>
       </div>
@@ -1475,27 +1505,27 @@ function PendingScreen({ authState, handleLogout }) {
 
 function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout }) {
   return (
-    <div style={{ minHeight: "100vh", background: C.paper, padding: "20px", fontFamily: "'Archivo', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: getColors().paper, padding: "20px", fontFamily: "'Archivo', sans-serif" }}>
       <div style={{ maxWidth: 1240, margin: "0 auto" }}>
-        <div style={{ marginBottom: 24, paddingBottom: 16, borderBottom: `2px solid ${C.ink}` }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.22em", color: C.rust, textTransform: "uppercase" }}>Admin panel</div>
-          <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.01em", marginTop: 2, color: C.ink }}>Pending signups</div>
-          <div style={{ fontSize: 13, color: C.mut, marginTop: 8 }}>{authState?.user?.email}</div>
+        <div style={{ marginBottom: 24, paddingBottom: 16, borderBottom: `2px solid ${getColors().ink}` }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.22em", color: getColors().rust, textTransform: "uppercase" }}>Admin panel</div>
+          <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.01em", marginTop: 2, color: getColors().ink }}>Pending signups</div>
+          <div style={{ fontSize: 13, color: getColors().mut, marginTop: 8 }}>{authState?.user?.email}</div>
         </div>
 
         {pendingUsers.length === 0 ? (
-          <div style={{ textAlign: "center", color: C.mut, padding: "40px 20px", fontSize: 14 }}>
+          <div style={{ textAlign: "center", color: getColors().mut, padding: "40px 20px", fontSize: 14 }}>
             No pending approvals. All users are approved! ✓
           </div>
         ) : (
           <div>
             {pendingUsers.map((user) => (
-              <div key={user.id} style={{ background: C.card, border: `1px solid ${C.hair}`, borderRadius: 12, padding: 16, marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
+              <div key={user.id} style={{ background: getColors().card, border: `1px solid ${getColors().hair}`, borderRadius: 12, padding: 16, marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>{user.email}</div>
-                  <div style={{ fontSize: 12, color: C.mut, marginTop: 4, fontFamily: "'Courier New', monospace" }}>{user.id}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: getColors().ink }}>{user.email}</div>
+                  <div style={{ fontSize: 12, color: getColors().mut, marginTop: 4, fontFamily: "'Courier New', monospace" }}>{user.id}</div>
                 </div>
-                <button onClick={() => handleApprove(user.id)} style={{ padding: "8px 16px", background: C.rust, color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>
+                <button onClick={() => handleApprove(user.id)} style={{ padding: "8px 16px", background: getColors().rust, color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>
                   Approve
                 </button>
               </div>
@@ -1504,7 +1534,7 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout }) {
         )}
 
         <div style={{ marginTop: 40, textAlign: "center" }}>
-          <button onClick={handleLogout} style={{ padding: "8px 16px", background: "transparent", border: `1.5px solid ${C.mut}`, color: C.mut, borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+          <button onClick={handleLogout} style={{ padding: "8px 16px", background: "transparent", border: `1.5px solid ${getColors().mut}`, color: getColors().mut, borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
             Log out
           </button>
         </div>
@@ -1844,10 +1874,24 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
   const today = new Date().toLocaleDateString("es-DO");
   const confirmClose = () => {
     if (window.confirm(ms("Save your sheet before closing?", "¿Guardar la hoja antes de cerrar?"))) {
-      // Don't close — let them save first
-      return;
+      // User clicked OK — save the sheet then close
+      const name = saveSheetName && saveSheetName !== "__new__" ? saveSheetName : (projectName || "Hoja sin nombre");
+      const now = new Date();
+      const date = now.toLocaleDateString("es-DO") + " " + now.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" });
+      const sheet = { name, date, rows, globalMaterial, factura, nombre, telefono };
+      const existing = savedSheets.findIndex(s => s.name === name);
+      let updated;
+      if (existing >= 0) {
+        updated = [...savedSheets];
+        updated[existing] = sheet;
+      } else {
+        updated = [sheet, ...savedSheets.slice(0, 19)];
+      }
+      setSavedSheets(updated);
+      try { localStorage.setItem("savedDesgloseSheets", JSON.stringify(updated)); } catch {}
+      onClose();
     }
-    onClose();
+    // If user clicks Cancel, do nothing (just return)
   };
 
   // Build summarised cut list — group same dimensions, multiply by cabinet qty
@@ -1856,10 +1900,20 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
     // Helper: add a part to the map, merging by name+dimensions
     const emitPart = (map, name, L, A, G, qty, part, opts) => {
       const key = `${name}|${L}-${A}-${G}`;
+      const o = opts || {};
       if (map.has(key)) {
-        map.get(key).cant += qty;
+        const existing = map.get(key);
+        existing.cant += qty;
+        // Update flags when merging: if this variant should have the flag, mark it
+        if (o.hasBisagra && o.sideH) {
+          // Mark on the dimension closest to cabinet height
+          const distL = Math.abs(o.doorL - o.sideH);
+          const distA = Math.abs(o.doorA - o.sideH);
+          if (distL <= distA) { existing.hbl = "X"; }  // doorL is closer to sideH
+          else { existing.hba = "X"; }  // doorA is closer to sideH
+        }
+        if (o.hasRanura) { existing.rl = "X"; existing.ra = "X"; }
       } else {
-        const o = opts || {};
         map.set(key, {
           id: key, largo: L, ancho: A, grosor: G, cant: qty, nombre: name,
           cl1: "X", cl2: "X", ca1: "X", ca2: "X",
@@ -1867,10 +1921,11 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
           // Ranuras: auto-mark on parts whose height matches cabinet height (back panel groove)
           rl: o.hasRanura ? "X" : "",
           ra: o.hasRanura ? "X" : "",
-          // Bisagras: auto-mark on parts touching side panels (same height as side)
-          hbl: o.hasBisagra ? "X" : "",
-          hba: o.hasBisagra ? "X" : "",
+          // Bisagras: mark on dimension closest to cabinet height (where hinge attaches)
+          hbl: (o.hasBisagra && o.sideH && Math.abs(L - o.sideH) <= Math.abs(A - o.sideH)) ? "X" : "",
+          hba: (o.hasBisagra && o.sideH && Math.abs(A - o.sideH) < Math.abs(L - o.sideH)) ? "X" : "",
           material: (o && o.cabMaterial) || "", isHardboard: part.material === "hardboard",
+          cabType: o.cabType || "",
         });
       }
     };
@@ -1912,15 +1967,16 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         if (part.part === "Side") {
           const totalSides = part.qty * cabQty;      // usually 2 × cabQty
           // Emit all sides as plain, no hinge marking
-          emitPart(map, "Side", L, A, G, totalSides, part, { hasRanura: true, hasBisagra: false, cabMaterial });
+          emitPart(map, "Side", L, A, G, totalSides, part, { hasRanura: true, hasBisagra: false, cabMaterial, cabType: cab.type });
           return;
         }
 
         const sideLabel = part.part;
         const totalQty = part.qty * cabQty;
-        // Mark door parts with hasBisagra so they show X in HB-L/HB-A (fixed to side of cabinet)
+        // Mark door parts: bisagra attaches on whichever dimension is closer to cabinet height
         const isDoorPart = sideLabel.includes("Door");
-        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: isDoorPart, cabMaterial });
+        const sideH = p.sideH;  // cabinet's side panel height
+        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: isDoorPart, cabMaterial, cabType: cab.type, sideH, doorL: L, doorA: A });
       });
     });
     return Array.from(map.values()).sort((a, b) => b.largo - a.largo || b.ancho - a.ancho);
@@ -2160,6 +2216,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               <tr>
                 <th style={hdrStyle({ width: 30 })} rowSpan={2}>No</th>
                 <th style={hdrStyle({ minWidth: 80 })} rowSpan={2}>Material</th>
+                <th style={hdrStyle({ minWidth: 60 })} rowSpan={2}>Type</th>
                 <th style={{ ...hdrStyle({ minWidth: 100 }), cursor: "pointer" }} rowSpan={2}
                   onClick={() => toggleSort("nombre")}>
                   Nombre {sortField === "nombre" ? (sortDir === 1 ? "▲" : "▼") : "↕"}
@@ -2200,6 +2257,10 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                   <td style={cellStyle({ textAlign: "left", minWidth: 100 })}>
                     <input value={row.material || ""} onChange={e => updateRow(row.id, "material", e.target.value)}
                       style={{ ...inputStyle, textAlign: "left", fontSize: 10 }} placeholder="—" />
+                  </td>
+                  {/* Type (Base/Wall) */}
+                  <td style={cellStyle({ textAlign: "center", minWidth: 60, fontSize: 10, color: "#666", fontWeight: 500 })}>
+                    {row.cabType || "—"}
                   </td>
                   {/* Nombre */}
                   <td style={cellStyle({ textAlign: "left", minWidth: 100, fontSize: 10, color: "#555" })}>
@@ -2394,7 +2455,8 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 <option key={i} value={s.name}>{s.name} · {s.date}</option>
               ))}
             </select>
-            <button onClick={() => {
+            <button onClick={(e) => {
+              e.stopPropagation();  // prevent click from bubbling to overlay
               const name = saveSheetName && saveSheetName !== "__new__" ? saveSheetName : (projectName || "Hoja sin nombre");
               const now = new Date();
               const date = now.toLocaleDateString("es-DO") + " " + now.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" });
@@ -2410,6 +2472,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               setSavedSheets(updated);
               try { localStorage.setItem("savedDesgloseSheets", JSON.stringify(updated)); } catch {}
               alert("Hoja guardada: " + name);
+              onClose();
             }}
               style={{ padding: "8px 14px", background: "#276221", color: "#fff", border: "none",
                 borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
@@ -2516,10 +2579,11 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 await new Promise((r) => { script.onload = r; });
               }
               const XLSX = window.XLSX;
-              const headers = ["No","Material","Nombre","Vetas","Largo (mm)","Ancho (mm)","Grosor (mm)","Cant.","L1","L2","A1","A2","R-L","R-A","HB-L","HB-A"];
+              const headers = ["No","Material","Type","Nombre","Vetas","Largo (mm)","Ancho (mm)","Grosor (mm)","Cant.","L1","L2","A1","A2","R-L","R-A","HB-L","HB-A"];
               const data = sortedRows.map((row, i) => ({
                 "No": i + 1,
                 "Material": row.material || "",
+                "Type": row.cabType || "",
                 "Nombre": mTName(row.nombre),
                 "Vetas": row.vetas || "",
                 "Largo (mm)": row.largo,
@@ -2534,7 +2598,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               const ws = XLSX.utils.json_to_sheet(data, { header: headers });
               // Set column widths
               ws["!cols"] = [
-                {wch:4},{wch:24},{wch:22},{wch:6},{wch:10},{wch:10},{wch:9},{wch:6},
+                {wch:4},{wch:24},{wch:12},{wch:22},{wch:6},{wch:10},{wch:10},{wch:9},{wch:6},
                 {wch:4},{wch:4},{wch:4},{wch:4},{wch:4},{wch:4},{wch:5},{wch:5}
               ];
               const wb = XLSX.utils.book_new();
@@ -2603,6 +2667,16 @@ export default function CabinetProject() {
   const [authError, setAuthError] = useState("");
   const [pendingUsers, setPendingUsers] = useState([]);
   const [adminViewActive, setAdminViewActive] = useState(true);
+  
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem("cabinetTheme") || "dark"; } catch { return "dark"; }
+  });
+  const colors = THEME_COLORS[theme];
+  const toggleTheme = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setTheme(newTheme); currentTheme = newTheme;
+    try { localStorage.setItem("cabinetTheme", newTheme); } catch {}
+  };
   
   const [lang, setLang] = useState("en");
   const t = (key) => (translations[lang] && translations[lang][key]) || key;
@@ -3142,7 +3216,7 @@ export default function CabinetProject() {
       const cabQty = c.qty || 1;
       const d = buildCutList(W, p, c);
       return [`${cabLabel(c, i, t)} — ${t(TYPES[c.type].label)} — ${W} mm`,
-        ...d.parts.map((x) => `  ${x.qty * cabQty}×  ${tName(x.part, t).padEnd(20)} ${fmt(x.a)} × ${fmt(x.b)} (${t(x.aLabel)} × ${t(x.bLabel)})`)].join("\n");
+        ...d.parts.map((x) => `  ${x.qty * cabQty}×  ${tName(x.part, t).padEnd(20)} ${fmt(x.a)} × ${fmt(x.b)} (${t(x.aLabel)} × ${t(x.bLabel)})`)].join("; currentTheme = theme;\n");
     });
     const p = (selectedCab && selectedCab.params) || DEFAULTS;
     const text = [`${projectName} — ${today} — ${p.t}mm ${t("melamine")}`, "", ...blocks, "",
@@ -3305,9 +3379,9 @@ export default function CabinetProject() {
 
   if (authLoading) {
     return (
-      <div style={{ minHeight: "100vh", background: C.paper, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Archivo', sans-serif" }}>
+      <div style={{ minHeight: "100vh", background: getColors().paper, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Archivo', sans-serif" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: C.ink }}>Loading...</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: getColors().ink }}>Loading...</div>
         </div>
       </div>
     );
@@ -3337,14 +3411,14 @@ export default function CabinetProject() {
   }
 
   return (
-    <div className="cab-root" style={{ background: C.paper, color: C.ink, minHeight: "100%",
+    <div className="cab-root" style={{ background: getColors().paper, color: getColors().ink, minHeight: "100%",
       padding: "18px 14px 44px", fontFamily: "'Archivo', sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
         .cab-root *{box-sizing:border-box}
         .cab-root input[type=number]{-moz-appearance:textfield}
         .cab-root input::-webkit-outer-spin-button,.cab-root input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-        .cab-root input:focus,.cab-root select:focus{border-color:${C.amber}!important;box-shadow:0 0 0 3px rgba(228,87,46,.18)}
+        .cab-root input:focus,.cab-root select:focus{border-color:${getColors().amber}!important;box-shadow:0 0 0 3px rgba(228,87,46,.18)}
         .cab-name:hover{background:rgba(228,87,46,.08)!important;border-radius:6px}
         .cab-btn{transition:background .15s,color .15s}
         .cab-panels rect{transition:x .35s ease,width .35s ease}
@@ -3395,28 +3469,28 @@ export default function CabinetProject() {
       `}</style>
 
       <div style={{ maxWidth: 1240, margin: "0 auto" }}>
-        <div style={{ borderBottom: `2px solid ${C.ink}`, paddingBottom: 12, marginBottom: 18,
+        <div style={{ borderBottom: `2px solid ${getColors().ink}`, paddingBottom: 12, marginBottom: 18,
           display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, letterSpacing: "0.22em", color: C.rust, fontWeight: 700, textTransform: "uppercase" }}>{t("Shop drawing · mm")} {saveStatus && <span style={{ fontSize: 10, color: saveStatus === "error" ? "#e74c3c" : "#27ae60" }}>{saveStatus === "saving" ? "Saving..." : "Saved ✓"}</span>}</div>
+            <div style={{ fontSize: 11, letterSpacing: "0.22em", color: getColors().rust, fontWeight: 700, textTransform: "uppercase" }}>{t("Shop drawing · mm")} {saveStatus && <span style={{ fontSize: 10, color: saveStatus === "error" ? "#e74c3c" : "#27ae60" }}>{saveStatus === "saving" ? "Saving..." : "Saved ✓"}</span>}</div>
             <input value={currentProjectName} onChange={(e) => setCurrentProjectName(e.target.value)} className="cab-name"
               style={{ margin: "2px 0 0", fontSize: 27, fontWeight: 800, letterSpacing: "-0.01em", border: "none",
-                background: "transparent", color: C.ink, outline: "none", fontFamily: "'Archivo', sans-serif", maxWidth: "100%" }} />
+                background: "transparent", color: getColors().ink, outline: "none", fontFamily: "'Archivo', sans-serif", maxWidth: "100%" }} />
           </div>
           <div className="cab-noprint" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end", position: "relative" }}>
             <div className="projects-dropdown-container" style={{ position: "relative" }}>
-              <button onClick={() => setShowProjectList(!showProjectList)} className="cab-btn" style={btn("transparent", C.ink, `1.5px solid ${C.ink}`)}>
+              <button onClick={() => setShowProjectList(!showProjectList)} className="cab-btn" style={btn("transparent", getColors().ink, `1.5px solid ${getColors().ink}`)}>
                 {userProjects.length} {t("Projects")} ▼
               </button>
               {showProjectList && (
-                <div className="projects-dropdown-menu" style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, background: C.card, border: `1px solid ${C.hair}`, borderRadius: 10, minWidth: 250, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", zIndex: 1000 }}>
+                <div className="projects-dropdown-menu" style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, background: getColors().card, border: `1px solid ${getColors().hair}`, borderRadius: 10, minWidth: 250, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", zIndex: 1000 }}>
                   <div style={{ padding: 12 }}>
-                    <button onClick={createNewProject} style={{ width: "100%", padding: 10, background: C.rust, color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 12 }}>{t("+ New Project")}</button>
+                    <button onClick={createNewProject} style={{ width: "100%", padding: 10, background: getColors().rust, color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 12 }}>{t("+ New Project")}</button>
                     <div style={{ maxHeight: 300, overflowY: "auto" }}>
                       {userProjects.length > 0 ? (
                         userProjects.map((proj) => (
                           <div key={proj.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: 6, background: proj.id === currentProjectId ? "#f0f0f0" : "transparent", marginBottom: 4, gap: 8 }}>
-                            <button onClick={() => switchProject(proj.id)} style={{ flex: 1, textAlign: "left", border: "none", background: "transparent", cursor: "pointer", fontSize: 13, color: proj.id === currentProjectId ? C.rust : C.ink, fontWeight: proj.id === currentProjectId ? 700 : 400 }}>
+                            <button onClick={() => switchProject(proj.id)} style={{ flex: 1, textAlign: "left", border: "none", background: "transparent", cursor: "pointer", fontSize: 13, color: proj.id === currentProjectId ? getColors().rust : getColors().ink, fontWeight: proj.id === currentProjectId ? 700 : 400 }}>
                               {proj.name}
                             </button>
                             <button onClick={() => toggleLockProject(proj)} title={proj.locked ? "Unlock project" : "Lock project"}
@@ -3429,7 +3503,7 @@ export default function CabinetProject() {
                           </div>
                         ))
                       ) : (
-                        <div style={{ padding: 10, fontSize: 12, color: C.mut }}>No projects yet</div>
+                        <div style={{ padding: 10, fontSize: 12, color: getColors().mut }}>No projects yet</div>
                       )}
                     </div>
                   </div>
@@ -3439,86 +3513,86 @@ export default function CabinetProject() {
             <div style={{ position: "relative", display: "inline-block" }}
               onMouseEnter={e => e.currentTarget.querySelector('.dl-menu').style.display='block'}
               onMouseLeave={e => e.currentTarget.querySelector('.dl-menu').style.display='none'}>
-              <button className="cab-btn" style={btn(C.rust, "#fff", `1.5px solid ${C.rust}`)}>
+              <button className="cab-btn" style={btn(getColors().rust, "#fff", `1.5px solid ${getColors().rust}`)}>
                 ⬇ {t("Download")} ▾
               </button>
               <div className="dl-menu" style={{ display: "none", position: "absolute", top: "100%", left: 0,
-                background: "#fff", border: `1.5px solid ${C.hair}`, borderRadius: 8, zIndex: 999,
+                background: "#fff", border: `1.5px solid ${getColors().hair}`, borderRadius: 8, zIndex: 999,
                 minWidth: 200, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", overflow: "hidden" }}>
                 <div onClick={downloadPDF} style={{ padding: "10px 16px", cursor: "pointer", fontSize: 13,
-                  fontWeight: 600, color: C.ink, borderBottom: `1px solid ${C.hair}` }}
-                  onMouseEnter={e => e.currentTarget.style.background=C.card}
+                  fontWeight: 600, color: getColors().ink, borderBottom: `1px solid ${getColors().hair}` }}
+                  onMouseEnter={e => e.currentTarget.style.background=getColors().card}
                   onMouseLeave={e => e.currentTarget.style.background="#fff"}>
                   {t("Download PDF")}
                 </div>
                 <div onClick={exportProjectToPDF} style={{ padding: "10px 16px", cursor: "pointer", fontSize: 13,
-                  fontWeight: 600, color: C.ink, borderBottom: `1px solid ${C.hair}` }}
-                  onMouseEnter={e => e.currentTarget.style.background=C.card}
+                  fontWeight: 600, color: getColors().ink, borderBottom: `1px solid ${getColors().hair}` }}
+                  onMouseEnter={e => e.currentTarget.style.background=getColors().card}
                   onMouseLeave={e => e.currentTarget.style.background="#fff"}>
                   Export Project PDF
                 </div>
                 <div onClick={downloadShopPDF} style={{ padding: "10px 16px", cursor: "pointer", fontSize: 13,
-                  fontWeight: 600, color: C.ink, borderBottom: `1px solid ${C.hair}` }}
-                  onMouseEnter={e => e.currentTarget.style.background=C.card}
+                  fontWeight: 600, color: getColors().ink, borderBottom: `1px solid ${getColors().hair}` }}
+                  onMouseEnter={e => e.currentTarget.style.background=getColors().card}
                   onMouseLeave={e => e.currentTarget.style.background="#fff"}>
                   {t("Shop drawing PDF")}
                 </div>
                 <div onClick={() => setShowDesglose(true)} style={{ padding: "10px 16px", cursor: "pointer", fontSize: 13,
-                  fontWeight: 600, color: C.ink }}
-                  onMouseEnter={e => e.currentTarget.style.background=C.card}
+                  fontWeight: 600, color: getColors().ink }}
+                  onMouseEnter={e => e.currentTarget.style.background=getColors().card}
                   onMouseLeave={e => e.currentTarget.style.background="#fff"}>
                   Desglose
                 </div>
               </div>
             </div>
-            <button onClick={copyAll} className="cab-btn" style={btn(copied ? C.ink : "transparent", copied ? C.card : C.mut, `1px solid ${C.hair}`)}>
+            <button onClick={copyAll} className="cab-btn" style={btn(copied ? getColors().ink : "transparent", copied ? getColors().card : getColors().mut, `1px solid ${getColors().hair}`)}>
               {copied ? t("Copied ✓") : t("Copy text")}</button>
-            <span style={{ width: 1, height: 22, background: C.hair, margin: "0 2px" }} />
+            <span style={{ width: 1, height: 22, background: getColors().hair, margin: "0 2px" }} />
             <button className="cab-btn" onClick={() => setLang(lang === "en" ? "es" : "en")}
-              style={{ padding: "7px 11px", borderRadius: 8, border: `1.5px solid ${C.ink}`, background: "transparent",
-                color: C.ink, cursor: "pointer", fontSize: 12, fontWeight: 700, letterSpacing: "0.04em" }}>
+              style={{ padding: "7px 11px", borderRadius: 8, border: `1.5px solid ${getColors().ink}`, background: "transparent",
+                color: getColors().ink, cursor: "pointer", fontSize: 12, fontWeight: 700, letterSpacing: "0.04em" }}>
               {lang === "en" ? "ES" : "EN"}
             </button>
             {authState?.isAdmin && (
               <button className="cab-btn" onClick={() => setAdminViewActive(true)}
                 style={btn("#1a1a1a", "#fff", "1.5px solid #1a1a1a")}>Admin</button>
             )}
-            <button className="cab-btn" onClick={handleLogout} style={btn(C.ink, C.card, `1.5px solid ${C.ink}`)}>{t("Log out")}</button>
+            <button className="cab-btn" onClick={handleLogout} style={btn(getColors().ink, getColors().card, `1.5px solid ${getColors().ink}`)}>{t("Log out")}</button>
           </div>
         </div>
         {copyBox && (
           <div className="cab-noprint" style={{ marginTop: -8, marginBottom: 16 }}>
-            <div style={{ fontSize: 12, color: C.mut, marginBottom: 6 }}>
+            <div style={{ fontSize: 12, color: getColors().mut, marginBottom: 6 }}>
               {t("Auto-copy was blocked here — tap the box, select all, and copy:")}
             </div>
             <textarea readOnly value={copyBox} onFocus={(e) => e.target.select()}
               style={{ width: "100%", height: 180, fontFamily: "'JetBrains Mono', monospace", fontSize: 11,
-                padding: 10, borderRadius: 8, border: `1px solid ${C.hair}`, background: C.card, color: C.ink, resize: "vertical" }} />
-            <button onClick={() => setCopyBox(null)} style={{ ...btn("transparent", C.mut, `1px solid ${C.hair}`), marginTop: 6 }}>{t("Close")}</button>
+                padding: 10, borderRadius: 8, border: `1px solid ${getColors().hair}`, background: getColors().card, color: getColors().ink, resize: "vertical" }} />
+            <button onClick={() => setCopyBox(null)} style={{ ...btn("transparent", getColors().mut, `1px solid ${getColors().hair}`), marginTop: 6 }}>{t("Close")}</button>
           </div>
         )}
         {pdfMsg && (
           <div className="cab-noprint" style={{ marginTop: -8, marginBottom: 16, fontSize: 12.5,
-            color: pdfMsg.includes("Couldn't") ? C.rust : C.mut, fontFamily: "'JetBrains Mono', monospace" }}>{pdfMsg}</div>
+            color: pdfMsg.includes("Couldn't") ? getColors().rust : getColors().mut, fontFamily: "'JetBrains Mono', monospace" }}>{pdfMsg}</div>
         )}
         {pdfUrl && (
           <div className="cab-noprint" style={{ marginBottom: 18 }}>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 8 }}>
-              <button onClick={() => sharePdf(pdfBlob, pdfName)} className="cab-btn" style={btn(C.ink, C.card, `1.5px solid ${C.ink}`)}>{t("Save file")}</button>
-              <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="cab-btn" style={{ ...btn("transparent", C.ink, `1.5px solid ${C.ink}`), textDecoration: "none" }}>{t("Open in new tab")}</a>
-              <button onClick={() => { URL.revokeObjectURL(pdfUrl); setPdfUrl(null); }} style={btn("transparent", C.mut, `1px solid ${C.hair}`)}>{t("Close")}</button>
+              <button onClick={() => sharePdf(pdfBlob, pdfName)} className="cab-btn" style={btn(getColors().ink, getColors().card, `1.5px solid ${getColors().ink}`)}>{t("Save file")}</button>
+              <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="cab-btn" style={{ ...btn("transparent", getColors().ink, `1.5px solid ${getColors().ink}`), textDecoration: "none" }}>{t("Open in new tab")}</a>
+              <button onClick={() => { URL.revokeObjectURL(pdfUrl); setPdfUrl(null); }} style={btn("transparent", getColors().mut, `1px solid ${getColors().hair}`)}>{t("Close")}</button>
             </div>
-            <div style={{ fontSize: 12, color: C.mut, marginBottom: 8 }}>
+            <div style={{ fontSize: 12, color: getColors().mut, marginBottom: 8 }}>
               Preview below. If "Save file" does nothing, use the download / share button inside the preview, or "Open in new tab".
             </div>
-            <iframe title="PDF preview" src={pdfUrl} style={{ width: "100%", height: 520, border: `1px solid ${C.hair}`, borderRadius: 10, background: "#fff" }} />
+            <iframe title="PDF preview" src={pdfUrl} style={{ width: "100%", height: 520, border: `1px solid ${getColors().hair}`, borderRadius: 10, background: "#fff" }} />
           </div>
         )}
 
         <div className="cab-wb">
           {/* LEFT: cabinet list */}
           <aside className="cab-side cab-noprint">
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.mut, marginBottom: 8 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: getColors().mut, marginBottom: 8 }}>
               {t("Cabinets")}
             </div>
             {cabs.map((c, i) => {
@@ -3528,7 +3602,7 @@ export default function CabinetProject() {
                   <button className="cab-nav" onClick={() => setSelectedId(c.id)}
                     style={{ flex: 1, minWidth: 0, textAlign: "left", cursor: "pointer",
                       padding: "11px 13px", borderRadius: 10, fontSize: 14, fontWeight: 700,
-                      border: `1px solid ${on ? C.ink : C.hair}`, background: on ? C.ink : C.card, color: on ? C.card : C.ink,
+                      border: `1px solid ${on ? getColors().ink : getColors().hair}`, background: on ? getColors().ink : getColors().card, color: on ? getColors().card : getColors().ink,
                       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {cabLabel(c, i, t)}
                   </button>
@@ -3544,8 +3618,8 @@ export default function CabinetProject() {
               );
             })}
             <button onClick={addCab} className="cab-nav" style={{ display: "block", width: "100%", textAlign: "center", cursor: "pointer",
-              padding: "11px 13px", borderRadius: 10, fontSize: 14, fontWeight: 700, color: C.mut,
-              border: `1.5px dashed ${C.hair}`, background: "transparent" }}>
+              padding: "11px 13px", borderRadius: 10, fontSize: 14, fontWeight: 700, color: getColors().mut,
+              border: `1.5px dashed ${getColors().hair}`, background: "transparent" }}>
               {t("+ Add cabinet")}
             </button>
           </aside>
@@ -3563,9 +3637,9 @@ export default function CabinetProject() {
                   🔒 {t("This project is locked. Unlock it from the project list to make changes.")}
                 </div>
               )}
-              <div style={{ padding: "32px 24px", textAlign: "center", color: C.mut }}>
+              <div style={{ padding: "32px 24px", textAlign: "center", color: getColors().mut }}>
                 <div style={{ fontSize: 32, marginBottom: 12 }}>👈</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: C.ink, marginBottom: 6 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: getColors().ink, marginBottom: 6 }}>
                   {t("Select a cabinet")}
                 </div>
                 <div style={{ fontSize: 13 }}>
@@ -3575,9 +3649,9 @@ export default function CabinetProject() {
               </>
             )}
         {/* totals + boards */}
-        <div style={{ background: C.ink, color: C.card, borderRadius: 12, padding: "16px", marginTop: 4 }}>
+        <div style={{ background: getColors().ink, color: getColors().card, borderRadius: 12, padding: "16px", marginTop: 4 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-            <span style={{ fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 700, color: C.amber }}>
+            <span style={{ fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 700, color: getColors().amber }}>
               {t("Material total")} · {summary.n} {t(summary.n === 1 ? "cabinet" : "cabinets")}</span>
             <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 700 }}>
               {summary.pieces} {t("pieces")} · {summary.area.toFixed(2)} m²</span>
@@ -3586,7 +3660,7 @@ export default function CabinetProject() {
             display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8 }}>
             <span style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "#CFD2C7" }}>
               {t("Boards needed")} · {p.boardW} × {p.boardH} mm</span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 28, fontWeight: 700, color: C.amber }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 28, fontWeight: 700, color: getColors().amber }}>
               ≈ {summary.board.boards}</span>
           </div>
           <div style={{ fontSize: 11.5, color: "#B9BCB1", marginTop: 6, fontFamily: "'JetBrains Mono', monospace" }}>
@@ -3623,20 +3697,20 @@ export default function CabinetProject() {
 
         <div className="cab-noprint" style={{ marginTop: 20 }}>
           <button onClick={() => { setShowSpec((s) => !s); if (!showSpec) setSpecTab("shared"); }} style={{ width: "100%", textAlign: "left",
-            background: "transparent", cursor: "pointer", border: `1px dashed ${C.mut}`, borderRadius: 10,
-            padding: "11px 14px", color: C.ink, fontWeight: 700, fontSize: 13, letterSpacing: "0.04em",
+            background: "transparent", cursor: "pointer", border: `1px dashed ${getColors().mut}`, borderRadius: 10,
+            padding: "11px 14px", color: getColors().ink, fontWeight: 700, fontSize: 13, letterSpacing: "0.04em",
             display: "flex", justifyContent: "space-between" }}>
             <span>{t("Shared specifications & assumptions")}</span>
-            <span style={{ color: C.mut }}>{showSpec ? "− hide" : "+ edit"}</span>
+            <span style={{ color: getColors().mut }}>{showSpec ? "− hide" : "+ edit"}</span>
           </button>
           {showSpec && (
-            <div style={{ background: C.card, border: `1px solid ${C.hair}`, borderRadius: 12, marginTop: 10, overflow: "hidden" }}>
+            <div style={{ background: getColors().card, border: `1px solid ${getColors().hair}`, borderRadius: 12, marginTop: 10, overflow: "hidden" }}>
               {/* Tab buttons */}
-              <div style={{ display: "flex", borderBottom: `1px solid ${C.hair}` }}>
-                <button onClick={() => setSpecTab("shared")} style={{ flex: 1, padding: "12px 14px", border: "none", background: specTab === "shared" ? C.card : "#f5f5f5", color: specTab === "shared" ? C.rust : C.mut, cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: "0.05em" }}>
+              <div style={{ display: "flex", borderBottom: `1px solid ${getColors().hair}` }}>
+                <button onClick={() => setSpecTab("shared")} style={{ flex: 1, padding: "12px 14px", border: "none", background: specTab === "shared" ? getColors().card : "#f5f5f5", color: specTab === "shared" ? getColors().rust : getColors().mut, cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: "0.05em" }}>
                   Shared Specifications
                 </button>
-                <button onClick={() => setSpecTab("generic")} style={{ flex: 1, padding: "12px 14px", border: "none", background: specTab === "generic" ? C.card : "#f5f5f5", color: specTab === "generic" ? C.rust : C.mut, cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: "0.05em" }}>
+                <button onClick={() => setSpecTab("generic")} style={{ flex: 1, padding: "12px 14px", border: "none", background: specTab === "generic" ? getColors().card : "#f5f5f5", color: specTab === "generic" ? getColors().rust : getColors().mut, cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: "0.05em" }}>
                   Generic Options
                 </button>
               </div>
@@ -3696,7 +3770,7 @@ export default function CabinetProject() {
                       <NumField label={t("Slide clear/side")} value={p.drawerSideClear} onChange={setP("drawerSideClear")} />
                       <NumField label={t("Drawer box depth")} value={p.drawerBoxDepth} onChange={setP("drawerBoxDepth")} />
                       <NumField label={t("Box H = front −")} value={p.drawerBoxHReduce} onChange={setP("drawerBoxHReduce")} />
-                      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: getColors().ink }}>
                         <input type="checkbox" checked={p.drawerBoxes} onChange={(e) => setP("drawerBoxes")(e.target.checked)} />
                         {t("Include drawer boxes")}
                       </label>
@@ -3718,11 +3792,11 @@ export default function CabinetProject() {
                   </label>
                   <NumField label={t("Board width")} value={p.boardW} onChange={setP("boardW")} />
                   <NumField label={t("Board height")} value={p.boardH} onChange={setP("boardH")} />
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: getColors().ink }}>
                     <input type="checkbox" checked={p.allowRotate} onChange={(e) => setP("allowRotate")(e.target.checked)} />
                     {t("Allow parts to rotate (no grain direction)")}
                   </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.ink }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: getColors().ink }}>
                     <input type="checkbox" checked={p.backBetween} onChange={(e) => setP("backBetween")(e.target.checked)} />
                     {t("Back fits between sides")} (−{2 * p.t})
                   </label>
