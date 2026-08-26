@@ -786,7 +786,7 @@ function Elevation({ W, p, shelfQty, faces }) {
 
   return (
     <svg viewBox={`0 0 ${vbW} ${vbH}`} width="100%" preserveAspectRatio="xMidYMid meet"
-      style={{ display: "block", borderRadius: 10 }} role="img"
+      style={{ display: "block", borderRadius: 10, minWidth: 0, maxWidth: "100%" }} role="img"
       aria-label={`Front elevation of a ${W} mm cabinet`}>
       <rect x="0" y="0" width={vbW} height={vbH} fill={getColors().mat} />
       <defs>
@@ -1303,7 +1303,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
 
       {data && cab.type !== "filler" && (
         <>
-          <div className="cab-mat cab-noprint" style={{ marginBottom: 12, maxWidth: 380 }}>
+          <div className="cab-mat cab-noprint" style={{ marginBottom: 12, maxWidth: 380, width: "100%", minWidth: 0, overflow: "hidden" }}>
             <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces} />
           </div>
           <div style={{ border: `1px solid ${getColors().hair}`, borderRadius: 10, overflow: "hidden", background: "#fff" }}>
@@ -3483,7 +3483,7 @@ export default function CabinetProject() {
         .cab-printonly{display:none}
         @media (prefers-reduced-motion: reduce){.cab-panels rect,.cab-btn,.cab-row{transition:none}}
         @media (min-width:760px){.cab-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}.cab-card{margin-bottom:0}}
-        .cab-wb{display:flex;gap:22px;align-items:flex-start}
+        .cab-wb{display:flex;gap:22px;align-items:flex-start;min-width:0}
         .app-shell{display:flex;gap:22px;align-items:flex-start;max-width:1320px;margin:0 auto}
         .app-rail{width:212px;flex-shrink:0;position:sticky;top:20px;border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;min-height:calc(100vh - 40px)}
         .app-content{flex:1;min-width:0}
@@ -3500,8 +3500,9 @@ export default function CabinetProject() {
         }
         .cab-side{width:380px;flex-shrink:0}
         .cab-main{flex:1;min-width:0}
+        .cab-card{min-width:0}
         .cab-nav{transition:background .15s,border-color .15s}
-        @media (max-width:900px){.cab-wb{flex-direction:column}.cab-side{width:100%}}
+        @media (max-width:900px){.cab-wb{flex-direction:column}.cab-side{width:100%}.cab-main{width:100%;min-width:0}}
         @media (max-width:640px){
           .cab-name{font-size:20px!important}
           .projects-dropdown-menu{
