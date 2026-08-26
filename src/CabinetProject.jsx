@@ -2867,6 +2867,35 @@ export default function CabinetProject() {
     setPendingUsers([]);
   };
 
+  const handleChangePassword = async () => {
+    setPwError("");
+    if (!newPassword || newPassword.length < 6) {
+      setPwError(t("Password must be at least 6 characters") || "Password must be at least 6 characters");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError(t("Passwords do not match") || "Passwords do not match");
+      return;
+    }
+    if (!supabase) return;
+    setPwStatus("saving");
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        setPwStatus("error");
+        setPwError(error.message);
+        return;
+      }
+      setPwStatus("success");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setPwStatus(""), 3000);
+    } catch (e) {
+      setPwStatus("error");
+      setPwError(String(e));
+    }
+  };
+
   // Save project to Supabase
   const saveProject = async (projectId, name, cabinets) => {
     if (!supabase || !authState?.user?.id) return;
@@ -2959,6 +2988,10 @@ export default function CabinetProject() {
 
   const [isSwitching, setIsSwitching] = useState(false);
   const [projectsLoaded, setProjectsLoaded] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwStatus, setPwStatus] = useState(""); // "", "saving", "success", "error"
+  const [pwError, setPwError] = useState("");
 
   // Switch to a different project
   const switchProject = async (projectId) => {
@@ -3554,6 +3587,7 @@ export default function CabinetProject() {
             ["projects", t("Projects")],
             ["download", t("Download")],
             ["specs", t("Specs") || "Specs"],
+            ["account", t("Account") || "Account"],
           ].map(([k,label]) => (
             <button key={k} className="rail-item" onClick={()=>{setActiveView(k); setMobileNavOpen(false);}}
               style={{ color: activeView===k?getColors().buttonText:getColors().mut, background: activeView===k?getColors().buttonBg:"transparent" }}>
@@ -3889,6 +3923,45 @@ export default function CabinetProject() {
 
           {activeView === "admin" && authState?.isAdmin && (
             <AdminPanel pendingUsers={pendingUsers} handleApprove={handleApprove} authState={authState} handleLogout={handleLogout} />
+          )}
+
+          {activeView === "account" && (
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().canvasMut, marginBottom: 16 }}>
+                {t("Account") || "Account"}
+              </div>
+              <div style={{ background: getColors().card, borderRadius: 16, padding: 24, maxWidth: 420 }}>
+                <div style={{ fontSize: 13, color: getColors().mut, marginBottom: 4 }}>{t("Signed in as") || "Signed in as"}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: getColors().ink, marginBottom: 22 }}>{authState?.user?.email}</div>
+
+                <div style={{ fontSize: 14, fontWeight: 700, color: getColors().ink, marginBottom: 14 }}>{t("Change password") || "Change password"}</div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>
+                    {t("New password") || "New password"}
+                  </label>
+                  <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••"
+                    style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${getColors().hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: "#111", background: "#fff" }} />
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>
+                    {t("Confirm new password") || "Confirm new password"}
+                  </label>
+                  <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••"
+                    style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${getColors().hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: "#111", background: "#fff" }} />
+                </div>
+
+                {pwError && <div style={{ fontSize: 13, color: "#e74c3c", marginBottom: 12 }}>{pwError}</div>}
+                {pwStatus === "success" && <div style={{ fontSize: 13, color: "#27ae60", marginBottom: 12 }}>{t("Password updated ✓") || "Password updated ✓"}</div>}
+
+                <button onClick={handleChangePassword} disabled={pwStatus === "saving"}
+                  style={{ padding: "11px 20px", background: getColors().buttonBg, color: getColors().buttonText, border: "none",
+                    borderRadius: 9, fontSize: 14, fontWeight: 800, cursor: pwStatus === "saving" ? "not-allowed" : "pointer", opacity: pwStatus === "saving" ? 0.6 : 1 }}>
+                  {pwStatus === "saving" ? (t("Saving...") || "Saving...") : (t("Update password") || "Update password")}
+                </button>
+              </div>
+            </div>
           )}
 
           </div>
