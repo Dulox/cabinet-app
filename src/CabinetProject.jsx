@@ -3093,6 +3093,7 @@ export default function CabinetProject() {
   useEffect(() => {
     if (authState?.user?.id) {
       loadUserProjects();
+      setMobileNavOpen(false);
     }
   }, [authState?.user?.id]);
 
