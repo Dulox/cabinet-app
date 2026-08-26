@@ -1580,6 +1580,69 @@ function PendingScreen({ authState, handleLogout, checkAuth }) {
 
 function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout }) {
   const c = getColors();
+  const [allUsers, setAllUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [actionMsg, setActionMsg] = useState({}); // { [userId]: "sent" | "error" }
+
+  const loadAllUsers = async () => {
+    if (!supabase) return;
+    setUsersLoading(true);
+    try {
+      const { data, error } = await supabase.from("profiles").select("*").order("email", { ascending: true });
+      if (!error) setAllUsers(data || []);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  React.useEffect(() => { loadAllUsers(); }, []);
+
+  const setApproved = async (userId, approved) => {
+    if (!supabase) return;
+    const { error } = await supabase.from("profiles").update({ approved }).eq("id", userId);
+    if (!error) {
+      setAllUsers((list) => list.map((u) => u.id === userId ? { ...u, approved } : u));
+    }
+  };
+
+  const setIsAdmin = async (userId, isAdmin) => {
+    if (!supabase) return;
+    if (!isAdmin && userId === authState?.user?.id) {
+      if (!window.confirm("Remove your own admin access? You will lose access to this panel.")) return;
+    }
+    const { error } = await supabase.from("profiles").update({ is_admin: isAdmin }).eq("id", userId);
+    if (!error) {
+      setAllUsers((list) => list.map((u) => u.id === userId ? { ...u, is_admin: isAdmin } : u));
+    }
+  };
+
+  const sendReset = async (email, userId) => {
+    if (!supabase) return;
+    setActionMsg((m) => ({ ...m, [userId]: "sending" }));
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin,
+      });
+      setActionMsg((m) => ({ ...m, [userId]: error ? "error" : "sent" }));
+      setTimeout(() => setActionMsg((m) => ({ ...m, [userId]: undefined })), 4000);
+    } catch (e) {
+      setActionMsg((m) => ({ ...m, [userId]: "error" }));
+    }
+  };
+
+  const revokeAccess = async (userId, email) => {
+    if (!supabase) return;
+    if (userId === authState?.user?.id) {
+      window.alert("You can't revoke your own access.");
+      return;
+    }
+    if (!window.confirm(`Revoke app access for ${email}? This removes their profile so they can no longer log into the app. Their Supabase login itself is not deleted — that requires direct database access.`)) return;
+    const { error } = await supabase.from("profiles").delete().eq("id", userId);
+    if (!error) {
+      setAllUsers((list) => list.filter((u) => u.id !== userId));
+    }
+  };
+
   return (
     <div>
       {/* header */}
@@ -1595,6 +1658,11 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout }) {
           <div style={{ fontSize: 32, fontWeight: 800, color: c.ink, fontFamily: "'JetBrains Mono', monospace" }}>{pendingUsers.length}</div>
           <div style={{ fontSize: 11, color: c.mut, marginTop: 4 }}>awaiting approval</div>
         </div>
+        <div style={{ background: c.card, borderRadius: 14, padding: "18px 16px" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.mut, marginBottom: 10 }}>Total users</div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: c.ink, fontFamily: "'JetBrains Mono', monospace" }}>{allUsers.length}</div>
+          <div style={{ fontSize: 11, color: c.mut, marginTop: 4 }}>with a profile</div>
+        </div>
         <div style={{ background: c.canvasBtn, border: `1px solid ${c.canvasBorder}`, borderRadius: 14, padding: "18px 16px" }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.canvasMut, marginBottom: 10 }}>Signed in as</div>
           <div style={{ fontSize: 14, fontWeight: 700, color: c.canvasText, wordBreak: "break-all" }}>{authState?.user?.email || "—"}</div>
@@ -1606,13 +1674,13 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout }) {
       <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.canvasMut, marginBottom: 12 }}>Pending signups</div>
 
       {pendingUsers.length === 0 ? (
-        <div style={{ background: c.card, borderRadius: 14, padding: "32px 20px", textAlign: "center" }}>
-          <div style={{ fontSize: 28, marginBottom: 10 }}>✓</div>
+        <div style={{ background: c.card, borderRadius: 14, padding: "24px 20px", textAlign: "center", marginBottom: 28 }}>
+          <div style={{ fontSize: 24, marginBottom: 8 }}>✓</div>
           <div style={{ fontSize: 14, fontWeight: 600, color: c.ink }}>All clear</div>
-          <div style={{ fontSize: 12, color: c.mut, marginTop: 4 }}>No pending approvals. All users are approved.</div>
+          <div style={{ fontSize: 12, color: c.mut, marginTop: 4 }}>No pending approvals.</div>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 28 }}>
           {pendingUsers.map((user) => (
             <div key={user.id} style={{
               background: c.card, border: `1px solid ${c.hair}`, borderRadius: 14,
@@ -1622,7 +1690,7 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout }) {
                 <div style={{ fontSize: 14, fontWeight: 700, color: c.ink }}>{user.email}</div>
                 <div style={{ fontSize: 11, color: c.mut, marginTop: 4, fontFamily: "'JetBrains Mono', monospace", opacity: 0.7 }}>{user.id}</div>
               </div>
-              <button onClick={() => handleApprove(user.id)} style={{
+              <button onClick={async () => { await handleApprove(user.id); loadAllUsers(); }} style={{
                 padding: "9px 18px", background: c.buttonBg, color: c.buttonText,
                 border: "none", borderRadius: 10, fontWeight: 700, fontSize: 13,
                 cursor: "pointer", whiteSpace: "nowrap", transition: "opacity .15s"
@@ -1633,6 +1701,71 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout }) {
           ))}
         </div>
       )}
+
+      {/* all users list */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.canvasMut }}>All users</div>
+        <button onClick={loadAllUsers} style={{ background: "none", border: "none", color: c.canvasMut, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+          {usersLoading ? "Loading..." : "↻ Refresh"}
+        </button>
+      </div>
+
+      <div style={{ fontSize: 11, color: c.canvasMut, marginBottom: 14, lineHeight: 1.5 }}>
+        To create a new account, ask the person to sign up via "Request access" on the login screen, then approve them here.
+        To change someone's password, send them a reset link — they set the new password themselves.
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {allUsers.map((user) => {
+          const msg = actionMsg[user.id];
+          return (
+            <div key={user.id} style={{
+              background: c.card, border: `1px solid ${c.hair}`, borderRadius: 14,
+              padding: "16px 18px", display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 12
+            }}>
+              <div style={{ flex: 1, minWidth: 180 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: c.ink }}>{user.email}</div>
+                  {user.is_admin && (
+                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 6, background: c.buttonBg, color: c.buttonText }}>Admin</span>
+                  )}
+                  {!user.approved && (
+                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 6, background: "rgba(231,76,60,0.15)", color: "#e74c3c" }}>Pending</span>
+                  )}
+                </div>
+                {msg === "sent" && <div style={{ fontSize: 11, color: "#27ae60", marginTop: 4 }}>Reset email sent ✓</div>}
+                {msg === "error" && <div style={{ fontSize: 11, color: "#e74c3c", marginTop: 4 }}>Couldn't send reset email</div>}
+              </div>
+
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button onClick={() => setApproved(user.id, !user.approved)} style={{
+                  padding: "7px 12px", background: "transparent", color: c.ink, border: `1px solid ${c.hair}`,
+                  borderRadius: 8, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
+                  {user.approved ? "Revoke approval" : "Approve"}
+                </button>
+                <button onClick={() => setIsAdmin(user.id, !user.is_admin)} style={{
+                  padding: "7px 12px", background: "transparent", color: c.ink, border: `1px solid ${c.hair}`,
+                  borderRadius: 8, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
+                  {user.is_admin ? "Remove admin" : "Make admin"}
+                </button>
+                <button onClick={() => sendReset(user.email, user.id)} disabled={msg === "sending"} style={{
+                  padding: "7px 12px", background: "transparent", color: c.ink, border: `1px solid ${c.hair}`,
+                  borderRadius: 8, fontWeight: 600, fontSize: 12, cursor: msg === "sending" ? "not-allowed" : "pointer", opacity: msg === "sending" ? 0.6 : 1 }}>
+                  {msg === "sending" ? "Sending..." : "Send password reset"}
+                </button>
+                <button onClick={() => revokeAccess(user.id, user.email)} style={{
+                  padding: "7px 12px", background: "transparent", color: "#e74c3c", border: "1px solid rgba(231,76,60,0.3)",
+                  borderRadius: 8, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
+                  Revoke access
+                </button>
+              </div>
+            </div>
+          );
+        })}
+        {allUsers.length === 0 && !usersLoading && (
+          <div style={{ color: c.mut, fontSize: 13, textAlign: "center", padding: 20 }}>No users found.</div>
+        )}
+      </div>
     </div>
   );
 }
