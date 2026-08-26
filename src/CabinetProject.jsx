@@ -1545,7 +1545,12 @@ function RecoveryScreen({ recoveryPassword, setRecoveryPassword, recoveryConfirm
   );
 }
 
-function PendingScreen({ authState, handleLogout }) {
+function PendingScreen({ authState, handleLogout, checkAuth }) {
+  const [checking, setChecking] = useState(false);
+  const onCheckAgain = async () => {
+    setChecking(true);
+    try { await checkAuth(); } finally { setChecking(false); }
+  };
   return (
     <div style={{ minHeight: "100vh", background: getColors().paper, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'Archivo', sans-serif" }}>
       <div style={{ width: "100%", maxWidth: 470, background: getColors().card, border: `1px solid ${getColors().hair}`, borderRadius: 18, padding: 40, textAlign: "center", boxShadow: "0 18px 50px rgba(0,0,0,0.1)" }}>
@@ -1562,8 +1567,8 @@ function PendingScreen({ authState, handleLogout }) {
         <div style={{ display: "inline-block", background: "#F2F2EF", border: `1px solid ${getColors().hair}`, borderRadius: 8, padding: "7px 12px", fontSize: 13, fontWeight: 700, fontFamily: "'Courier New', monospace", marginBottom: 24 }}>
           {authState?.user?.email}
         </div><br />
-        <button onClick={() => { const sess = supabase.auth.getSession(); if (sess) { supabase.db.getProfile(sess.access_token, authState.user.id).then((prof) => { if (prof?.approved) window.location.reload(); }); } }} style={{ padding: "8px 16px", border: `1.5px solid ${getColors().canvasBorder}`, background: "transparent", color: getColors().ink, borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer", marginRight: 8 }}>
-          Check again
+        <button onClick={onCheckAgain} disabled={checking} style={{ padding: "8px 16px", border: `1.5px solid ${getColors().canvasBorder}`, background: "transparent", color: getColors().ink, borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: checking ? "not-allowed" : "pointer", marginRight: 8, opacity: checking ? 0.6 : 1 }}>
+          {checking ? "Checking..." : "Check again"}
         </button>
         <button onClick={handleLogout} style={{ padding: "8px 16px", border: "none", background: "transparent", color: getColors().mut, borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
           Log out
@@ -3633,7 +3638,7 @@ export default function CabinetProject() {
   }
 
   if (!authState.approved) {
-    return <PendingScreen authState={authState} handleLogout={handleLogout} />;
+    return <PendingScreen authState={authState} handleLogout={handleLogout} checkAuth={checkAuth} />;
   }
 
 
