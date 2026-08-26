@@ -1506,6 +1506,45 @@ function LoginScreen({ signupMode, setSignupMode, loginEmail, setLoginEmail, log
   );
 }
 
+function RecoveryScreen({ recoveryPassword, setRecoveryPassword, recoveryConfirm, setRecoveryConfirm, recoveryError, recoveryStatus, handleRecoverySubmit }) {
+  const handleSubmit = (e) => { e.preventDefault(); handleRecoverySubmit(); };
+  return (
+    <div style={{ minHeight: "100svh", background: getColors().paper, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'Archivo', sans-serif", boxSizing: "border-box" }}>
+      <div style={{ width: "100%", maxWidth: 420, background: getColors().card, border: `1px solid ${getColors().hair}`, borderRadius: 18, padding: 36, boxShadow: "0 18px 50px rgba(0,0,0,0.1)" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: getColors().rust, textAlign: "center" }}>
+          Password recovery
+        </div>
+        <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.5px", textAlign: "center", marginTop: 3, color: getColors().ink }}>
+          Set a new password
+        </div>
+        <div style={{ fontSize: 13, color: getColors().mut, textAlign: "center", marginTop: 8, marginBottom: 26 }}>
+          Choose a new password for your account.
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>New password</label>
+            <input type="password" value={recoveryPassword} onChange={(e) => setRecoveryPassword(e.target.value)} placeholder="••••••••"
+              style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${getColors().hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: "#111", background: "#fff" }} />
+          </div>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>Confirm new password</label>
+            <input type="password" value={recoveryConfirm} onChange={(e) => setRecoveryConfirm(e.target.value)} placeholder="••••••••"
+              style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${getColors().hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: "#111", background: "#fff" }} />
+          </div>
+
+          {recoveryError && <div style={{ fontSize: 13, color: getColors().rust, marginBottom: 14, textAlign: "center" }}>{recoveryError}</div>}
+          {recoveryStatus === "success" && <div style={{ fontSize: 13, color: "#27ae60", marginBottom: 14, textAlign: "center" }}>Password updated ✓ Redirecting...</div>}
+
+          <button type="submit" disabled={recoveryStatus === "saving"} style={{ width: "100%", padding: 12, background: getColors().rust, color: "#fff", border: "none", borderRadius: 9, fontSize: 14, fontWeight: 800, cursor: recoveryStatus === "saving" ? "not-allowed" : "pointer", opacity: recoveryStatus === "saving" ? 0.6 : 1 }}>
+            {recoveryStatus === "saving" ? "Please wait..." : "Set new password"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function PendingScreen({ authState, handleLogout }) {
   return (
     <div style={{ minHeight: "100vh", background: getColors().paper, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'Archivo', sans-serif" }}>
@@ -3039,6 +3078,11 @@ export default function CabinetProject() {
   const [newEmail, setNewEmail] = useState("");
   const [emailStatus, setEmailStatus] = useState(""); // "", "saving", "success", "error"
   const [emailError, setEmailError] = useState("");
+  const [recoveryMode, setRecoveryMode] = useState(false);
+  const [recoveryPassword, setRecoveryPassword] = useState("");
+  const [recoveryConfirm, setRecoveryConfirm] = useState("");
+  const [recoveryStatus, setRecoveryStatus] = useState("");
+  const [recoveryError, setRecoveryError] = useState("");
 
   // Switch to a different project
   const switchProject = async (projectId) => {
@@ -3134,8 +3178,50 @@ export default function CabinetProject() {
     loadSupabase().then(() => {
       // After Supabase loads, check auth
       checkAuth();
+      if (supabase) {
+        supabase.auth.onAuthStateChange((event) => {
+          if (event === "PASSWORD_RECOVERY") {
+            setRecoveryMode(true);
+          }
+        });
+      }
     });
   }, []);
+
+  const handleRecoverySubmit = async () => {
+    setRecoveryError("");
+    if (!recoveryPassword || recoveryPassword.length < 6) {
+      setRecoveryError("Password must be at least 6 characters");
+      return;
+    }
+    if (recoveryPassword !== recoveryConfirm) {
+      setRecoveryError("Passwords do not match");
+      return;
+    }
+    if (!supabase) return;
+    setRecoveryStatus("saving");
+    try {
+      const { error } = await supabase.auth.updateUser({ password: recoveryPassword });
+      if (error) {
+        setRecoveryStatus("error");
+        setRecoveryError(error.message);
+        return;
+      }
+      setRecoveryStatus("success");
+      // Clean the recovery token out of the URL and drop back into the normal app
+      try { window.history.replaceState(null, "", window.location.pathname); } catch {}
+      setTimeout(() => {
+        setRecoveryMode(false);
+        setRecoveryPassword("");
+        setRecoveryConfirm("");
+        setRecoveryStatus("");
+        checkAuth();
+      }, 1500);
+    } catch (e) {
+      setRecoveryStatus("error");
+      setRecoveryError(String(e));
+    }
+  };
 
   const checkAuth = async () => {
     if (!supabase) {
@@ -3525,6 +3611,12 @@ export default function CabinetProject() {
       setPdfMsg("Couldn't build the shop drawing — try again or use Copy text.");
     }
   };
+
+  if (recoveryMode) {
+    return <RecoveryScreen recoveryPassword={recoveryPassword} setRecoveryPassword={setRecoveryPassword}
+      recoveryConfirm={recoveryConfirm} setRecoveryConfirm={setRecoveryConfirm}
+      recoveryError={recoveryError} recoveryStatus={recoveryStatus} handleRecoverySubmit={handleRecoverySubmit} />;
+  }
 
   if (authLoading) {
     return (
