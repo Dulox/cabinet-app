@@ -2935,6 +2935,7 @@ export default function CabinetProject() {
       }
     } catch (e) {
     }
+    setProjectsLoaded(true);
   };
 
   // Create a new project
@@ -2956,6 +2957,7 @@ export default function CabinetProject() {
   };
 
   const [isSwitching, setIsSwitching] = useState(false);
+  const [projectsLoaded, setProjectsLoaded] = useState(false);
 
   // Switch to a different project
   const switchProject = async (projectId) => {
@@ -3095,7 +3097,7 @@ export default function CabinetProject() {
 
   // Auto-save projects when cabinets change (debounced)
   useEffect(() => {
-    if (!currentProjectId || !authState?.user?.id || cabs.length === 0 || isSwitching) return;
+    if (!currentProjectId || !authState?.user?.id || cabs.length === 0 || isSwitching || !projectsLoaded) return;
     
     const timer = setTimeout(() => {
       saveProject(currentProjectId, currentProjectName, cabs);
