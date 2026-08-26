@@ -2955,11 +2955,19 @@ export default function CabinetProject() {
     await loadUserProjects();
   };
 
+  const [isSwitching, setIsSwitching] = useState(false);
+
   // Switch to a different project
   const switchProject = async (projectId) => {
     const project = userProjects.find(p => p.id === projectId);
     if (!project) return;
     
+    // Save current project first before switching
+    if (currentProjectId && cabs.length > 0) {
+      await saveProject(currentProjectId, currentProjectName, cabs);
+    }
+    
+    setIsSwitching(true);
     setCurrentProjectId(project.id);
     setCurrentProjectName(project.name);
     setCabs(project.cabs || []);
@@ -2967,6 +2975,8 @@ export default function CabinetProject() {
       setSelectedId(null);
     }
     setShowProjectList(false);
+    // Allow state to settle before re-enabling auto-save
+    setTimeout(() => setIsSwitching(false), 1500);
   };
 
   // Delete a project
@@ -3085,7 +3095,7 @@ export default function CabinetProject() {
 
   // Auto-save projects when cabinets change (debounced)
   useEffect(() => {
-    if (!currentProjectId || !authState?.user?.id || cabs.length === 0) return;
+    if (!currentProjectId || !authState?.user?.id || cabs.length === 0 || isSwitching) return;
     
     const timer = setTimeout(() => {
       saveProject(currentProjectId, currentProjectName, cabs);
