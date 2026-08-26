@@ -3587,7 +3587,6 @@ export default function CabinetProject() {
             ["projects", t("Projects")],
             ["download", t("Download")],
             ["specs", t("Specs") || "Specs"],
-            ["account", t("Account") || "Account"],
           ].map(([k,label]) => (
             <button key={k} className="rail-item" onClick={()=>{setActiveView(k); setMobileNavOpen(false);}}
               style={{ color: activeView===k?getColors().buttonText:getColors().mut, background: activeView===k?getColors().buttonBg:"transparent" }}>
@@ -3599,6 +3598,7 @@ export default function CabinetProject() {
           {authState?.isAdmin && (
             <button className="rail-item" onClick={()=>{setActiveView("admin"); setMobileNavOpen(false);}} style={{ color: activeView==="admin"?getColors().buttonText:getColors().mut, background: activeView==="admin"?getColors().buttonBg:"transparent" }}>Admin</button>
           )}
+          <button className="rail-item" onClick={()=>{setActiveView("account"); setMobileNavOpen(false);}} style={{ color: activeView==="account"?getColors().buttonText:getColors().mut, background: activeView==="account"?getColors().buttonBg:"transparent" }}>{t("Account") || "Account"}</button>
           <button className="rail-item" onClick={handleLogout} style={{ color:getColors().mut }}>{t("Log out")}</button>
           <div style={{ marginTop:"auto", display:"flex", alignItems:"center", gap:10, padding:10, borderRadius:12, background:getColors().mat }}>
             <div style={{ width:30, height:30, borderRadius:8, background:getColors().buttonBg, flexShrink:0 }} />
