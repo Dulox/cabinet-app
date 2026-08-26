@@ -3469,6 +3469,8 @@ export default function CabinetProject() {
       padding: "18px 14px 44px", fontFamily: "'Archivo', sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        html, body{overflow-x:hidden;max-width:100vw}
+        .cab-root{overflow-x:hidden;max-width:100vw}
         .cab-root *{box-sizing:border-box}
         .cab-root input[type=number]{-moz-appearance:textfield}
         .cab-root input::-webkit-outer-spin-button,.cab-root input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
@@ -3502,6 +3504,7 @@ export default function CabinetProject() {
         .cab-nav{transition:background .15s,border-color .15s}
         @media (max-width:900px){.cab-wb{flex-direction:column}.cab-side{width:100%}}
         @media (max-width:640px){
+          .cab-name{font-size:20px!important}
           .projects-dropdown-menu{
             position:fixed!important;
             top:auto!important;
