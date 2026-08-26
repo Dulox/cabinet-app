@@ -2094,6 +2094,8 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
   const [sortDir, setSortDir] = React.useState(1); // 1=asc
   const [showCustomMat, setShowCustomMat] = React.useState(false);
   const [showSaved, setShowSaved] = React.useState(false);
+  const [renamingIdx, setRenamingIdx] = React.useState(null);
+  const [renameValue, setRenameValue] = React.useState("");
   const [savedSheets, setSavedSheets] = React.useState(() => {
     try { return JSON.parse(localStorage.getItem("savedDesgloseSheets") || "[]"); } catch { return []; }
   });
@@ -2211,6 +2213,14 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
 
   const deleteSavedSheet = (idx) => {
     const updated = savedSheets.filter((_, i) => i !== idx);
+    setSavedSheets(updated);
+    try { localStorage.setItem("savedDesgloseSheets", JSON.stringify(updated)); } catch {}
+  };
+
+  const renameSavedSheet = (idx, newName) => {
+    const trimmed = (newName || "").trim();
+    if (!trimmed) return;
+    const updated = savedSheets.map((s, i) => i === idx ? { ...s, name: trimmed } : s);
     setSavedSheets(updated);
     try { localStorage.setItem("savedDesgloseSheets", JSON.stringify(updated)); } catch {}
   };
@@ -2726,22 +2736,41 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                     No hay hojas guardadas aún.
                   </div>
                 )}
-                {[...savedSheets].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((s, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10,
+                {[...savedSheets].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((s) => {
+                  const realIdx = savedSheets.indexOf(s);
+                  const isRenaming = renamingIdx === realIdx;
+                  return (
+                  <div key={realIdx} style={{ display: "flex", alignItems: "center", gap: 10,
                     padding: "10px 4px", borderBottom: "1px solid #f0f0f0" }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13 }}>{s.name}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {isRenaming ? (
+                        <input autoFocus value={renameValue} onChange={e => setRenameValue(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === "Enter") { renameSavedSheet(realIdx, renameValue); setRenamingIdx(null); }
+                            if (e.key === "Escape") setRenamingIdx(null);
+                          }}
+                          onBlur={() => { renameSavedSheet(realIdx, renameValue); setRenamingIdx(null); }}
+                          style={{ fontWeight: 700, fontSize: 13, width: "100%", border: "1.5px solid #E4572E",
+                            borderRadius: 5, padding: "3px 6px", outline: "none", color: "#111", background: "#fff" }} />
+                      ) : (
+                        <div style={{ fontWeight: 700, fontSize: 13, color: "#111", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
+                      )}
                       <div style={{ fontSize: 11, color: "#888" }}>{s.date} · {s.rows?.length || 0} piezas</div>
                     </div>
+                    {!isRenaming && (
+                      <button onClick={() => { setRenamingIdx(realIdx); setRenameValue(s.name); }}
+                        title="Rename" style={{ background: "none", border: "none", color: "#888", cursor: "pointer", fontSize: 15, padding: "4px 6px" }}>✎</button>
+                    )}
                     <button onClick={() => loadSheet(s)}
                       style={{ padding: "5px 12px", background: "#E4572E", color: "#fff",
-                        border: "none", borderRadius: 5, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
+                        border: "none", borderRadius: 5, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
                       Cargar
                     </button>
-                    <button onClick={() => deleteSavedSheet(i)}
+                    <button onClick={() => deleteSavedSheet(realIdx)}
                       style={{ background: "none", border: "none", color: "#e74c3c", cursor: "pointer", fontSize: 18 }}>×</button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
