@@ -2251,7 +2251,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
       justifyContent: "center", overflowY: "auto", padding: "20px 0",
     }} onClick={confirmClose}>
       <div className="desglose-print-area" style={{
-        background: "#fff", width: 960, maxWidth: "98vw", borderRadius: 10,
+        background: "#fff", color: "#111", width: 960, maxWidth: "98vw", borderRadius: 10,
         boxShadow: "0 8px 40px rgba(0,0,0,0.3)", padding: 24, position: "relative",
       }} onClick={e => e.stopPropagation()}>
         {/* Close */}
