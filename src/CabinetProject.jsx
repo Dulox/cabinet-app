@@ -3488,17 +3488,16 @@ export default function CabinetProject() {
         .app-rail{width:212px;flex-shrink:0;position:sticky;top:20px;border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;min-height:calc(100vh - 40px)}
         .app-content{flex:1;min-width:0}
         .rail-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;border:none;background:transparent;width:100%;text-align:left;transition:background .15s,color .15s}
+        .mobile-hamburger{display:none;align-items:center;justify-content:center;width:40px;height:40px;border:1px solid ${getColors().canvasBorder};background:${getColors().canvasBtn};color:${getColors().canvasBtnText};border-radius:10px;cursor:pointer;padding:0;flex-shrink:0}
+        .mobile-hamburger svg{width:18px;height:18px}
+        .mobile-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999}
         @media (max-width:900px){
           .app-shell{flex-direction:column;gap:0}
           .app-rail{position:fixed;top:0;left:0;bottom:0;width:260px;min-height:100vh;height:100vh;border-radius:0;padding:20px 14px;z-index:1000;transform:translateX(-100%);transition:transform .25s ease;box-shadow:0 0 24px rgba(0,0,0,.3);flex-direction:column;flex-wrap:nowrap;overflow-y:auto}
           .app-rail.open{transform:translateX(0)}
           .app-content{width:100%}
           .mobile-hamburger{display:flex}
-          .mobile-backdrop{display:block}
         }
-        .mobile-hamburger{display:none;align-items:center;justify-content:center;width:40px;height:40px;border:1px solid ${getColors().canvasBorder};background:${getColors().canvasBtn};color:${getColors().canvasBtnText};border-radius:10px;cursor:pointer;padding:0;flex-shrink:0}
-        .mobile-hamburger svg{width:18px;height:18px}
-        .mobile-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999}
         .cab-side{width:380px;flex-shrink:0}
         .cab-main{flex:1;min-width:0}
         .cab-nav{transition:background .15s,border-color .15s}
