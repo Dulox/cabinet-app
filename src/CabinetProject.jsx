@@ -2718,6 +2718,7 @@ export default function CabinetProject() {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [adminViewActive, setAdminViewActive] = useState(false);
   const [activeView, setActiveView] = useState("workbench");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   
   const [theme, setTheme] = useState(() => {
     try {
@@ -3485,7 +3486,17 @@ export default function CabinetProject() {
         .app-rail{width:212px;flex-shrink:0;position:sticky;top:20px;border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;min-height:calc(100vh - 40px)}
         .app-content{flex:1;min-width:0}
         .rail-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;border:none;background:transparent;width:100%;text-align:left;transition:background .15s,color .15s}
-        @media (max-width:900px){.app-shell{flex-direction:column}.app-rail{width:100%;position:static;min-height:0;flex-direction:row;flex-wrap:wrap}}
+        @media (max-width:900px){
+          .app-shell{flex-direction:column;gap:0}
+          .app-rail{position:fixed;top:0;left:0;bottom:0;width:260px;min-height:100vh;height:100vh;border-radius:0;padding:20px 14px;z-index:1000;transform:translateX(-100%);transition:transform .25s ease;box-shadow:0 0 24px rgba(0,0,0,.3);flex-direction:column;flex-wrap:nowrap;overflow-y:auto}
+          .app-rail.open{transform:translateX(0)}
+          .app-content{width:100%}
+          .mobile-hamburger{display:flex}
+          .mobile-backdrop{display:block}
+        }
+        .mobile-hamburger{display:none;align-items:center;justify-content:center;width:40px;height:40px;border:1px solid ${getColors().canvasBorder};background:${getColors().canvasBtn};color:${getColors().canvasBtnText};border-radius:10px;cursor:pointer;padding:0;flex-shrink:0}
+        .mobile-hamburger svg{width:18px;height:18px}
+        .mobile-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999}
         .cab-side{width:380px;flex-shrink:0}
         .cab-main{flex:1;min-width:0}
         .cab-nav{transition:background .15s,border-color .15s}
@@ -3528,7 +3539,8 @@ export default function CabinetProject() {
 
       <div className="app-shell">
         {/* ── LEFT NAV RAIL ─────────────────────────────── */}
-        <aside className="app-rail cab-noprint" style={{ background: getColors().card }}>
+        {mobileNavOpen && <div className="mobile-backdrop" onClick={()=>setMobileNavOpen(false)} />}
+        <aside className={`app-rail cab-noprint ${mobileNavOpen ? "open" : ""}`} style={{ background: getColors().card }}>
           <div style={{ display:"flex", alignItems:"center", gap:10, padding:"4px 8px 16px" }}>
             <div style={{ width:34, height:34, borderRadius:9, background:getColors().buttonBg, display:"grid", placeItems:"center", flexShrink:0, color:getColors().buttonText, fontWeight:800 }}>▣</div>
             <div><div style={{ color:getColors().ink, fontWeight:700, fontSize:14 }}>Cabinet APP</div><div style={{ color:getColors().mut, fontSize:11 }}>Cut-list Calculator</div></div>
@@ -3539,15 +3551,15 @@ export default function CabinetProject() {
             ["download", t("Download")],
             ["specs", t("Specs") || "Specs"],
           ].map(([k,label]) => (
-            <button key={k} className="rail-item" onClick={()=>setActiveView(k)}
+            <button key={k} className="rail-item" onClick={()=>{setActiveView(k); setMobileNavOpen(false);}}
               style={{ color: activeView===k?getColors().buttonText:getColors().mut, background: activeView===k?getColors().buttonBg:"transparent" }}>
               {label}
             </button>
           ))}
-          <button className="rail-item" onClick={()=>setShowDesglose(true)} style={{ color:getColors().mut }}>Madesol</button>
+          <button className="rail-item" onClick={()=>{setShowDesglose(true); setMobileNavOpen(false);}} style={{ color:getColors().mut }}>Madesol</button>
           <div style={{ height:1, background:getColors().hair, margin:"12px 8px" }} />
           {authState?.isAdmin && (
-            <button className="rail-item" onClick={()=>setActiveView("admin")} style={{ color: activeView==="admin"?getColors().buttonText:getColors().mut, background: activeView==="admin"?getColors().buttonBg:"transparent" }}>Admin</button>
+            <button className="rail-item" onClick={()=>{setActiveView("admin"); setMobileNavOpen(false);}} style={{ color: activeView==="admin"?getColors().buttonText:getColors().mut, background: activeView==="admin"?getColors().buttonBg:"transparent" }}>Admin</button>
           )}
           <button className="rail-item" onClick={handleLogout} style={{ color:getColors().mut }}>{t("Log out")}</button>
           <div style={{ marginTop:"auto", display:"flex", alignItems:"center", gap:10, padding:10, borderRadius:12, background:getColors().mat }}>
@@ -3561,11 +3573,16 @@ export default function CabinetProject() {
           <div style={{ maxWidth: 1240, margin: "0 auto" }}>
           <div style={{ borderBottom: `1px solid ${getColors().canvasBorder}`, paddingBottom: 14, marginBottom: 18,
             display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 11, letterSpacing: "0.22em", color: getColors().canvasMut, fontWeight: 700, textTransform: "uppercase" }}>{t("Shop drawing · mm")} {saveStatus && <span style={{ fontSize: 10, color: saveStatus === "error" ? "#e74c3c" : getColors().canvasText }}>{saveStatus === "saving" ? "Saving..." : "Saved ✓"}</span>}</div>
-              <input value={currentProjectName} onChange={(e) => setCurrentProjectName(e.target.value)} className="cab-name"
-                style={{ margin: "2px 0 0", fontSize: 27, fontWeight: 800, letterSpacing: "-0.01em", border: "none",
-                  background: "transparent", color: getColors().canvasText, outline: "none", fontFamily: "'Archivo', sans-serif", maxWidth: "100%" }} />
+            <div style={{ display:"flex", alignItems:"center", gap:12, minWidth: 0, flex: 1 }}>
+              <button className="mobile-hamburger cab-noprint" onClick={()=>setMobileNavOpen(true)} aria-label="Menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+              </button>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 11, letterSpacing: "0.22em", color: getColors().canvasMut, fontWeight: 700, textTransform: "uppercase" }}>{t("Shop drawing · mm")} {saveStatus && <span style={{ fontSize: 10, color: saveStatus === "error" ? "#e74c3c" : getColors().canvasText }}>{saveStatus === "saving" ? "Saving..." : "Saved ✓"}</span>}</div>
+                <input value={currentProjectName} onChange={(e) => setCurrentProjectName(e.target.value)} className="cab-name"
+                  style={{ margin: "2px 0 0", fontSize: 27, fontWeight: 800, letterSpacing: "-0.01em", border: "none",
+                    background: "transparent", color: getColors().canvasText, outline: "none", fontFamily: "'Archivo', sans-serif", maxWidth: "100%", width: "100%" }} />
+              </div>
             </div>
             <div className="cab-noprint" style={{ display:"flex", alignItems:"center", gap:8 }}>
               <button className="cab-btn" onClick={toggleTheme} style={{ padding:"8px 14px", borderRadius:8, border:`1px solid ${getColors().canvasBorder}`, background:getColors().canvasBtn, color:getColors().canvasBtnText, cursor:"pointer", fontSize:13, fontWeight:700 }}>{theme === "dark" ? "☀️ LIGHT" : "🌙 DARK"}</button>
