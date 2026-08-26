@@ -2869,6 +2869,10 @@ export default function CabinetProject() {
 
   const handleChangePassword = async () => {
     setPwError("");
+    if (!currentPassword) {
+      setPwError(t("Enter your current password") || "Enter your current password");
+      return;
+    }
     if (!newPassword || newPassword.length < 6) {
       setPwError(t("Password must be at least 6 characters") || "Password must be at least 6 characters");
       return;
@@ -2880,6 +2884,16 @@ export default function CabinetProject() {
     if (!supabase) return;
     setPwStatus("saving");
     try {
+      // Verify current password by re-authenticating before allowing the change
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: authState.user.email,
+        password: currentPassword,
+      });
+      if (verifyError) {
+        setPwStatus("error");
+        setPwError(t("Current password is incorrect") || "Current password is incorrect");
+        return;
+      }
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) {
         setPwStatus("error");
@@ -2887,12 +2901,41 @@ export default function CabinetProject() {
         return;
       }
       setPwStatus("success");
+      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       setTimeout(() => setPwStatus(""), 3000);
     } catch (e) {
       setPwStatus("error");
       setPwError(String(e));
+    }
+  };
+
+  const handleChangeEmail = async () => {
+    setEmailError("");
+    if (!newEmail || !newEmail.includes("@")) {
+      setEmailError(t("Enter a valid email address") || "Enter a valid email address");
+      return;
+    }
+    if (newEmail === authState?.user?.email) {
+      setEmailError(t("That is already your email") || "That is already your email");
+      return;
+    }
+    if (!supabase) return;
+    setEmailStatus("saving");
+    try {
+      const { error } = await supabase.auth.updateUser({ email: newEmail });
+      if (error) {
+        setEmailStatus("error");
+        setEmailError(error.message);
+        return;
+      }
+      setEmailStatus("success");
+      setNewEmail("");
+      setTimeout(() => setEmailStatus(""), 5000);
+    } catch (e) {
+      setEmailStatus("error");
+      setEmailError(String(e));
     }
   };
 
@@ -2990,8 +3033,12 @@ export default function CabinetProject() {
   const [projectsLoaded, setProjectsLoaded] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [pwStatus, setPwStatus] = useState(""); // "", "saving", "success", "error"
   const [pwError, setPwError] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [emailStatus, setEmailStatus] = useState(""); // "", "saving", "success", "error"
+  const [emailError, setEmailError] = useState("");
 
   // Switch to a different project
   const switchProject = async (projectId) => {
@@ -3930,11 +3977,41 @@ export default function CabinetProject() {
               <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().canvasMut, marginBottom: 16 }}>
                 {t("Account") || "Account"}
               </div>
-              <div style={{ background: getColors().card, borderRadius: 16, padding: 24, maxWidth: 420 }}>
+
+              <div style={{ background: getColors().card, borderRadius: 16, padding: 24, maxWidth: 420, marginBottom: 16 }}>
                 <div style={{ fontSize: 13, color: getColors().mut, marginBottom: 4 }}>{t("Signed in as") || "Signed in as"}</div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: getColors().ink, marginBottom: 22 }}>{authState?.user?.email}</div>
 
+                <div style={{ fontSize: 14, fontWeight: 700, color: getColors().ink, marginBottom: 14 }}>{t("Change email") || "Change email"}</div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>
+                    {t("New email") || "New email"}
+                  </label>
+                  <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="you@email.com"
+                    style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${getColors().hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: "#111", background: "#fff" }} />
+                </div>
+
+                {emailError && <div style={{ fontSize: 13, color: "#e74c3c", marginBottom: 12 }}>{emailError}</div>}
+                {emailStatus === "success" && <div style={{ fontSize: 13, color: "#27ae60", marginBottom: 12 }}>{t("Check your inbox to confirm the new email ✓") || "Check your inbox to confirm the new email ✓"}</div>}
+
+                <button onClick={handleChangeEmail} disabled={emailStatus === "saving"}
+                  style={{ padding: "11px 20px", background: getColors().buttonBg, color: getColors().buttonText, border: "none",
+                    borderRadius: 9, fontSize: 14, fontWeight: 800, cursor: emailStatus === "saving" ? "not-allowed" : "pointer", opacity: emailStatus === "saving" ? 0.6 : 1 }}>
+                  {emailStatus === "saving" ? (t("Saving...") || "Saving...") : (t("Update email") || "Update email")}
+                </button>
+              </div>
+
+              <div style={{ background: getColors().card, borderRadius: 16, padding: 24, maxWidth: 420 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: getColors().ink, marginBottom: 14 }}>{t("Change password") || "Change password"}</div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>
+                    {t("Current password") || "Current password"}
+                  </label>
+                  <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="••••••••"
+                    style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${getColors().hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: "#111", background: "#fff" }} />
+                </div>
 
                 <div style={{ marginBottom: 12 }}>
                   <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>
