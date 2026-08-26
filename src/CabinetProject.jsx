@@ -1453,7 +1453,7 @@ function LoginScreen({ signupMode, setSignupMode, loginEmail, setLoginEmail, log
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: getColors().paper, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'Archivo', sans-serif" }}>
+    <div style={{ minHeight: "100svh", background: getColors().paper, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'Archivo', sans-serif", boxSizing: "border-box" }}>
       <div style={{ width: "100%", maxWidth: 420, background: getColors().card, border: `1px solid ${getColors().hair}`, borderRadius: 18, padding: 36, boxShadow: "0 18px 50px rgba(0,0,0,0.1)" }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: getColors().rust, textAlign: "center" }}>
           Private · Invite only
@@ -1469,12 +1469,12 @@ function LoginScreen({ signupMode, setSignupMode, loginEmail, setLoginEmail, log
           <div style={{ marginBottom: 14 }}>
             <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>Email</label>
             <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} placeholder="you@email.com"
-              style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${getColors().hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: getColors().ink, background: "#fff" }} />
+              style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${getColors().hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: "#111", background: "#fff" }} />
           </div>
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>Password</label>
             <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} placeholder="••••••••"
-              style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${getColors().hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: getColors().ink, background: "#fff" }} />
+              style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${getColors().hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: "#111", background: "#fff" }} />
           </div>
 
           {authError && <div style={{ fontSize: 13, color: getColors().rust, marginBottom: 14, textAlign: "center" }}>{authError}</div>}
