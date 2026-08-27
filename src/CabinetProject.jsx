@@ -1643,6 +1643,43 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout }) {
     }
   };
 
+  const [pwFieldOpen, setPwFieldOpen] = useState({}); // { [userId]: true }
+  const [pwFieldValue, setPwFieldValue] = useState({}); // { [userId]: string }
+
+  const setDirectPassword = async (userId) => {
+    const newPassword = pwFieldValue[userId] || "";
+    if (newPassword.length < 6) {
+      setActionMsg((m) => ({ ...m, [userId]: "pwerror" }));
+      return;
+    }
+    if (!supabase) return;
+    setActionMsg((m) => ({ ...m, [userId]: "pwsending" }));
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const callerToken = sessionData?.session?.access_token;
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/admin-set-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${callerToken}`,
+          apikey: SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ targetUserId: userId, newPassword }),
+      });
+      const result = await resp.json();
+      if (!resp.ok || result.error) {
+        setActionMsg((m) => ({ ...m, [userId]: "pwerror" }));
+        return;
+      }
+      setActionMsg((m) => ({ ...m, [userId]: "pwsuccess" }));
+      setPwFieldValue((v) => ({ ...v, [userId]: "" }));
+      setPwFieldOpen((o) => ({ ...o, [userId]: false }));
+      setTimeout(() => setActionMsg((m) => ({ ...m, [userId]: undefined })), 4000);
+    } catch (e) {
+      setActionMsg((m) => ({ ...m, [userId]: "pwerror" }));
+    }
+  };
+
   return (
     <div>
       {/* header */}
@@ -1735,6 +1772,21 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout }) {
                 </div>
                 {msg === "sent" && <div style={{ fontSize: 11, color: "#27ae60", marginTop: 4 }}>Reset email sent ✓</div>}
                 {msg === "error" && <div style={{ fontSize: 11, color: "#e74c3c", marginTop: 4 }}>Couldn't send reset email</div>}
+                {msg === "pwsuccess" && <div style={{ fontSize: 11, color: "#27ae60", marginTop: 4 }}>Password updated ✓</div>}
+                {msg === "pwerror" && <div style={{ fontSize: 11, color: "#e74c3c", marginTop: 4 }}>Couldn't set password (min. 6 characters, or Edge Function not deployed)</div>}
+                {pwFieldOpen[user.id] && (
+                  <div style={{ display: "flex", gap: 6, marginTop: 8, alignItems: "center" }}>
+                    <input type="password" placeholder="New password" value={pwFieldValue[user.id] || ""}
+                      onChange={(e) => setPwFieldValue((v) => ({ ...v, [user.id]: e.target.value }))}
+                      onKeyDown={(e) => { if (e.key === "Enter") setDirectPassword(user.id); }}
+                      style={{ padding: "6px 10px", borderRadius: 7, border: `1px solid ${c.hair}`, fontSize: 12, color: "#111", background: "#fff", width: 160 }} />
+                    <button onClick={() => setDirectPassword(user.id)} disabled={msg === "pwsending"} style={{
+                      padding: "6px 12px", background: c.buttonBg, color: c.buttonText, border: "none",
+                      borderRadius: 7, fontWeight: 700, fontSize: 12, cursor: msg === "pwsending" ? "not-allowed" : "pointer", opacity: msg === "pwsending" ? 0.6 : 1 }}>
+                      {msg === "pwsending" ? "Setting..." : "Save"}
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -1752,6 +1804,11 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout }) {
                   padding: "7px 12px", background: "transparent", color: c.ink, border: `1px solid ${c.hair}`,
                   borderRadius: 8, fontWeight: 600, fontSize: 12, cursor: msg === "sending" ? "not-allowed" : "pointer", opacity: msg === "sending" ? 0.6 : 1 }}>
                   {msg === "sending" ? "Sending..." : "Send password reset"}
+                </button>
+                <button onClick={() => setPwFieldOpen((o) => ({ ...o, [user.id]: !o[user.id] }))} style={{
+                  padding: "7px 12px", background: "transparent", color: c.ink, border: `1px solid ${c.hair}`,
+                  borderRadius: 8, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
+                  {pwFieldOpen[user.id] ? "Cancel" : "Set password"}
                 </button>
                 <button onClick={() => revokeAccess(user.id, user.email)} style={{
                   padding: "7px 12px", background: "transparent", color: "#e74c3c", border: "1px solid rgba(231,76,60,0.3)",
