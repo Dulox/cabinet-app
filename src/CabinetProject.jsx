@@ -901,7 +901,181 @@ function Elevation({ W, p, shelfQty, faces }) {
   );
 }
 
-/* ------------------------------ fields ---------------------------- */
+/* Plan (top-down) view: shows width × depth footprint */
+function TopView({ W, D, p }) {
+  const t = p.t;
+  const pad = Math.max(90, Math.max(W, D) * 0.18);
+  const vbW = W + pad * 2, vbH = D + pad * 2;
+  const ox = pad, oy = pad;
+  const fs = Math.max(vbW / 34, 22);
+  const dash = `${fs * 0.7} ${fs * 0.45}`;
+  const tick = (x, y) => {
+    const s = fs * 0.5;
+    return <line x1={x - s} y1={y - s} x2={x + s} y2={y + s} stroke={getColors().amber} strokeWidth={fs * 0.07} />;
+  };
+  return (
+    <svg viewBox={`0 0 ${vbW} ${vbH}`} width="100%" preserveAspectRatio="xMidYMid meet"
+      style={{ display: "block", borderRadius: 10, minWidth: 0, maxWidth: "100%" }} role="img"
+      aria-label={`Top view: ${W} × ${D} mm`}>
+      <rect x="0" y="0" width={vbW} height={vbH} fill={getColors().mat} />
+      <defs>
+        <pattern id="gTop" width="50" height="50" patternUnits="userSpaceOnUse">
+          <path d="M50 0H0V50" fill="none" stroke={getColors().matLine} strokeWidth="1.2" />
+        </pattern>
+      </defs>
+      <rect x="0" y="0" width={vbW} height={vbH} fill="url(#gTop)" />
+      {/* footprint outline */}
+      <rect x={ox} y={oy} width={W} height={D} fill="none" stroke={getColors().amber} strokeWidth={fs * 0.09} strokeDasharray={dash} />
+      {/* side panels (left/right, full depth) */}
+      <rect x={ox} y={oy} width={t} height={D} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
+      <rect x={ox + W - t} y={oy} width={t} height={D} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
+      {/* back panel band */}
+      <rect x={ox + t} y={oy} width={W - 2 * t} height={t} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
+      <text x={ox + W / 2} y={oy - 14} fill="#EDEDE6" fontSize={fs * 0.72} textAnchor="middle" opacity="0.7"
+        style={{ fontFamily: "'JetBrains Mono', monospace" }}>back</text>
+      <text x={ox + W / 2} y={oy + D + fs * 1.1} fill="#EDEDE6" fontSize={fs * 0.72} textAnchor="middle" opacity="0.7"
+        style={{ fontFamily: "'JetBrains Mono', monospace" }}>front (open)</text>
+
+      {/* width dim */}
+      <line x1={ox} y1={oy + D + 46} x2={ox + W} y2={oy + D + 46} stroke={getColors().amber} strokeWidth={fs * 0.06} />
+      {tick(ox, oy + D + 46)}{tick(ox + W, oy + D + 46)}
+      <text x={ox + W / 2} y={oy + D + 46 + fs * 1.5} fill={getColors().amber} fontSize={fs} textAnchor="middle"
+        style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{W} mm</text>
+      {/* depth dim */}
+      <line x1={ox - 50} y1={oy} x2={ox - 50} y2={oy + D} stroke={getColors().amber} strokeWidth={fs * 0.06} />
+      {tick(ox - 50, oy)}{tick(ox - 50, oy + D)}
+      <text x={ox - 50 - fs * 0.7} y={oy + D / 2} fill={getColors().amber} fontSize={fs} textAnchor="middle"
+        transform={`rotate(-90 ${ox - 50 - fs * 0.7} ${oy + D / 2})`}
+        style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{D} mm</text>
+    </svg>
+  );
+}
+
+/* Profile (side) view: shows depth × height, with shelf/drawer partition lines */
+function SideView({ D, H, p, shelfQty, faces }) {
+  const t = p.t;
+  const pad = Math.max(90, Math.max(D, H) * 0.18);
+  const vbW = D + pad * 2, vbH = H + pad * 2;
+  const ox = pad, oy = pad;
+  const fs = Math.max(vbH / 34, 22);
+  const openTop = oy + p.railH, openBot = oy + H - t;
+  const dash = `${fs * 0.7} ${fs * 0.45}`;
+  const tick = (x, y) => {
+    const s = fs * 0.5;
+    return <line x1={x - s} y1={y - s} x2={x + s} y2={y + s} stroke={getColors().amber} strokeWidth={fs * 0.07} />;
+  };
+  const shelves = [];
+  for (let i = 1; i <= shelfQty; i++) {
+    const y = openTop + ((openBot - openTop) * i) / (shelfQty + 1);
+    shelves.push(<line key={i} x1={ox} y1={y} x2={ox + D} y2={y} stroke={getColors().panelEdge} strokeWidth={fs * 0.08} strokeDasharray={dash} />);
+  }
+  // Horizontal partitions from the front faces (door/drawer boundaries), same y positions
+  const partitions = [];
+  const seenY = new Set();
+  (faces || []).forEach((f, i) => {
+    [f.y, f.y + f.h].forEach((fy) => {
+      const key = Math.round(fy);
+      if (!seenY.has(key)) {
+        seenY.add(key);
+        partitions.push(<line key={"p" + i + "-" + key} x1={ox} y1={oy + fy} x2={ox + D} y2={oy + fy}
+          stroke={getColors().amber} strokeWidth={fs * 0.05} opacity="0.35" />);
+      }
+    });
+  });
+
+  return (
+    <svg viewBox={`0 0 ${vbW} ${vbH}`} width="100%" preserveAspectRatio="xMidYMid meet"
+      style={{ display: "block", borderRadius: 10, minWidth: 0, maxWidth: "100%" }} role="img"
+      aria-label={`Side view: ${D} × ${H} mm`}>
+      <rect x="0" y="0" width={vbW} height={vbH} fill={getColors().mat} />
+      <defs>
+        <pattern id="gSide" width="50" height="50" patternUnits="userSpaceOnUse">
+          <path d="M50 0H0V50" fill="none" stroke={getColors().matLine} strokeWidth="1.2" />
+        </pattern>
+      </defs>
+      <rect x="0" y="0" width={vbW} height={vbH} fill="url(#gSide)" />
+      <rect x={ox} y={oy} width={D} height={H} fill="none" stroke={getColors().amber} strokeWidth={fs * 0.09} strokeDasharray={dash} />
+      {/* top rail / bottom panel bands */}
+      <rect x={ox} y={oy} width={D} height={p.railH} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
+      <rect x={ox} y={oy + H - t} width={D} height={t} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
+      {partitions}
+      {shelves}
+      <text x={ox + D / 2} y={oy - 14} fill="#EDEDE6" fontSize={fs * 0.72} textAnchor="middle" opacity="0.7"
+        style={{ fontFamily: "'JetBrains Mono', monospace" }}>back ← → front</text>
+
+      {/* depth dim */}
+      <line x1={ox} y1={oy + H + 46} x2={ox + D} y2={oy + H + 46} stroke={getColors().amber} strokeWidth={fs * 0.06} />
+      {tick(ox, oy + H + 46)}{tick(ox + D, oy + H + 46)}
+      <text x={ox + D / 2} y={oy + H + 46 + fs * 1.5} fill={getColors().amber} fontSize={fs} textAnchor="middle"
+        style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{D} mm</text>
+      {/* height dim */}
+      <line x1={ox - 50} y1={oy} x2={ox - 50} y2={oy + H} stroke={getColors().amber} strokeWidth={fs * 0.06} />
+      {tick(ox - 50, oy)}{tick(ox - 50, oy + H)}
+      <text x={ox - 50 - fs * 0.7} y={oy + H / 2} fill={getColors().amber} fontSize={fs} textAnchor="middle"
+        transform={`rotate(-90 ${ox - 50 - fs * 0.7} ${oy + H / 2})`}
+        style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{H} mm</text>
+    </svg>
+  );
+}
+
+/* Full-screen modal: front / top / side views together with a complete
+   dimensions table for every cut part. Pure SVG — no new dependency. */
+function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
+  const D = p.sideD, H = p.sideH;
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 2000,
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+      onClick={onClose}>
+      <div style={{ background: getColors().card, borderRadius: 16, padding: 24, width: "100%", maxWidth: 1100,
+        maxHeight: "92vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}
+        onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: getColors().ink }}>
+            {cabLabel(cab, idx || 0, t)} — {t ? t("all views & dimensions") : "all views & dimensions"}
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 26, cursor: "pointer", color: getColors().mut, lineHeight: 1 }}>×</button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr", gap: 16, marginBottom: 22 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Front</div>
+            <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces} />
+          </div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Top</div>
+            <TopView W={W} D={D} p={p} />
+          </div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Side</div>
+            <SideView D={D} H={H} p={p} shelfQty={cab.shelfQty} faces={data.faces} />
+          </div>
+        </div>
+
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 10 }}>
+          Every cut — dimensions
+        </div>
+        <div style={{ border: `1px solid ${getColors().hair}`, borderRadius: 10, overflow: "hidden", background: "#fff" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 70px 110px 110px 110px", gap: 8, padding: "8px 13px",
+            fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#888", borderBottom: "1px solid #eee" }}>
+            <div>Part</div><div>Qty</div><div>{data.parts[0]?.aLabel || "A"}</div><div>{data.parts[0]?.bLabel || "B"}</div><div>Material</div>
+          </div>
+          {data.parts.map((x, i) => (
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 70px 110px 110px 110px", gap: 8, padding: "9px 13px",
+              fontSize: 13, borderTop: i ? "1px solid #f0f0f0" : "none", color: "#222" }}>
+              <div style={{ fontWeight: 600 }}>{tName(x.part, t)}</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", color: getColors().rust, fontWeight: 700 }}>{x.qty * (cab.qty || 1)}×</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{x.a} mm</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{x.b} mm</div>
+              <div style={{ fontSize: 12, color: "#888" }}>{x.material === "hardboard" ? "hardboard" : "melamine"}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function NumField({ label, value, onChange, suffix = "mm", w = 92 }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -1052,6 +1226,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
   const valid = !isNaN(W) && W > 2 * p.t + 10;
   const data = valid ? buildCutList(W, p, cab) : null;
   const [pinsOpen, setPinsOpen] = useState(false);
+  const [showAllViews, setShowAllViews] = useState(false);
 
   const pickType = (e) => {
     const k = e.target.value, s = TYPES[k].set;
@@ -1362,9 +1537,17 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
 
       {data && cab.type !== "filler" && (
         <>
-          <div className="cab-mat cab-noprint" style={{ marginBottom: 12, maxWidth: 380, width: "100%", minWidth: 0, overflow: "hidden" }}>
+          <div className="cab-mat cab-noprint" style={{ marginBottom: 8, maxWidth: 380, width: "100%", minWidth: 0, overflow: "hidden" }}>
             <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces} />
           </div>
+          <button onClick={() => setShowAllViews(true)} className="cab-noprint" style={{
+            marginBottom: 12, padding: "8px 14px", background: getColors().buttonBg, color: getColors().buttonText,
+            border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
+            ⛶ {t ? t("All views & dimensions") : "All views & dimensions"}
+          </button>
+          {showAllViews && (
+            <AllViewsModal cab={cab} W={W} p={p} data={data} t={t} idx={index} onClose={() => setShowAllViews(false)} />
+          )}
           <div style={{ border: `1px solid ${getColors().hair}`, borderRadius: 10, overflow: "hidden", background: "#fff" }}>
             {data.parts.map((x, i) => (
               <div key={i} className="cab-row" style={{ padding: "10px 13px", borderTop: i ? `1px solid ${getColors().hair}` : "none",
