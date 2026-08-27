@@ -1023,6 +1023,14 @@ function SideView({ D, H, p, shelfQty, faces }) {
 /* Small dimensioned rectangle for a single cut part — used as a thumbnail
    in the full parts table so every individual piece (drawer sides, rails,
    back panel, build-up strips, etc.) has its own labeled diagram. */
+/* Grain direction always runs along the longer edge of a part: if the
+   "a" dimension is the larger one, grain reads horizontal (H); if "b" is
+   larger, grain reads vertical (V). Matches the orientation already used
+   to draw PartDiagram, so the label and the little drawing always agree. */
+function vetasFor(a, b) {
+  return a >= b ? "H" : "V";
+}
+
 function PartDiagram({ a, b, size = 60 }) {
   const long = Math.max(a, b), short = Math.min(a, b);
   const aspect = short / long;
@@ -1085,16 +1093,17 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
           Every cut — dimensions
         </div>
         <div style={{ border: `1px solid ${getColors().hair}`, borderRadius: 10, overflow: "hidden", background: "#fff" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 70px 110px 110px 110px", gap: 8, padding: "8px 13px",
+          <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 70px 70px 110px 110px 110px", gap: 8, padding: "8px 13px",
             fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#888", borderBottom: "1px solid #eee" }}>
-            <div>Diagram</div><div>Part</div><div>Qty</div><div>{data.parts[0]?.aLabel || "A"}</div><div>{data.parts[0]?.bLabel || "B"}</div><div>Material</div>
+            <div>Diagram</div><div>Part</div><div>Qty</div><div>Vetas</div><div>{data.parts[0]?.aLabel || "A"}</div><div>{data.parts[0]?.bLabel || "B"}</div><div>Material</div>
           </div>
           {data.parts.map((x, i) => (
-            <div key={i} style={{ display: "grid", gridTemplateColumns: "60px 1fr 70px 110px 110px 110px", gap: 8, padding: "9px 13px",
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "60px 1fr 70px 70px 110px 110px 110px", gap: 8, padding: "9px 13px",
               fontSize: 13, borderTop: i ? "1px solid #f0f0f0" : "none", color: "#222", alignItems: "center" }}>
               <PartDiagram a={x.a} b={x.b} />
               <div style={{ fontWeight: 600 }}>{tName(x.part, t)}</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", color: getColors().rust, fontWeight: 700 }}>{x.qty * (cab.qty || 1)}×</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: getColors().amber }}>{vetasFor(x.a, x.b)}</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{x.a} mm</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{x.b} mm</div>
               <div style={{ fontSize: 12, color: "#888" }}>{x.material === "hardboard" ? "hardboard" : "melamine"}</div>
