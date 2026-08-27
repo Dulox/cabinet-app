@@ -2237,6 +2237,11 @@ function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
 function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProjects = [] }) {
   const today = new Date().toLocaleDateString("es-DO");
   const confirmClose = () => {
+    if (!hasUnsavedChanges()) {
+      // Nothing changed since opening — close immediately, no prompt
+      onClose();
+      return;
+    }
     if (window.confirm(ms("Save your sheet before closing?", "¿Guardar la hoja antes de cerrar?"))) {
       // User clicked OK — save the sheet then close
       const name = saveSheetName && saveSheetName !== "__new__" ? saveSheetName : (projectName || "Hoja sin nombre");
@@ -2446,6 +2451,11 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
   React.useEffect(() => {
     try { localStorage.setItem("desgloseDraft_telefono", telefono); } catch {}
   }, [telefono]);
+
+  // Snapshot of the sheet as first loaded, to detect real unsaved changes on close
+  const initialSnapshotRef = React.useRef(JSON.stringify({ rows, globalMaterial, factura, nombre, telefono }));
+  const hasUnsavedChanges = () =>
+    JSON.stringify({ rows, globalMaterial, factura, nombre, telefono }) !== initialSnapshotRef.current;
 
   // Apply global material to all rows unless individually overridden
   React.useEffect(() => {
