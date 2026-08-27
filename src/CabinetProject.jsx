@@ -2339,9 +2339,26 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
   const [newMatCode, setNewMatCode] = React.useState("");
   const [newMatColor, setNewMatColor] = React.useState("#C4A882");
   const [globalWidth, setGlobalWidth] = React.useState("");
-  const [factura, setFactura] = React.useState("");
-  const [nombre, setNombre] = React.useState("");
-  const [telefono, setTelefono] = React.useState("");
+  const [factura, setFactura] = React.useState(() => {
+    try { return localStorage.getItem("desgloseDraft_factura") || ""; } catch { return ""; }
+  });
+  const [nombre, setNombre] = React.useState(() => {
+    try { return localStorage.getItem("desgloseDraft_nombre") || ""; } catch { return ""; }
+  });
+  const [telefono, setTelefono] = React.useState(() => {
+    try { return localStorage.getItem("desgloseDraft_telefono") || ""; } catch { return ""; }
+  });
+
+  // Persist client-info fields as a draft so they survive closing/reopening the sheet
+  React.useEffect(() => {
+    try { localStorage.setItem("desgloseDraft_factura", factura); } catch {}
+  }, [factura]);
+  React.useEffect(() => {
+    try { localStorage.setItem("desgloseDraft_nombre", nombre); } catch {}
+  }, [nombre]);
+  React.useEffect(() => {
+    try { localStorage.setItem("desgloseDraft_telefono", telefono); } catch {}
+  }, [telefono]);
 
   // Apply global material to all rows unless individually overridden
   React.useEffect(() => {
