@@ -2337,13 +2337,8 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
     }
     return name;
   };
-  // Prefix a row's name with the cabinet number(s) it came from, e.g. "(1,3,5) Side"
-  const displayNombre = (row) => {
-    const translated = mTName(row.nombre);
-    const nums = row.cabNums;
-    if (!nums || nums.length === 0) return translated;
-    return `(${nums.join(",")}) ${translated}`;
-  };
+  // Cabinet number now has its own column — keep this as a thin wrapper for callers
+  const displayNombre = (row) => mTName(row.nombre);
   const [customMaterials, setCustomMaterials] = React.useState(() => {
     try { return JSON.parse(localStorage.getItem("customMaterials") || "[]"); } catch { return []; }
   });
@@ -2538,6 +2533,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               {/* Main header groups */}
               <tr>
                 <th style={hdrStyle({ width: 30 })} rowSpan={2}>No</th>
+                <th style={hdrStyle({ width: 44 })} rowSpan={2}>Cab.</th>
                 <th style={hdrStyle({ minWidth: 80 })} rowSpan={2}>Material</th>
                 <th style={hdrStyle({ minWidth: 60 })} rowSpan={2}>Type</th>
                 <th style={{ ...hdrStyle({ minWidth: 100 }), cursor: "pointer" }} rowSpan={2}
@@ -2576,6 +2572,10 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               {sortedRows.map((row, i) => (
                 <tr key={i} style={{ background: row.isHardboard ? "#fffbe6" : (i % 2 === 0 ? "#fff" : "#f9f9f9") }}>
                   <td style={cellStyle({ color: "#888" })}>{i + 1}</td>
+                  {/* Cabinet number(s) this part came from */}
+                  <td style={cellStyle({ fontSize: 10, color: "#c00", fontWeight: 700 })}>
+                    {row.cabNums && row.cabNums.length > 0 ? row.cabNums.join(",") : "—"}
+                  </td>
                   {/* Material — editable */}
                   <td style={cellStyle({ textAlign: "left", minWidth: 100 })}>
                     <input value={row.material || ""} onChange={e => updateRow(row.id, "material", e.target.value)}
@@ -2907,9 +2907,10 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 await new Promise((r) => { script.onload = r; });
               }
               const XLSX = window.XLSX;
-              const headers = ["No","Material","Type","Nombre","Vetas","Largo (mm)","Ancho (mm)","Grosor (mm)","Cant.","L1","L2","A1","A2","R-L","R-A","HB-L","HB-A"];
+              const headers = ["No","Cab.","Material","Type","Nombre","Vetas","Largo (mm)","Ancho (mm)","Grosor (mm)","Cant.","L1","L2","A1","A2","R-L","R-A","HB-L","HB-A"];
               const data = sortedRows.map((row, i) => ({
                 "No": i + 1,
+                "Cab.": row.cabNums && row.cabNums.length > 0 ? row.cabNums.join(",") : "",
                 "Material": row.material || "",
                 "Type": row.cabType || "",
                 "Nombre": displayNombre(row),
