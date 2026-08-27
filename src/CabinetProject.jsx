@@ -1020,6 +1020,36 @@ function SideView({ D, H, p, shelfQty, faces }) {
 
 /* Full-screen modal: front / top / side views together with a complete
    dimensions table for every cut part. Pure SVG — no new dependency. */
+/* Small dimensioned rectangle for a single cut part — used as a thumbnail
+   in the full parts table so every individual piece (drawer sides, rails,
+   back panel, build-up strips, etc.) has its own labeled diagram. */
+function PartDiagram({ a, b, size = 60 }) {
+  const long = Math.max(a, b), short = Math.min(a, b);
+  const aspect = short / long;
+  const isWide = a >= b;
+  const boxLong = size - 22, boxShort = Math.max(10, boxLong * aspect);
+  const w = isWide ? boxLong : boxShort;
+  const h = isWide ? boxShort : boxLong;
+  const vb = size;
+  const ox = (vb - w) / 2, oy = (vb - h) / 2 - 3;
+  const fs = 8.5;
+  return (
+    <svg viewBox={`0 0 ${vb} ${vb + 14}`} width={vb} height={vb + 14} style={{ display: "block", flexShrink: 0 }}>
+      <rect x={ox} y={oy} width={w} height={h} fill={getColors().mat} stroke={getColors().amber} strokeWidth="1.3" />
+      {/* top (a) dimension */}
+      <line x1={ox} y1={oy - 4} x2={ox + w} y2={oy - 4} stroke={getColors().amber} strokeWidth="0.8" />
+      <text x={ox + w / 2} y={oy - 6} fill={getColors().amber} fontSize={fs} textAnchor="middle"
+        style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{a}</text>
+      {/* left (b) dimension */}
+      <line x1={ox - 4} y1={oy} x2={ox - 4} y2={oy + h} stroke={getColors().amber} strokeWidth="0.8" />
+      <text x={ox - 6} y={oy + h / 2} fill={getColors().amber} fontSize={fs} textAnchor="middle"
+        transform={`rotate(-90 ${ox - 6} ${oy + h / 2})`}
+        style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{b}</text>
+    </svg>
+  );
+}
+
+
 function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
   const D = p.sideD, H = p.sideH;
   return (
@@ -1055,13 +1085,14 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
           Every cut — dimensions
         </div>
         <div style={{ border: `1px solid ${getColors().hair}`, borderRadius: 10, overflow: "hidden", background: "#fff" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 70px 110px 110px 110px", gap: 8, padding: "8px 13px",
+          <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 70px 110px 110px 110px", gap: 8, padding: "8px 13px",
             fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#888", borderBottom: "1px solid #eee" }}>
-            <div>Part</div><div>Qty</div><div>{data.parts[0]?.aLabel || "A"}</div><div>{data.parts[0]?.bLabel || "B"}</div><div>Material</div>
+            <div>Diagram</div><div>Part</div><div>Qty</div><div>{data.parts[0]?.aLabel || "A"}</div><div>{data.parts[0]?.bLabel || "B"}</div><div>Material</div>
           </div>
           {data.parts.map((x, i) => (
-            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 70px 110px 110px 110px", gap: 8, padding: "9px 13px",
-              fontSize: 13, borderTop: i ? "1px solid #f0f0f0" : "none", color: "#222" }}>
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "60px 1fr 70px 110px 110px 110px", gap: 8, padding: "9px 13px",
+              fontSize: 13, borderTop: i ? "1px solid #f0f0f0" : "none", color: "#222", alignItems: "center" }}>
+              <PartDiagram a={x.a} b={x.b} />
               <div style={{ fontWeight: 600 }}>{tName(x.part, t)}</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", color: getColors().rust, fontWeight: 700 }}>{x.qty * (cab.qty || 1)}×</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{x.a} mm</div>
