@@ -27,68 +27,127 @@ loadSupabase();
 
 // Theme definitions (all colors are dynamic, no hardcoded C object)
 const THEME_COLORS = {
-  // LIGHT (default): soft lavender canvas, white glass cards, indigo/purple accent
-  light: {
-    paper: "#eef0fb",        // soft lavender-blue canvas
-    card: "#ffffff",         // white glass cards
-    ink: "#2a2d52",          // deep indigo-navy text on cards
-    mut: "#8b8fb8",          // muted indigo-grey on cards
-    hair: "rgba(99,102,241,0.12)",
-    amber: "#6d5ce8",        // "accent" on cards = indigo/purple
-    rust: "#6d5ce8",         // "accent" on light surfaces = same indigo/purple
-    mat: "#f4f4fd",          // input/inset background — very light lavender
-    matLine: "rgba(99,102,241,0.14)",
-    panel: "#ffffff",
-    panelEdge: "rgba(99,102,241,0.14)",
-    bgPrimary: "#eef0fb",
-    bgSecondary: "#e4e6fa",
-    textPrimary: "#2a2d52",
-    textSecondary: "#7c7fa8",
-    border: "rgba(99,102,241,0.16)",   // hairline on light canvas
-    buttonBg: "#6d5ce8",               // indigo/purple button
-    buttonText: "#ffffff",
-    inputBg: "#ffffff",
-    inputBorder: "rgba(99,102,241,0.22)",
-    // canvas-surface tokens (elements sitting directly on the light paper)
-    canvasText: "#2a2d52",
-    canvasMut: "#7c7fa8",
-    canvasBorder: "rgba(99,102,241,0.18)",
-    canvasBtn: "#ffffff",
-    canvasBtnText: "#2a2d52",
+  // MONOCHROME style: black/white/grey, no color accent
+  mono: {
+    light: {
+      paper: "#efece6",        // soft off-white canvas
+      card: "#17181c",         // near-black cards
+      ink: "#ffffff",          // text on cards = white
+      mut: "#9a9ba2",          // muted grey on dark cards
+      hair: "rgba(255,255,255,0.09)",
+      amber: "#ffffff",        // "accent" on dark cards = white
+      rust: "#111214",         // "accent" on light surfaces = near-black
+      mat: "#1e2026",          // input/inset on dark cards
+      matLine: "rgba(255,255,255,0.10)",
+      panel: "#17181c",
+      panelEdge: "rgba(255,255,255,0.10)",
+      bgPrimary: "#efece6",
+      bgSecondary: "#e6e2da",
+      textPrimary: "#ffffff",
+      textSecondary: "#c3c4ca",
+      border: "rgba(17,18,20,0.10)",   // hairline on light canvas
+      buttonBg: "#111214",             // black button on light
+      buttonText: "#ffffff",
+      inputBg: "#1e2026",
+      inputBorder: "rgba(255,255,255,0.12)",
+      canvasText: "#17181c",
+      canvasMut: "#6a6b72",
+      canvasBorder: "rgba(17,18,20,0.16)",
+      canvasBtn: "#ffffff",
+      canvasBtnText: "#17181c",
+    },
+    dark: {
+      paper: "#0c0d10",        // near-black canvas
+      card: "#17181c",         // dark grey cards
+      ink: "#ffffff",
+      mut: "#8b8c93",
+      hair: "rgba(255,255,255,0.08)",
+      amber: "#ffffff",
+      rust: "#ffffff",
+      mat: "#1e2026",
+      matLine: "rgba(255,255,255,0.10)",
+      panel: "#17181c",
+      panelEdge: "rgba(255,255,255,0.10)",
+      bgPrimary: "#0c0d10",
+      bgSecondary: "#141519",
+      textPrimary: "#ffffff",
+      textSecondary: "#c3c4ca",
+      border: "rgba(255,255,255,0.10)",
+      buttonBg: "#ffffff",             // white button on black
+      buttonText: "#0c0d10",
+      inputBg: "#1e2026",
+      inputBorder: "rgba(255,255,255,0.12)",
+      canvasText: "#ffffff",
+      canvasMut: "#8b8c93",
+      canvasBorder: "rgba(255,255,255,0.16)",
+      canvasBtn: "#17181c",
+      canvasBtnText: "#ffffff",
+    }
   },
-  dark: {
-    paper: "#0c0d10",        // near-black canvas
-    card: "#17181c",         // dark grey cards
-    ink: "#ffffff",
-    mut: "#8b8c93",
-    hair: "rgba(255,255,255,0.08)",
-    amber: "#ffffff",
-    rust: "#ffffff",
-    mat: "#1e2026",
-    matLine: "rgba(255,255,255,0.10)",
-    panel: "#17181c",
-    panelEdge: "rgba(255,255,255,0.10)",
-    bgPrimary: "#0c0d10",
-    bgSecondary: "#141519",
-    textPrimary: "#ffffff",
-    textSecondary: "#c3c4ca",
-    border: "rgba(255,255,255,0.10)",
-    buttonBg: "#ffffff",             // white button on black
-    buttonText: "#0c0d10",
-    inputBg: "#1e2026",
-    inputBorder: "rgba(255,255,255,0.12)",
-    // canvas-surface tokens (elements sitting directly on the dark paper)
-    canvasText: "#ffffff",
-    canvasMut: "#8b8c93",
-    canvasBorder: "rgba(255,255,255,0.16)",
-    canvasBtn: "#17181c",
-    canvasBtnText: "#ffffff",
+  // GLASS style: soft lavender canvas, white glass cards, indigo/purple accent
+  glass: {
+    light: {
+      paper: "#eef0fb",        // soft lavender-blue canvas
+      card: "#ffffff",         // white glass cards
+      ink: "#2a2d52",          // deep indigo-navy text on cards
+      mut: "#8b8fb8",          // muted indigo-grey on cards
+      hair: "rgba(99,102,241,0.12)",
+      amber: "#6d5ce8",        // "accent" on cards = indigo/purple
+      rust: "#6d5ce8",         // "accent" on light surfaces = same indigo/purple
+      mat: "#f4f4fd",          // input/inset background — very light lavender
+      matLine: "rgba(99,102,241,0.14)",
+      panel: "#ffffff",
+      panelEdge: "rgba(99,102,241,0.14)",
+      bgPrimary: "#eef0fb",
+      bgSecondary: "#e4e6fa",
+      textPrimary: "#2a2d52",
+      textSecondary: "#7c7fa8",
+      border: "rgba(99,102,241,0.16)",   // hairline on light canvas
+      buttonBg: "#6d5ce8",               // indigo/purple button
+      buttonText: "#ffffff",
+      inputBg: "#ffffff",
+      inputBorder: "rgba(99,102,241,0.22)",
+      canvasText: "#2a2d52",
+      canvasMut: "#7c7fa8",
+      canvasBorder: "rgba(99,102,241,0.18)",
+      canvasBtn: "#ffffff",
+      canvasBtnText: "#2a2d52",
+    },
+    // GLASS dark: same tokens as mono dark for now — no separate glass-dark design yet
+    dark: {
+      paper: "#0c0d10",
+      card: "#17181c",
+      ink: "#ffffff",
+      mut: "#8b8c93",
+      hair: "rgba(255,255,255,0.08)",
+      amber: "#ffffff",
+      rust: "#ffffff",
+      mat: "#1e2026",
+      matLine: "rgba(255,255,255,0.10)",
+      panel: "#17181c",
+      panelEdge: "rgba(255,255,255,0.10)",
+      bgPrimary: "#0c0d10",
+      bgSecondary: "#141519",
+      textPrimary: "#ffffff",
+      textSecondary: "#c3c4ca",
+      border: "rgba(255,255,255,0.10)",
+      buttonBg: "#ffffff",
+      buttonText: "#0c0d10",
+      inputBg: "#1e2026",
+      inputBorder: "rgba(255,255,255,0.12)",
+      canvasText: "#ffffff",
+      canvasMut: "#8b8c93",
+      canvasBorder: "rgba(255,255,255,0.16)",
+      canvasBtn: "#17181c",
+      canvasBtnText: "#ffffff",
+    }
   }
 }
 
-// Global colors variable - will be updated by main component
+// Global colors variables - updated by main component
 let currentTheme = "light";
-let getColors = () => THEME_COLORS[currentTheme];
+let currentColorStyle = "glass";
+let getColors = () => THEME_COLORS[currentColorStyle][currentTheme];
 
 
 
@@ -1578,7 +1637,7 @@ function PendingScreen({ authState, handleLogout, checkAuth }) {
   );
 }
 
-function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout }) {
+function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout, colorStyle, setColorStyleAndPersist }) {
   const c = getColors();
   const [allUsers, setAllUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
@@ -1686,6 +1745,27 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout }) {
       <div style={{ marginBottom: 22, paddingBottom: 14, borderBottom: `1px solid ${c.canvasBorder}` }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: c.canvasMut, textTransform: "uppercase" }}>Admin panel</div>
         <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.02em", marginTop: 4, color: c.canvasText }}>User management</div>
+      </div>
+
+      {/* app theme style switch */}
+      <div style={{ background: c.card, borderRadius: 14, padding: "18px 16px", marginBottom: 24 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.mut, marginBottom: 12 }}>App theme style</div>
+        <div style={{ display: "inline-flex", background: c.mat, borderRadius: 10, padding: 4, gap: 4 }}>
+          {[["mono", "Monochrome"], ["glass", "Glass"]].map(([key, label]) => (
+            <button key={key} onClick={() => setColorStyleAndPersist(key)} style={{
+              padding: "8px 18px", borderRadius: 8, border: "none", cursor: "pointer",
+              fontWeight: 700, fontSize: 13,
+              background: colorStyle === key ? c.buttonBg : "transparent",
+              color: colorStyle === key ? c.buttonText : c.mut,
+              transition: "background .15s, color .15s",
+            }}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div style={{ fontSize: 11, color: c.mut, marginTop: 10 }}>
+          Monochrome: black, white, and grey only. Glass: soft lavender canvas with an indigo/purple accent. Applies in light mode; dark mode looks the same either way.
+        </div>
       </div>
 
       {/* stat cards */}
@@ -3021,15 +3101,28 @@ export default function CabinetProject() {
   const [theme, setTheme] = useState(() => {
     try {
       let stored = localStorage.getItem("cabinetTheme") || "light";
-      if (!THEME_COLORS[stored]) stored = "light"; // guard old/invalid names
+      if (!THEME_COLORS.mono[stored]) stored = "light"; // guard old/invalid names
       return stored;
     } catch { return "light"; }
   });
-  const colors = THEME_COLORS[theme];
+  const [colorStyle, setColorStyle] = useState(() => {
+    try {
+      let stored = localStorage.getItem("cabinetColorStyle") || "glass";
+      if (!THEME_COLORS[stored]) stored = "glass"; // guard old/invalid names
+      return stored;
+    } catch { return "glass"; }
+  });
+  const colors = THEME_COLORS[colorStyle][theme];
+  currentTheme = theme;
+  currentColorStyle = colorStyle;
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme); currentTheme = newTheme;
     try { localStorage.setItem("cabinetTheme", newTheme); } catch {}
+  };
+  const setColorStyleAndPersist = (style) => {
+    setColorStyle(style); currentColorStyle = style;
+    try { localStorage.setItem("cabinetColorStyle", style); } catch {}
   };
   
   const [lang, setLang] = useState("en");
@@ -4320,7 +4413,7 @@ export default function CabinetProject() {
           )}
 
           {activeView === "admin" && authState?.isAdmin && (
-            <AdminPanel pendingUsers={pendingUsers} handleApprove={handleApprove} authState={authState} handleLogout={handleLogout} />
+            <AdminPanel pendingUsers={pendingUsers} handleApprove={handleApprove} authState={authState} handleLogout={handleLogout} colorStyle={colorStyle} setColorStyleAndPersist={setColorStyleAndPersist} />
           )}
 
           {activeView === "account" && (
