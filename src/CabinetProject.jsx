@@ -2182,12 +2182,13 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
   const buildRows = (cabsToUse) => {
     const map = new Map();
     // Helper: add a part to the map, merging by name+dimensions
-    const emitPart = (map, name, L, A, G, qty, part, opts) => {
+    const emitPart = (map, name, L, A, G, qty, part, opts, cabNum) => {
       const key = `${name}|${L}-${A}-${G}`;
       const o = opts || {};
       if (map.has(key)) {
         const existing = map.get(key);
         existing.cant += qty;
+        if (cabNum != null) existing.cabNums.add(cabNum);
         // Update flags when merging: if this variant should have the flag, mark it
         if (o.hasBisagra && o.sideH) {
           // Mark on the dimension closest to cabinet height
@@ -2200,6 +2201,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
       } else {
         map.set(key, {
           id: key, largo: L, ancho: A, grosor: G, cant: qty, nombre: name,
+          cabNums: new Set(cabNum != null ? [cabNum] : []),
           cl1: "X", cl2: "X", ca1: "X", ca2: "X",
           vetas: "",
           // Ranuras: auto-mark on parts whose height matches cabinet height (back panel groove)
@@ -2213,8 +2215,9 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         });
       }
     };
-    (cabsToUse || cabs).forEach((cab) => {
+    (cabsToUse || cabs).forEach((cab, cabIdx) => {
       const cabQty = cab.qty || 1;
+      const cabNum = cabIdx + 1;
 
       // Filler piece — completely standalone, not a cabinet
       if (cab.type === "filler") {
@@ -2224,7 +2227,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         if (fW > 0 && fH > 0) {
           const L = Math.max(fW, fH), A = Math.min(fW, fH);
           const fakePart = { material: "melamine" };
-          emitPart(map, "Filler", L, A, fT, cabQty, fakePart, { cabMaterial: cab.material || "" });
+          emitPart(map, "Filler", L, A, fT, cabQty, fakePart, { cabMaterial: cab.material || "" }, cabNum);
           // Override grosor since emitPart uses a fixed G — update it after
           const key = "Filler|" + L + "-" + A + "-" + fT;
           if (map.has(key)) map.get(key).grosor = fT;
@@ -2251,7 +2254,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         if (part.part === "Side") {
           const totalSides = part.qty * cabQty;      // usually 2 × cabQty
           // Emit all sides as plain, no hinge marking
-          emitPart(map, "Side", L, A, G, totalSides, part, { hasRanura: true, hasBisagra: false, cabMaterial, cabType: cab.type });
+          emitPart(map, "Side", L, A, G, totalSides, part, { hasRanura: true, hasBisagra: false, cabMaterial, cabType: cab.type }, cabNum);
           return;
         }
 
@@ -2260,10 +2263,12 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         // Mark door parts: bisagra attaches on whichever dimension is closer to cabinet height
         const isDoorPart = sideLabel.includes("Door");
         const sideH = p.sideH;  // cabinet's side panel height
-        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: isDoorPart, cabMaterial, cabType: cab.type, sideH, doorL: L, doorA: A });
+        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: isDoorPart, cabMaterial, cabType: cab.type, sideH, doorL: L, doorA: A }, cabNum);
       });
     });
-    return Array.from(map.values()).sort((a, b) => b.largo - a.largo || b.ancho - a.ancho);
+    return Array.from(map.values())
+      .map((row) => ({ ...row, cabNums: Array.from(row.cabNums).sort((a, b) => a - b) }))
+      .sort((a, b) => b.largo - a.largo || b.ancho - a.ancho);
   };
 
   const [rows, setRows] = React.useState(() => {
@@ -2331,6 +2336,13 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
       if (name.startsWith(k)) return v + name.slice(k.length);
     }
     return name;
+  };
+  // Prefix a row's name with the cabinet number(s) it came from, e.g. "(1,3,5) Side"
+  const displayNombre = (row) => {
+    const translated = mTName(row.nombre);
+    const nums = row.cabNums;
+    if (!nums || nums.length === 0) return translated;
+    return `(${nums.join(",")}) ${translated}`;
   };
   const [customMaterials, setCustomMaterials] = React.useState(() => {
     try { return JSON.parse(localStorage.getItem("customMaterials") || "[]"); } catch { return []; }
@@ -2575,7 +2587,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                   </td>
                   {/* Nombre */}
                   <td style={cellStyle({ textAlign: "left", minWidth: 100, fontSize: 10, color: "#555" })}>
-                    {mTName(row.nombre)}
+                    {displayNombre(row)}
                   </td>
                   {/* Vetas */}
                   <td style={{ ...cellStyle({ width: 28 }), cursor: "pointer", color: row.vetas ? "#c00" : "#ddd",
@@ -2895,7 +2907,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 "No": i + 1,
                 "Material": row.material || "",
                 "Type": row.cabType || "",
-                "Nombre": mTName(row.nombre),
+                "Nombre": displayNombre(row),
                 "Vetas": row.vetas || "",
                 "Largo (mm)": row.largo,
                 "Ancho (mm)": row.ancho,
