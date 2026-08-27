@@ -2590,10 +2590,15 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                     {displayNombre(row)}
                   </td>
                   {/* Vetas */}
-                  <td style={{ ...cellStyle({ width: 28 }), cursor: "pointer", color: row.vetas ? "#c00" : "#ddd",
-                    fontWeight: 700, fontSize: 14, userSelect: "none" }}
-                    onClick={() => toggleCell(row.id, "vetas")}>
-                    {row.vetas || "·"}
+                  <td style={{ ...cellStyle({ width: 34 }), padding: 0 }}>
+                    <select value={row.vetas || ""} onChange={e => updateRow(row.id, "vetas", e.target.value)}
+                      style={{ width: "100%", border: "none", background: "transparent", textAlign: "center",
+                        fontWeight: 700, fontSize: 12, color: row.vetas ? "#c00" : "#ddd", cursor: "pointer",
+                        padding: "6px 2px", outline: "none", appearance: "none", WebkitAppearance: "none" }}>
+                      <option value="">·</option>
+                      <option value="V">V</option>
+                      <option value="H">H</option>
+                    </select>
                   </td>
                   {/* Largo */}
                   <td style={cellStyle({ fontWeight: 700 })}>
