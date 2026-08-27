@@ -27,34 +27,34 @@ loadSupabase();
 
 // Theme definitions (all colors are dynamic, no hardcoded C object)
 const THEME_COLORS = {
-  // LIGHT (default): off-white canvas, near-black cards, black accent — pure monochrome
+  // LIGHT (default): soft lavender canvas, white glass cards, indigo/purple accent
   light: {
-    paper: "#efece6",        // soft off-white canvas
-    card: "#17181c",         // near-black cards
-    ink: "#ffffff",          // text on cards = white
-    mut: "#9a9ba2",          // muted grey on dark cards
-    hair: "rgba(255,255,255,0.09)",
-    amber: "#ffffff",        // "accent" on dark cards = white
-    rust: "#111214",         // "accent" on light surfaces = near-black
-    mat: "#1e2026",          // input/inset on dark cards
-    matLine: "rgba(255,255,255,0.10)",
-    panel: "#17181c",
-    panelEdge: "rgba(255,255,255,0.10)",
-    bgPrimary: "#efece6",
-    bgSecondary: "#e6e2da",
-    textPrimary: "#ffffff",
-    textSecondary: "#c3c4ca",
-    border: "rgba(17,18,20,0.10)",   // hairline on light canvas
-    buttonBg: "#111214",             // black button on light
+    paper: "#eef0fb",        // soft lavender-blue canvas
+    card: "#ffffff",         // white glass cards
+    ink: "#2a2d52",          // deep indigo-navy text on cards
+    mut: "#8b8fb8",          // muted indigo-grey on cards
+    hair: "rgba(99,102,241,0.12)",
+    amber: "#6d5ce8",        // "accent" on cards = indigo/purple
+    rust: "#6d5ce8",         // "accent" on light surfaces = same indigo/purple
+    mat: "#f4f4fd",          // input/inset background — very light lavender
+    matLine: "rgba(99,102,241,0.14)",
+    panel: "#ffffff",
+    panelEdge: "rgba(99,102,241,0.14)",
+    bgPrimary: "#eef0fb",
+    bgSecondary: "#e4e6fa",
+    textPrimary: "#2a2d52",
+    textSecondary: "#7c7fa8",
+    border: "rgba(99,102,241,0.16)",   // hairline on light canvas
+    buttonBg: "#6d5ce8",               // indigo/purple button
     buttonText: "#ffffff",
-    inputBg: "#1e2026",
-    inputBorder: "rgba(255,255,255,0.12)",
+    inputBg: "#ffffff",
+    inputBorder: "rgba(99,102,241,0.22)",
     // canvas-surface tokens (elements sitting directly on the light paper)
-    canvasText: "#17181c",
-    canvasMut: "#6a6b72",
-    canvasBorder: "rgba(17,18,20,0.16)",
+    canvasText: "#2a2d52",
+    canvasMut: "#7c7fa8",
+    canvasBorder: "rgba(99,102,241,0.18)",
     canvasBtn: "#ffffff",
-    canvasBtnText: "#17181c",
+    canvasBtnText: "#2a2d52",
   },
   dark: {
     paper: "#0c0d10",        // near-black canvas
