@@ -1028,7 +1028,7 @@ function SideView({ D, H, p, shelfQty, faces }) {
    larger, grain reads vertical (V). Matches the orientation already used
    to draw PartDiagram, so the label and the little drawing always agree. */
 function vetasFor(a, b) {
-  return a >= b ? "H" : "V";
+  return a >= b ? "V" : "H";
 }
 
 function PartDiagram({ a, b, size = 60 }) {
@@ -3669,6 +3669,75 @@ export default function CabinetProject() {
   const [recoveryStatus, setRecoveryStatus] = useState("");
   const [recoveryError, setRecoveryError] = useState("");
 
+  // Unlock-PIN gate for locked projects
+  const [unlockModalProject, setUnlockModalProject] = useState(null);
+  const [unlockPinInput, setUnlockPinInput] = useState("");
+  const [unlockError, setUnlockError] = useState("");
+  const [unlockChecking, setUnlockChecking] = useState(false);
+
+  // Admin: manage the shared unlock PIN (Account page)
+  const [pinNewValue, setPinNewValue] = useState("");
+  const [pinStatus, setPinStatus] = useState(""); // "", "saving", "error"
+  const [pinError, setPinError] = useState("");
+  const [pinRevealValue, setPinRevealValue] = useState(""); // shown once after set/generate
+
+  const fetchUnlockPin = async () => {
+    if (!supabase) return "1985";
+    try {
+      const { data, error } = await supabase.from("app_settings").select("value").eq("key", "unlock_pin").single();
+      if (error || !data) return "1985"; // graceful default if table/row not set up yet
+      return data.value || "1985";
+    } catch {
+      return "1985";
+    }
+  };
+
+  const attemptUnlock = async () => {
+    setUnlockError("");
+    setUnlockChecking(true);
+    try {
+      const correctPin = await fetchUnlockPin();
+      if (unlockPinInput.trim() === correctPin) {
+        await toggleLockProject(unlockModalProject);
+        setUnlockModalProject(null);
+        setUnlockPinInput("");
+      } else {
+        setUnlockError(t("Incorrect PIN") || "Incorrect PIN");
+      }
+    } finally {
+      setUnlockChecking(false);
+    }
+  };
+
+  const savePin = async (newValue) => {
+    setPinError("");
+    if (!/^[0-9]{4,8}$/.test(newValue)) {
+      setPinError(t("PIN must be 4-8 digits") || "PIN must be 4-8 digits");
+      return;
+    }
+    if (!supabase) return;
+    setPinStatus("saving");
+    try {
+      const { error } = await supabase.from("app_settings").upsert({ key: "unlock_pin", value: newValue, updated_at: new Date().toISOString() });
+      if (error) {
+        setPinStatus("error");
+        setPinError(error.message);
+        return;
+      }
+      setPinStatus("");
+      setPinNewValue("");
+      setPinRevealValue(newValue); // show once
+    } catch (e) {
+      setPinStatus("error");
+      setPinError(String(e));
+    }
+  };
+
+  const generateRandomPin = () => {
+    const pin = String(Math.floor(1000 + Math.random() * 9000)); // random 4-digit
+    savePin(pin);
+  };
+
   // Switch to a different project
   const switchProject = async (projectId) => {
     const project = userProjects.find(p => p.id === projectId);
@@ -4502,7 +4571,7 @@ export default function CabinetProject() {
                     </div>
                     <div style={{ display:"flex", gap:6, marginTop:14 }}>
                       <button onClick={() => { switchProject(proj.id); setActiveView("workbench"); }} style={{ flex:1, padding:"8px", background:getColors().buttonBg, color:getColors().buttonText, border:"none", borderRadius:8, fontWeight:700, fontSize:12, cursor:"pointer" }}>{t("Open")}</button>
-                      <button onClick={() => toggleLockProject(proj)} title="Lock" style={{ padding:"8px 10px", background:getColors().mat, color:getColors().ink, border:"none", borderRadius:8, cursor:"pointer", fontSize:13 }}>{proj.locked?"🔓":"🔒"}</button>
+                      <button onClick={() => proj.locked ? setUnlockModalProject(proj) : toggleLockProject(proj)} title="Lock" style={{ padding:"8px 10px", background:getColors().mat, color:getColors().ink, border:"none", borderRadius:8, cursor:"pointer", fontSize:13 }}>{proj.locked?"🔓":"🔒"}</button>
                       <button onClick={() => duplicateProject(proj)} title="Duplicate" style={{ padding:"8px 10px", background:getColors().mat, color:getColors().ink, border:"none", borderRadius:8, cursor:"pointer", fontSize:13 }}>⧉</button>
                       <button onClick={() => !proj.locked && deleteProject(proj.id)} title="Delete" style={{ padding:"8px 10px", background:getColors().mat, color:proj.locked?getColors().mut:"#e74c3c", border:"none", borderRadius:8, cursor:proj.locked?"not-allowed":"pointer", fontSize:13 }}>×</button>
                     </div>
@@ -4715,12 +4784,102 @@ export default function CabinetProject() {
                   {pwStatus === "saving" ? (t("Saving...") || "Saving...") : (t("Update password") || "Update password")}
                 </button>
               </div>
+
+              {authState?.isAdmin && (
+                <div style={{ background: getColors().card, borderRadius: 16, padding: 24, maxWidth: 420, marginTop: 16 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: getColors().ink, marginBottom: 6 }}>
+                    {t("Project unlock PIN") || "Project unlock PIN"}
+                  </div>
+                  <div style={{ fontSize: 12, color: getColors().mut, marginBottom: 16, lineHeight: 1.5 }}>
+                    {t("Anyone unlocking a locked project needs this PIN. Default is 1985 until you set a new one. For security, once set the current PIN is never shown again — only right after you set or generate it.") ||
+                      "Anyone unlocking a locked project needs this PIN. Default is 1985 until you set a new one. For security, once set the current PIN is never shown again — only right after you set or generate it."}
+                  </div>
+
+                  {pinRevealValue && (
+                    <div style={{ background: "rgba(39,174,96,0.1)", border: "1px solid rgba(39,174,96,0.35)", borderRadius: 10,
+                      padding: "14px 16px", marginBottom: 16, textAlign: "center" }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#27ae60", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
+                        {t("New PIN — shown only once") || "New PIN — shown only once"}
+                      </div>
+                      <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: "0.25em", color: getColors().ink,
+                        fontFamily: "'JetBrains Mono', monospace", marginBottom: 8 }}>{pinRevealValue}</div>
+                      <button onClick={() => setPinRevealValue("")} style={{ padding: "6px 14px", background: "transparent",
+                        border: "1px solid rgba(39,174,96,0.4)", borderRadius: 7, color: "#27ae60", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                        {t("I've saved it") || "I've saved it"}
+                      </button>
+                    </div>
+                  )}
+
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>
+                      {t("Set a custom PIN") || "Set a custom PIN"}
+                    </label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <input type="text" inputMode="numeric" value={pinNewValue} onChange={(e) => setPinNewValue(e.target.value)}
+                        placeholder="1985" maxLength={8}
+                        style={{ flex: 1, padding: "11px 12px", border: `1.5px solid ${getColors().hair}`, borderRadius: 9,
+                          fontSize: 15, fontFamily: "'JetBrains Mono', monospace", color: "#111", background: "#fff", letterSpacing: "0.15em" }} />
+                      <button onClick={() => savePin(pinNewValue)} disabled={pinStatus === "saving"}
+                        style={{ padding: "0 18px", background: getColors().buttonBg, color: getColors().buttonText, border: "none",
+                          borderRadius: 9, fontWeight: 700, fontSize: 13, cursor: pinStatus === "saving" ? "not-allowed" : "pointer" }}>
+                        {t("Save") || "Save"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {pinError && <div style={{ fontSize: 13, color: "#e74c3c", marginBottom: 12 }}>{pinError}</div>}
+
+                  <button onClick={generateRandomPin} disabled={pinStatus === "saving"} style={{
+                    width: "100%", padding: "10px", background: "transparent", border: `1px solid ${getColors().hair}`,
+                    borderRadius: 9, color: getColors().ink, fontWeight: 700, fontSize: 13, cursor: pinStatus === "saving" ? "not-allowed" : "pointer" }}>
+                    🎲 {t("Generate random PIN") || "Generate random PIN"}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
           </div>
         </div>
       </div>
+
+      {/* ── UNLOCK PIN MODAL ─────────────────────────────── */}
+      {unlockModalProject && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 2000,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+          onClick={() => { setUnlockModalProject(null); setUnlockPinInput(""); setUnlockError(""); }}>
+          <div style={{ background: getColors().card, borderRadius: 16, padding: 28, width: "100%", maxWidth: 340,
+            boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: 32, marginBottom: 10, textAlign: "center" }}>🔒</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: getColors().ink, textAlign: "center", marginBottom: 4 }}>
+              {t("Enter PIN to unlock") || "Enter PIN to unlock"}
+            </div>
+            <div style={{ fontSize: 13, color: getColors().mut, textAlign: "center", marginBottom: 18 }}>
+              {unlockModalProject.name}
+            </div>
+            <input type="password" inputMode="numeric" autoFocus value={unlockPinInput}
+              onChange={(e) => setUnlockPinInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") attemptUnlock(); }}
+              placeholder="••••" style={{ width: "100%", padding: "12px", border: `1.5px solid ${getColors().hair}`,
+                borderRadius: 9, fontSize: 20, letterSpacing: "0.3em", textAlign: "center", color: "#111", background: "#fff",
+                fontFamily: "'JetBrains Mono', monospace", marginBottom: 12 }} />
+            {unlockError && <div style={{ fontSize: 13, color: "#e74c3c", textAlign: "center", marginBottom: 12 }}>{unlockError}</div>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => { setUnlockModalProject(null); setUnlockPinInput(""); setUnlockError(""); }}
+                style={{ flex: 1, padding: "10px", background: "transparent", border: `1px solid ${getColors().hair}`,
+                  borderRadius: 9, color: getColors().ink, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                {t("Cancel") || "Cancel"}
+              </button>
+              <button onClick={attemptUnlock} disabled={unlockChecking}
+                style={{ flex: 1, padding: "10px", background: getColors().buttonBg, color: getColors().buttonText,
+                  border: "none", borderRadius: 9, fontWeight: 800, fontSize: 13, cursor: unlockChecking ? "not-allowed" : "pointer",
+                  opacity: unlockChecking ? 0.6 : 1 }}>
+                {unlockChecking ? (t("Checking...") || "Checking...") : (t("Unlock") || "Unlock")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── DESGLOSE SHEET MODAL ─────────────────────────────── */}
       {showDesglose && (
