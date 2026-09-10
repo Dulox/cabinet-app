@@ -25,6 +25,22 @@ hardware totals across a whole project, and export-ready cut sheets.
 - **Exports**: PDF cut sheet, Excel (a "full" copy and a "production" copy
   with the internal-only columns dropped), and a DXF nesting layout for
   CNC/CAM software (part outlines + shelf-pin holes on real 32mm spacing).
+- **Material-saving suggestions**: a depth-comparison card tries small
+  uniform depth cuts (5-30mm) across every cabinet and shows a before/after
+  board count and utilization % whenever one would save a whole board, with
+  a one-click "apply to all cabinets".
+- **Assembly guide**: a per-cabinet, step-by-step build sequence generated
+  from that cabinet's own cut list and hardware tally (real panel sizes,
+  real shelf-pin/hinge/handle counts — not invented specs), with checkboxes
+  whose progress persists per project+cabinet.
+- **Direct manipulation**: shelves and drawer-front dividers can be dragged
+  up/down right in the elevation preview, not just set by number field.
+- **Undo/redo** (Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y) across cabinet edits, with
+  rapid edits (typing, quick clicks) coalesced into one undo step.
+- **Shareable project links**: copy a link that encodes a project's full
+  cabinet list; opening it drops the cabinets into a new project for
+  whoever opens it (they still need their own approved login — see
+  Projects & accounts below).
 - **Projects & accounts**: multi-project save/load backed by Supabase
   (email/password login, owner-approved signups, an admin panel, and a PIN
   lock for shared devices).
@@ -133,6 +149,21 @@ the pieces worth knowing about:
 - `estimateBoards()` / `packBoardsWithLayout()` — the board-count estimate
   and the layout-tracking version that feeds the DXF export.
 - `buildNestingDxf()` — the DXF writer.
+- `itemsForCabsWithDepthDelta()` — re-runs the board estimate with every
+  cabinet's depth cut by N mm; the depth-comparison suggestion picks the
+  smallest N that saves a board.
+- `buildAssemblySteps()` — turns one cabinet's cut list + hardware tally
+  into an ordered build sequence (`AssemblyGuideModal` renders it).
+- `evenShelfPositions()` — the default (evenly spaced) shelf Y-positions;
+  `cab.shelfPositions` overrides them once a shelf's been dragged in
+  `Elevation`. Drawer-front dividers reuse the existing `drawerHeights`.
+- `setCabs()` — not `useState`'s raw setter: it's a small undo/redo history
+  wrapper (`pastRef`/`futureRef`) around it, so every existing call site
+  gets undo for free. Project switch/load/create call `resetCabs()`
+  instead, which clears the history so one project's undo stack can't leak
+  into another's.
+- `encodeSharedConfig()` / `decodeSharedConfig()` — the base64 project
+  config behind shareable links.
 
 Edit, commit, push — a Pages/Vercel/Netlify deploy rebuilds on its own.
 
@@ -152,3 +183,6 @@ Edit, commit, push — a Pages/Vercel/Netlify deploy rebuilds on its own.
   CNC output.
 - **Supabase credentials are hardcoded in source**, not environment
   variables — see the Supabase section above if you're forking this.
+- **Assembly-guide checkbox progress is `localStorage`-only**, per
+  project+cabinet — unlike the cabinet data itself, it isn't synced to
+  Supabase, so it won't follow you to a different browser or device.
