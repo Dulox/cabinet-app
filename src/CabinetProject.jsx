@@ -1236,8 +1236,19 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
    model — good enough for a visual walk-around, not for fabrication. */
 function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
   const mountRef = React.useRef(null);
+  const grainGroupRef = React.useRef(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
+  const [showVetas, setShowVetas] = React.useState(false);
+  // Toggling just flips the pre-built grain-lines group's visibility —
+  // doesn't touch React state-driven effects, so it never rebuilds the scene.
+  const toggleVetas = () => {
+    setShowVetas((v) => {
+      const next = !v;
+      if (grainGroupRef.current) grainGroupRef.current.visible = next;
+      return next;
+    });
+  };
 
   React.useEffect(() => {
     let renderer, scene, camera, controls, frameId, resizeObserver;
@@ -1314,18 +1325,74 @@ function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
         group.add(edges);
       };
 
+      // Grain (vetas) preview lines — drawn on the same panel's outward-facing
+      // surface, oriented per vetaAxis()'s own V/H rule (grain runs along the
+      // longer edge; V = that edge is the height axis, H = a horizontal one).
+      // Toggled via grainGroup.visible, never rebuilt on toggle.
+      const grainGroup = new THREE.Group();
+      const grainMat = new THREE.LineBasicMaterial({ color: 0x8a6d3f, transparent: true, opacity: 0.55 });
+      const GRAIN_EPS = 1, GRAIN_PERIOD = 34;
+      const countFor = (span) => Math.max(3, Math.round(span / GRAIN_PERIOD));
+      const grainLine = (pts) => {
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+        grainGroup.add(new THREE.LineSegments(geo, grainMat));
+      };
+      // Plane at world X=x (sides): axis "V" -> lines run along Y, spread across Z; "H" -> along Z, spread across Y
+      const addGrainX = (x, cy, cz, spanY, spanZ, axis) => {
+        const pts = [];
+        if (axis === "V") {
+          const n = countFor(spanZ);
+          for (let i = 0; i < n; i++) { const z = cz - spanZ / 2 + (spanZ * (i + 0.5)) / n; pts.push(x, cy - spanY / 2, z, x, cy + spanY / 2, z); }
+        } else {
+          const n = countFor(spanY);
+          for (let i = 0; i < n; i++) { const y = cy - spanY / 2 + (spanY * (i + 0.5)) / n; pts.push(x, y, cz - spanZ / 2, x, y, cz + spanZ / 2); }
+        }
+        grainLine(pts);
+      };
+      // Plane at world Y=y (bottom, flat — no height axis): axis "X" -> lines along X, spread across Z; "Z" -> along Z, spread across X
+      const addGrainY = (y, cx, cz, spanX, spanZ, axis) => {
+        const pts = [];
+        if (axis === "X") {
+          const n = countFor(spanZ);
+          for (let i = 0; i < n; i++) { const z = cz - spanZ / 2 + (spanZ * (i + 0.5)) / n; pts.push(cx - spanX / 2, y, z, cx + spanX / 2, y, z); }
+        } else {
+          const n = countFor(spanX);
+          for (let i = 0; i < n; i++) { const x = cx - spanX / 2 + (spanX * (i + 0.5)) / n; pts.push(x, y, cz - spanZ / 2, x, y, cz + spanZ / 2); }
+        }
+        grainLine(pts);
+      };
+      // Plane at world Z=z (back/rail/doors): axis "V" -> lines run along Y, spread across X; "H" -> along X, spread across Y
+      const addGrainZ = (z, cx, cy, spanX, spanY, axis) => {
+        const pts = [];
+        if (axis === "V") {
+          const n = countFor(spanX);
+          for (let i = 0; i < n; i++) { const x = cx - spanX / 2 + (spanX * (i + 0.5)) / n; pts.push(x, cy - spanY / 2, z, x, cy + spanY / 2, z); }
+        } else {
+          const n = countFor(spanY);
+          for (let i = 0; i < n; i++) { const y = cy - spanY / 2 + (spanY * (i + 0.5)) / n; pts.push(cx - spanX / 2, y, z, cx + spanX / 2, y, z); }
+        }
+        grainLine(pts);
+      };
+
       const mt = p.t; // melamine thickness — NOT the `t` prop, which is the i18n translator function
       const innerW = W - 2 * mt;
       // Sides
       box(-W / 2 + mt / 2, H / 2, 0, mt, H, D, panelMat);
       box(W / 2 - mt / 2, H / 2, 0, mt, H, D, panelMat);
+      const sideAxis = vetaAxis("depth", "height", D, H);
+      addGrainX(-W / 2 - GRAIN_EPS, H / 2, 0, H, D, sideAxis);
+      addGrainX(W / 2 + GRAIN_EPS, H / 2, 0, H, D, sideAxis);
       // Bottom
       box(0, mt / 2, 0, innerW, mt, D, panelMat);
+      addGrainY(mt + GRAIN_EPS, 0, 0, innerW, D, innerW >= D ? "X" : "Z");
       // Back (thin strip near the back edge)
       box(0, H / 2, -D / 2 + mt / 2, innerW, H - mt, mt, panelMat);
+      addGrainZ(-D / 2 + mt + GRAIN_EPS, 0, H / 2, innerW, H - mt, vetaAxis("width", "height", innerW, H - mt));
       // Top rail (front stretcher)
       const railH = p.railH || 100;
       box(0, H - railH / 2, D / 2 - mt / 2, innerW, railH, mt, panelMat);
+      addGrainZ(D / 2 + GRAIN_EPS, 0, H - railH / 2, innerW, railH, vetaAxis("length", "height", innerW, railH));
 
       // Door / drawer fronts from the same faces data as the 2D elevation
       (data.faces || []).forEach((f) => {
@@ -1334,9 +1401,13 @@ function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
         const cy = H - f.y - fh / 2;
         const cz = D / 2 + doorT / 2;
         box(cx, cy, cz, fw, fh, doorT, f.kind === "blind" ? blindMat : doorMat);
+        addGrainZ(cz + doorT / 2 + GRAIN_EPS, cx, cy, fw, fh, vetaAxis("width", "height", fw, fh));
       });
 
       group.position.y = 0;
+      grainGroup.visible = showVetas;
+      grainGroupRef.current = grainGroup;
+      group.add(grainGroup);
       scene.add(group);
 
       const animate = () => {
@@ -1384,7 +1455,15 @@ function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
           <div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>
             🧊 3D preview — drag to rotate, scroll to zoom
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#9a9ba2", lineHeight: 1 }}>×</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button onClick={toggleVetas} style={{
+              padding: "6px 12px", borderRadius: 7, fontWeight: 700, fontSize: 12, cursor: "pointer",
+              border: showVetas ? "1px solid #8a6d3f" : "1px solid #3a3b42",
+              background: showVetas ? "#8a6d3f" : "transparent", color: "#fff" }}>
+              🌾 {showVetas ? (t ? t("Hide vetas") : "Hide vetas") : (t ? t("Show vetas") : "Show vetas")}
+            </button>
+            <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#9a9ba2", lineHeight: 1 }}>×</button>
+          </div>
         </div>
         <div style={{ width: "100%", height: "62vh", minHeight: 380, borderRadius: 10, overflow: "hidden", position: "relative" }}>
           {/* Exclusively owned by the imperative Three.js code below — never
