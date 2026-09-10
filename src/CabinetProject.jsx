@@ -1007,6 +1007,10 @@ function Elevation({ W, p, shelfQty, faces, shelfPositions, onShelfPositionsChan
   const shelfPos = (shelfPositions && shelfPositions.length === shelfQty) ? shelfPositions : evenShelfPositions(shelfQty, p, H);
   const shelfDraggable = shelfQty > 0 && typeof onShelfPositionsChange === "function";
   const shelves = [];
+  // Invisible drag handles, collected separately and rendered LAST (topmost
+  // z-order, above the door/drawer face outlines) so nothing drawn on top
+  // of a shelf or divider can ever block dragging it.
+  const dragHitAreas = [];
   for (let i = 0; i < shelfQty; i++) {
     const y = oy + shelfPos[i];
     const onShelfDrag = shelfDraggable ? dragTracker((svgY) => {
@@ -1016,29 +1020,28 @@ function Elevation({ W, p, shelfQty, faces, shelfPositions, onShelfPositionsChan
       onShelfPositionsChange(next);
     }) : undefined;
     shelves.push(
-      <g key={i}>
-        <rect x={ox + t} y={y - t / 2} width={W - 2 * t} height={t}
-          fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
-        {shelfDraggable && (
-          <rect x={ox + t} y={y - t / 2 - 10} width={W - 2 * t} height={t + 20}
-            fill="transparent" style={{ cursor: "ns-resize" }} onPointerDown={onShelfDrag} />
-        )}
-      </g>
+      <rect key={i} x={ox + t} y={y - t / 2} width={W - 2 * t} height={t}
+        fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
     );
+    if (shelfDraggable) {
+      dragHitAreas.push(
+        <rect key={"shelf" + i} x={ox + t} y={y - t / 2 - 10} width={W - 2 * t} height={t + 20}
+          fill="transparent" style={{ cursor: "ns-resize", pointerEvents: "all" }} onPointerDown={onShelfDrag} />
+      );
+    }
   }
 
   // Drawer-front boundaries — draggable when onDrawerDivider is given
   // (drawer-type cabinets only). Redistributes height between the two
   // adjacent drawers; everything else about the stack stays put.
   const drawerFaces = faces.filter((f) => f.kind === "drawer" || f.kind === "false");
-  const dividers = [];
   if (typeof onDrawerDivider === "function") {
     for (let i = 0; i < drawerFaces.length - 1; i++) {
       const boundaryY = oy + drawerFaces[i].y + drawerFaces[i].h + (drawerFaces[i + 1].y - (drawerFaces[i].y + drawerFaces[i].h)) / 2;
       const onDividerDrag = dragTracker((svgY) => onDrawerDivider(i, Math.round(svgY - oy)));
-      dividers.push(
+      dragHitAreas.push(
         <rect key={"div" + i} x={ox + t} y={boundaryY - 12} width={W - 2 * t} height={24}
-          fill="transparent" style={{ cursor: "ns-resize" }} onPointerDown={onDividerDrag} />
+          fill="transparent" style={{ cursor: "ns-resize", pointerEvents: "all" }} onPointerDown={onDividerDrag} />
       );
     }
   }
@@ -1077,7 +1080,7 @@ function Elevation({ W, p, shelfQty, faces, shelfPositions, onShelfPositionsChan
           )}
         </g>
       ))}
-      {dividers}
+      {dragHitAreas}
 
       {/* width dim */}
       <line x1={ox} y1={oy + H + 70} x2={ox + W} y2={oy + H + 70} stroke={getColors().amber} strokeWidth={fs * 0.06} />
