@@ -1314,21 +1314,22 @@ function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
         group.add(edges);
       };
 
-      const innerW = W - 2 * t;
+      const mt = p.t; // melamine thickness — NOT the `t` prop, which is the i18n translator function
+      const innerW = W - 2 * mt;
       // Sides
-      box(-W / 2 + t / 2, H / 2, 0, t, H, D, panelMat);
-      box(W / 2 - t / 2, H / 2, 0, t, H, D, panelMat);
+      box(-W / 2 + mt / 2, H / 2, 0, mt, H, D, panelMat);
+      box(W / 2 - mt / 2, H / 2, 0, mt, H, D, panelMat);
       // Bottom
-      box(0, t / 2, 0, innerW, t, D, panelMat);
+      box(0, mt / 2, 0, innerW, mt, D, panelMat);
       // Back (thin strip near the back edge)
-      box(0, H / 2, -D / 2 + t / 2, innerW, H - t, t, panelMat);
+      box(0, H / 2, -D / 2 + mt / 2, innerW, H - mt, mt, panelMat);
       // Top rail (front stretcher)
       const railH = p.railH || 100;
-      box(0, H - railH / 2, D / 2 - t / 2, innerW, railH, t, panelMat);
+      box(0, H - railH / 2, D / 2 - mt / 2, innerW, railH, mt, panelMat);
 
       // Door / drawer fronts from the same faces data as the 2D elevation
       (data.faces || []).forEach((f) => {
-        const fw = f.w, fh = f.h, doorT = t;
+        const fw = f.w, fh = f.h, doorT = mt;
         const cx = f.x + fw / 2 - W / 2;
         const cy = H - f.y - fh / 2;
         const cz = D / 2 + doorT / 2;
@@ -1363,10 +1364,11 @@ function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
       if (frameId) cancelAnimationFrame(frameId);
       if (resizeObserver) resizeObserver.disconnect();
       if (controls) controls.dispose();
-      if (renderer) {
-        renderer.dispose();
-        renderer.domElement?.remove();
-      }
+      // Only release the WebGL context here — don't manually detach the canvas
+      // node. React unmounts the whole mountRef div (canvas included) on its
+      // own; also calling .remove() on it here raced React's own DOM removal
+      // and threw "node is not a child of this node".
+      if (renderer) renderer.dispose();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
