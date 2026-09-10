@@ -477,6 +477,11 @@ const translations = {
     "parts may rotate": "las piezas pueden rotar", "grain fixed": "veta fija",
     "parts may rotate (grain-marked pieces kept fixed)": "las piezas pueden rotar (las piezas con veta se mantienen fijas)",
     "Download DXF (CNC nesting)": "Descargar DXF (anidado CNC)",
+    "Copy share link": "Copiar enlace para compartir",
+    "Could not create a share link for this project.": "No se pudo crear un enlace para compartir este proyecto.",
+    "Share link copied to clipboard:": "Enlace copiado al portapapeles:",
+    "This share link looks invalid or corrupted.": "Este enlace parece inválido o dañado.",
+    "Loaded shared project:": "Proyecto compartido cargado:",
     "part(s) bigger than a board!": "pieza(s) más grande(s) que un tablero!",
     "Layout estimate — real nesting varies. Buy at least one spare board for offcuts and mistakes.":
       "Estimado de despiece — el anidado real varía. Compra al menos un tablero extra para recortes y errores.",
@@ -1657,6 +1662,19 @@ function sharePdf(blob, fname) {
     setTimeout(() => URL.revokeObjectURL(url), 5000);
     return true;
   } catch (e) { return false; }
+}
+
+// Shareable-project-link config encoding — plain base64 of the JSON (UTF-8
+// safe via the escape/unescape trick), no compression library. Project
+// configs are small (a handful of cabinet objects), so this stays well
+// under practical URL length limits.
+function encodeSharedConfig(obj) {
+  try { return btoa(unescape(encodeURIComponent(JSON.stringify(obj)))); }
+  catch (e) { return null; }
+}
+function decodeSharedConfig(str) {
+  try { return JSON.parse(decodeURIComponent(escape(atob(str)))); }
+  catch (e) { return null; }
 }
 
 async function writeClipboard(text) {
@@ -4310,6 +4328,23 @@ export default function CabinetProject() {
     } catch (e) {}
   };
 
+  // Copy a shareable link for this project (name + cabinets, base64-encoded
+  // in the URL). The recipient still needs their own approved login — this
+  // app is private/invite-only — but once they're in, opening the link
+  // drops the exact same cabinets straight into a new project for them,
+  // no re-typing dimensions over the phone.
+  const shareProject = async (proj) => {
+    const encoded = encodeSharedConfig({ name: proj.name, cabs: proj.cabs || [] });
+    if (!encoded) { alert(t ? t("Could not create a share link for this project.") : "Could not create a share link for this project."); return; }
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.searchParams.set("shared", encoded);
+    const ok = await writeClipboard(url.toString());
+    alert(ok
+      ? (t ? t("Share link copied to clipboard:") : "Share link copied to clipboard:") + "\n" + url.toString()
+      : url.toString());
+  };
+
   const duplicateProject = async (proj) => {
     if (!supabase) return;
     const newName = proj.name + " (copy)";
@@ -4438,6 +4473,41 @@ export default function CabinetProject() {
       setMobileNavOpen(false);
     }
   }, [authState?.user?.id]);
+
+  // Import a shared-project link (?shared=<base64 config>) once the user's
+  // own projects have loaded. Runs once per page load (sharedImportedRef
+  // guard) and always strips the query param immediately, so a refresh or
+  // revisit never re-imports it. The recipient still needs their own
+  // approved login (this app is private/invite-only) — this just saves
+  // them re-typing every cabinet once they're in.
+  const sharedImportedRef = useRef(false);
+  useEffect(() => {
+    if (!projectsLoaded || sharedImportedRef.current) return;
+    sharedImportedRef.current = true;
+    const params = new URLSearchParams(window.location.search);
+    const shared = params.get("shared");
+    if (!shared) return;
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.search = "";
+    window.history.replaceState({}, "", cleanUrl.toString());
+    const decoded = decodeSharedConfig(shared);
+    if (!decoded || !Array.isArray(decoded.cabs)) {
+      alert(t ? t("This share link looks invalid or corrupted.") : "This share link looks invalid or corrupted.");
+      return;
+    }
+    (async () => {
+      const newProjectId = crypto.randomUUID();
+      const newName = `${decoded.name || "Shared project"} (shared)`;
+      setCurrentProjectId(newProjectId);
+      setCurrentProjectName(newName);
+      setCabs(decoded.cabs);
+      setSelectedId(null);
+      setShowProjectList(false);
+      await saveProject(newProjectId, newName, decoded.cabs);
+      await loadUserProjects();
+      alert((t ? t("Loaded shared project:") : "Loaded shared project:") + " " + newName);
+    })();
+  }, [projectsLoaded]);
 
   // Auto-save projects when cabinets change (debounced)
   useEffect(() => {
@@ -5114,6 +5184,7 @@ export default function CabinetProject() {
                       <button onClick={() => { switchProject(proj.id); setActiveView("workbench"); }} style={{ flex:1, padding:"8px", background:getColors().buttonBg, color:getColors().buttonText, border:"none", borderRadius:8, fontWeight:700, fontSize:12, cursor:"pointer" }}>{t("Open")}</button>
                       <button onClick={() => proj.locked ? setUnlockModalProject(proj) : toggleLockProject(proj)} title="Lock" style={{ padding:"8px 10px", background:getColors().mat, color:getColors().ink, border:"none", borderRadius:8, cursor:"pointer", fontSize:13 }}>{proj.locked?"🔓":"🔒"}</button>
                       <button onClick={() => duplicateProject(proj)} title="Duplicate" style={{ padding:"8px 10px", background:getColors().mat, color:getColors().ink, border:"none", borderRadius:8, cursor:"pointer", fontSize:13 }}>⧉</button>
+                      <button onClick={() => shareProject(proj)} title={t("Copy share link")} style={{ padding:"8px 10px", background:getColors().mat, color:getColors().ink, border:"none", borderRadius:8, cursor:"pointer", fontSize:13 }}>🔗</button>
                       <button onClick={() => !proj.locked && deleteProject(proj.id)} title="Delete" style={{ padding:"8px 10px", background:getColors().mat, color:proj.locked?getColors().mut:"#e74c3c", border:"none", borderRadius:8, cursor:proj.locked?"not-allowed":"pointer", fontSize:13 }}>×</button>
                     </div>
                   </div>
