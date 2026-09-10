@@ -1045,6 +1045,20 @@ function vetaAxis(aLabel, bLabel, a, b) {
   return heightVal >= otherVal ? "V" : "H";
 }
 
+// The back-panel groove (ranura) is cut into Side/Bottom/Top panels near
+// the back edge, running parallel to the edge that faces the back — i.e.
+// along whichever of the panel's two dimensions is NOT "depth" (depth is
+// the axis the groove is offset along, not the axis it runs along). So
+// exactly one edge — Largo or Ancho — gets the groove, never both.
+function ranuraSide(aLabel, bLabel, a, b) {
+  const aIsDepth = aLabel === "depth";
+  const bIsDepth = bLabel === "depth";
+  if (!aIsDepth && !bIsDepth) return "";
+  const depthVal = aIsDepth ? a : b;
+  const otherVal = aIsDepth ? b : a;
+  return otherVal >= depthVal ? "L" : "A";
+}
+
 function PartDiagram({ a, b, size = 60 }) {
   const long = Math.max(a, b), short = Math.min(a, b);
   const aspect = short / long;
@@ -2519,16 +2533,17 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
           if (distL <= distA) { existing.hbl = "X"; }  // doorL is closer to sideH
           else { existing.hba = "X"; }  // doorA is closer to sideH
         }
-        if (o.hasRanura) { existing.rl = "X"; existing.ra = "X"; }
+        if (o.ranura === "L") existing.rl = "X";
+        if (o.ranura === "A") existing.ra = "X";
       } else {
         map.set(key, {
           id: key, largo: L, ancho: A, grosor: G, cant: qty, nombre: name,
           cabNums: new Set(cabNum != null ? [cabNum] : []),
           cl1: "X", cl2: "X", ca1: "X", ca2: "X",
           vetas: o.vetas || "",
-          // Ranuras: auto-mark on parts whose height matches cabinet height (back panel groove)
-          rl: o.hasRanura ? "X" : "",
-          ra: o.hasRanura ? "X" : "",
+          // Ranuras: back-panel groove, marked on whichever single edge (Largo or Ancho) faces the back
+          rl: o.ranura === "L" ? "X" : "",
+          ra: o.ranura === "A" ? "X" : "",
           // Bisagras: mark on dimension closest to cabinet height (where hinge attaches)
           hbl: (o.hasBisagra && o.sideH && Math.abs(L - o.sideH) <= Math.abs(A - o.sideH)) ? "X" : "",
           hba: (o.hasBisagra && o.sideH && Math.abs(A - o.sideH) < Math.abs(L - o.sideH)) ? "X" : "",
@@ -2574,7 +2589,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
 
         // Auto-detect ranura (back panel groove) and bisagra (hinge drilling)
         const ranuraParts = new Set(["Side", "Bottom", "Top"]);
-        const hasRanura = ranuraParts.has(part.part);
+        const ranura = ranuraParts.has(part.part) ? ranuraSide(part.aLabel, part.bLabel, part.a, part.b) : "";
 
         // Side panels: all sides are plain (no "with doors" variant).
         // Doors will be marked with X in HB-L/HB-A to show they're fixed to the side.
@@ -2583,7 +2598,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         if (part.part === "Side") {
           const totalSides = part.qty * cabQty;      // usually 2 × cabQty
           // Emit all sides as plain, no hinge marking
-          emitPart(map, "Side", L, A, G, totalSides, part, { hasRanura: true, hasBisagra: false, cabMaterial, cabType: cab.type, vetas }, cabNum);
+          emitPart(map, "Side", L, A, G, totalSides, part, { ranura, hasBisagra: false, cabMaterial, cabType: cab.type, vetas }, cabNum);
           return;
         }
 
@@ -2592,7 +2607,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         // Mark door parts: bisagra attaches on whichever dimension is closer to cabinet height
         const isDoorPart = sideLabel.includes("Door");
         const sideH = p.sideH;  // cabinet's side panel height
-        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: isDoorPart, cabMaterial, cabType: cab.type, sideH, doorL: L, doorA: A, vetas }, cabNum);
+        emitPart(map, sideLabel, L, A, G, totalQty, part, { ranura, hasBisagra: isDoorPart, cabMaterial, cabType: cab.type, sideH, doorL: L, doorA: A, vetas }, cabNum);
       });
     });
     return Array.from(map.values())
