@@ -482,6 +482,7 @@ const translations = {
     "Share link copied to clipboard:": "Enlace copiado al portapapeles:",
     "This share link looks invalid or corrupted.": "Este enlace parece inválido o dañado.",
     "Loaded shared project:": "Proyecto compartido cargado:",
+    "Undo": "Deshacer", "Redo": "Rehacer",
     "part(s) bigger than a board!": "pieza(s) más grande(s) que un tablero!",
     "Layout estimate — real nesting varies. Buy at least one spare board for offcuts and mistakes.":
       "Estimado de despiece — el anidado real varía. Compra al menos un tablero extra para recortes y errores.",
@@ -3909,9 +3910,74 @@ export default function CabinetProject() {
   const [pdfUrl, setPdfUrl] = useState(null);
   const [pdfBlob, setPdfBlob] = useState(null);
   const [pdfName, setPdfName] = useState("cutlist.pdf");
-  const [cabs, setCabs] = useState([
+  const [cabs, setCabsRaw] = useState([
     { id: 1, name: "Cabinet 1", type: "base", width: "600", doorCount: 1, shelfQty: 1, falseFront: false, front: "doors", drawerCount: 3, drawerHeights: null, hingeType: "concealed", params: { ...DEFAULTS } },
   ]);
+  // Undo/redo history for cabinet edits (Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y).
+  // Plain refs, not state — pushing to history shouldn't itself force a
+  // re-render; cabs changing already does that, and the undo/redo buttons
+  // just read pastRef/futureRef.current fresh on whatever render happens.
+  // Rapid successive edits (typing a number, several quick clicks) within
+  // COALESCE_MS of each other are folded into a single undo step, so Ctrl+Z
+  // undoes "that edit", not one keystroke at a time.
+  const pastRef = useRef([]);
+  const futureRef = useRef([]);
+  const lastPushRef = useRef(0);
+  const HISTORY_LIMIT = 50, COALESCE_MS = 600;
+  const setCabs = (updater) => {
+    setCabsRaw((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      const now = Date.now();
+      if (now - lastPushRef.current > COALESCE_MS) {
+        pastRef.current = [...pastRef.current.slice(-(HISTORY_LIMIT - 1)), prev];
+        futureRef.current = [];
+      }
+      lastPushRef.current = now;
+      return next;
+    });
+  };
+  // Used when switching/loading/creating a project — a fresh project's
+  // cabinets shouldn't be undoable back into a different project's list.
+  const resetCabs = (newCabs) => {
+    pastRef.current = [];
+    futureRef.current = [];
+    lastPushRef.current = 0;
+    setCabsRaw(newCabs);
+  };
+  const undoCabs = () => {
+    if (pastRef.current.length === 0) return;
+    setCabsRaw((prev) => {
+      const previous = pastRef.current[pastRef.current.length - 1];
+      pastRef.current = pastRef.current.slice(0, -1);
+      futureRef.current = [prev, ...futureRef.current];
+      lastPushRef.current = 0;
+      return previous;
+    });
+  };
+  const redoCabs = () => {
+    if (futureRef.current.length === 0) return;
+    setCabsRaw((prev) => {
+      const nextState = futureRef.current[0];
+      futureRef.current = futureRef.current.slice(1);
+      pastRef.current = [...pastRef.current, prev];
+      lastPushRef.current = 0;
+      return nextState;
+    });
+  };
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      const tag = (e.target && e.target.tagName) || "";
+      // Let a focused field's own native undo handle in-progress typing —
+      // only take over Ctrl+Z/Y when focus isn't in an editable control.
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || e.target?.isContentEditable) return;
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const key = e.key.toLowerCase();
+      if (key === "z" && !e.shiftKey) { e.preventDefault(); undoCabs(); }
+      else if ((key === "z" && e.shiftKey) || key === "y") { e.preventDefault(); redoCabs(); }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
   const [selectedId, setSelectedId] = useState(null);
   const [currentProjectId, setCurrentProjectId] = useState(() => {
     try { return localStorage.getItem("lastProjectId") || null; } catch { return null; }
@@ -4158,7 +4224,7 @@ export default function CabinetProject() {
         const project = (savedProjId && data.find(p => p.id === savedProjId)) || data[0];
         setCurrentProjectId(project.id);
         setCurrentProjectName(project.name);
-        setCabs(project.cabs || []);
+        resetCabs(project.cabs || []);
         if (project.cabs?.length > 0) {
           setSelectedId(null);
         }
@@ -4185,7 +4251,7 @@ export default function CabinetProject() {
     
     setCurrentProjectId(newProjectId);
     setCurrentProjectName(newProjectName);
-    setCabs(defaultCabs);
+    resetCabs(defaultCabs);
     setSelectedId(null);
     setShowProjectList(false);
     
@@ -4291,7 +4357,7 @@ export default function CabinetProject() {
     setIsSwitching(true);
     setCurrentProjectId(project.id);
     setCurrentProjectName(project.name);
-    setCabs(project.cabs || []);
+    resetCabs(project.cabs || []);
     if (project.cabs?.length > 0) {
       setSelectedId(null);
     }
@@ -4500,7 +4566,7 @@ export default function CabinetProject() {
       const newName = `${decoded.name || "Shared project"} (shared)`;
       setCurrentProjectId(newProjectId);
       setCurrentProjectName(newName);
-      setCabs(decoded.cabs);
+      resetCabs(decoded.cabs);
       setSelectedId(null);
       setShowProjectList(false);
       await saveProject(newProjectId, newName, decoded.cabs);
@@ -5049,8 +5115,16 @@ export default function CabinetProject() {
         <div className="cab-wb">
           {/* LEFT: cabinet list */}
           <aside className="cab-side cab-noprint">
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: getColors().canvasMut, marginBottom: 8 }}>
-              {t("Cabinets")}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: getColors().canvasMut }}>
+                {t("Cabinets")}
+              </div>
+              <div style={{ display: "flex", gap: 4 }}>
+                <button onClick={undoCabs} disabled={pastRef.current.length === 0} title={`${t("Undo")} (Ctrl+Z)`}
+                  style={{ ...navMini(pastRef.current.length === 0), width: 24, minWidth: 24, fontSize: 13 }}>↶</button>
+                <button onClick={redoCabs} disabled={futureRef.current.length === 0} title={`${t("Redo")} (Ctrl+Y)`}
+                  style={{ ...navMini(futureRef.current.length === 0), width: 24, minWidth: 24, fontSize: 13 }}>↷</button>
+              </div>
             </div>
             {cabs.map((c, i) => {
               const on = c.id === selectedCab?.id;
