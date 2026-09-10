@@ -1018,6 +1018,84 @@ function SideView({ D, H, p, shelfQty, faces }) {
   );
 }
 
+/* Isometric preview: a true 30° isometric projection of the closed cabinet
+   (top + front + right-side faces of the carcass, with the door/drawer
+   front panels from `faces` popped slightly forward of the front face).
+   Pure SVG, no 3D library — reuses the same width/depth/height + faces
+   data as the other views.
+
+   Projection note: with px=(x-z)*cos30, py=(x+z)*sin30-yFloor, LARGER z
+   is closer to the viewer (bigger py = lower on screen), so the visible
+   "near" face is z=D, not z=0 — the front/door faces must be placed at
+   z=D (not z=0), otherwise the front face's polygon area overlaps the
+   top face's instead of sharing just an edge with it. */
+function IsoView({ W, D, p, faces }) {
+  const H = p.sideH;
+  const ANGLE = Math.PI / 6; // 30°
+  const cosA = Math.cos(ANGLE), sinA = Math.sin(ANGLE);
+  // x: 0..W (left→right), yFloor: 0..H (floor→top), z: 0..D (back→front)
+  const proj = (x, yFloor, z) => ({ px: (x - z) * cosA, py: (x + z) * sinA - yFloor });
+
+  const topFace = [proj(0, H, 0), proj(W, H, 0), proj(W, H, D), proj(0, H, D)];
+  const frontFace = [proj(0, H, D), proj(W, H, D), proj(W, 0, D), proj(0, 0, D)];
+  const sideFace = [proj(W, 0, 0), proj(W, H, 0), proj(W, H, D), proj(W, 0, D)];
+
+  const pop = 12; // door/drawer fronts sit slightly proud of the carcass front
+  const doorPolys = (faces || []).map((f) => {
+    const x1 = f.x, x2 = f.x + f.w;
+    const yTop = H - f.y, yBot = H - f.y - f.h;
+    const z = D + pop;
+    return { f, quad: [proj(x1, yTop, z), proj(x2, yTop, z), proj(x2, yBot, z), proj(x1, yBot, z)] };
+  });
+
+  const allPts = [...topFace, ...frontFace, ...sideFace, ...doorPolys.flatMap((d) => d.quad)];
+  const xs = allPts.map((pt) => pt.px), ys = allPts.map((pt) => pt.py);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  const pad = Math.max(60, (maxX - minX) * 0.12);
+  const vbW = (maxX - minX) + pad * 2, vbH = (maxY - minY) + pad * 2 + 40;
+  const ox = -minX + pad, oy = -minY + pad;
+  const fs = Math.max(vbW / 34, 20);
+  const toPts = (quad) => quad.map((pt) => `${pt.px + ox},${pt.py + oy}`).join(" ");
+
+  return (
+    <svg viewBox={`0 0 ${vbW} ${vbH}`} width="100%" preserveAspectRatio="xMidYMid meet"
+      style={{ display: "block", borderRadius: 10, minWidth: 0, maxWidth: "100%" }} role="img"
+      aria-label={`Isometric view: ${W} × ${D} × ${H} mm`}>
+      <rect x="0" y="0" width={vbW} height={vbH} fill={getColors().mat} />
+      {/* top face — lightened */}
+      <polygon points={toPts(topFace)} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
+      <polygon points={toPts(topFace)} fill="#ffffff" opacity="0.10" />
+      {/* right-side face — darkened */}
+      <polygon points={toPts(sideFace)} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
+      <polygon points={toPts(sideFace)} fill="#000000" opacity="0.22" />
+      {/* front face — plain (rail/reveal areas not covered by a door show through here) */}
+      <polygon points={toPts(frontFace)} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
+      {/* door / drawer fronts, popped forward */}
+      {doorPolys.map((d, i) => (
+        <g key={i}>
+          <polygon points={toPts(d.quad)}
+            fill={d.f.kind === "blind" ? "rgba(194,70,40,0.18)" : getColors().panel}
+            stroke={getColors().amber} strokeWidth="1.6" />
+          {d.f.split === 2 && (() => {
+            const midX = d.f.x + d.f.w / 2, yTop = H - d.f.y, yBot = H - d.f.y - d.f.h, z = D + pop;
+            const p1 = proj(midX, yTop, z), p2 = proj(midX, yBot, z);
+            return <line x1={p1.px + ox} y1={p1.py + oy} x2={p2.px + ox} y2={p2.py + oy}
+              stroke={getColors().amber} strokeWidth="1.4" opacity="0.7" />;
+          })()}
+          {d.f.kind === "door" && (() => {
+            const midX = d.f.split === 2 ? d.f.x + d.f.w * 0.5 - 30 : d.f.x + d.f.w - 34;
+            const midY = H - d.f.y - d.f.h * 0.5;
+            const c = proj(midX, midY, D + pop);
+            return <circle cx={c.px + ox} cy={c.py + oy} r={fs * 0.16} fill={getColors().amber} />;
+          })()}
+        </g>
+      ))}
+      <text x={vbW / 2} y={vbH - 14} fill={getColors().mut} fontSize={fs * 0.7} textAnchor="middle"
+        style={{ fontFamily: "'JetBrains Mono', monospace" }}>{W} × {D} × {H} mm</text>
+    </svg>
+  );
+}
+
 /* Full-screen modal: front / top / side views together with a complete
    dimensions table for every cut part. Pure SVG — no new dependency. */
 /* Small dimensioned rectangle for a single cut part — used as a thumbnail
@@ -1092,7 +1170,7 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 2000,
       display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
       onClick={onClose}>
-      <div style={{ background: getColors().card, borderRadius: 16, padding: 24, width: "100%", maxWidth: 1100,
+      <div style={{ background: getColors().card, borderRadius: 16, padding: 24, width: "100%", maxWidth: 1400,
         maxHeight: "92vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}
         onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
@@ -1102,7 +1180,7 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
           <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 26, cursor: "pointer", color: getColors().mut, lineHeight: 1 }}>×</button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr", gap: 16, marginBottom: 22 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 22 }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Front</div>
             <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces} />
@@ -1114,6 +1192,10 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Side</div>
             <SideView D={D} H={H} p={p} shelfQty={cab.shelfQty} faces={data.faces} />
+          </div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Isometric</div>
+            <IsoView W={W} D={D} p={p} faces={data.faces} />
           </div>
         </div>
 
