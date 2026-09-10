@@ -512,6 +512,17 @@ const splitHeights = (total, n, gap) => {
   return Array.from({ length: n }, () => Math.floor(each));
 };
 
+// Default (evenly spaced) shelf Y-positions — mm from the top of the
+// cabinet, matching the same "distance from top" convention buildCutList
+// uses for faces[].y. Used whenever a cabinet has no custom shelfPositions,
+// or a stale array whose length no longer matches shelfQty (e.g. right
+// after the shelf count changed) — dragging a shelf in the elevation view
+// re-seeds the full array from these before applying the one that moved.
+function evenShelfPositions(shelfQty, p, H) {
+  const openTop = p.railH, openBot = H - p.t;
+  return Array.from({ length: shelfQty }, (_, idx) => Math.round(openTop + ((openBot - openTop) * (idx + 1)) / (shelfQty + 1)));
+}
+
 // Shelf pin hole positions (32mm spacing, DIN 1142)
 function shelfPinHoles(sideH, startFromTop = 37, spacing = 32) {
   const holes = [];
@@ -952,7 +963,7 @@ function buildNestingDxf(items, p) {
 }
 
 /* ----------------------------- Diagram ---------------------------- */
-function Elevation({ W, p, shelfQty, faces }) {
+function Elevation({ W, p, shelfQty, faces, shelfPositions, onShelfPositionsChange, onDrawerDivider }) {
   const t = p.t, H = p.sideH;
   const padX = Math.max(120, W * 0.22), padTop = 60, padBot = 150;
   const vbW = W + padX * 2, vbH = H + padTop + padBot;
@@ -965,15 +976,75 @@ function Elevation({ W, p, shelfQty, faces }) {
     const s = fs * 0.5;
     return <line x1={x - s} y1={y - s} x2={x + s} y2={y + s} stroke={getColors().amber} strokeWidth={fs * 0.07} />;
   };
+
+  // Drag-to-reposition: convert a pointer event's client coords into this
+  // SVG's own viewBox (mm) coordinate space via its screen transform, so
+  // dragging works correctly no matter how the SVG is scaled on the page.
+  const svgRef = React.useRef(null);
+  const toSvgY = (clientX, clientY) => {
+    const svg = svgRef.current;
+    if (!svg) return null;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return null;
+    const pt = svg.createSVGPoint();
+    pt.x = clientX; pt.y = clientY;
+    return pt.matrixTransform(ctm.inverse()).y;
+  };
+  const dragTracker = (onMove) => (e) => {
+    e.preventDefault();
+    const move = (ev) => {
+      const y = toSvgY(ev.clientX ?? ev.touches?.[0]?.clientX, ev.clientY ?? ev.touches?.[0]?.clientY);
+      if (y != null) onMove(y);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  const shelfPos = (shelfPositions && shelfPositions.length === shelfQty) ? shelfPositions : evenShelfPositions(shelfQty, p, H);
+  const shelfDraggable = shelfQty > 0 && typeof onShelfPositionsChange === "function";
   const shelves = [];
-  for (let i = 1; i <= shelfQty; i++) {
-    const y = openTop + ((openBot - openTop) * i) / (shelfQty + 1);
-    shelves.push(<rect key={i} x={ox + t} y={y - t / 2} width={W - 2 * t} height={t}
-      fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />);
+  for (let i = 0; i < shelfQty; i++) {
+    const y = oy + shelfPos[i];
+    const onShelfDrag = shelfDraggable ? dragTracker((svgY) => {
+      const yFromTop = Math.round(Math.min(Math.max(svgY - oy, openTop - oy + t), openBot - oy - t));
+      const next = shelfPos.slice();
+      next[i] = yFromTop;
+      onShelfPositionsChange(next);
+    }) : undefined;
+    shelves.push(
+      <g key={i}>
+        <rect x={ox + t} y={y - t / 2} width={W - 2 * t} height={t}
+          fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
+        {shelfDraggable && (
+          <rect x={ox + t} y={y - t / 2 - 10} width={W - 2 * t} height={t + 20}
+            fill="transparent" style={{ cursor: "ns-resize" }} onPointerDown={onShelfDrag} />
+        )}
+      </g>
+    );
+  }
+
+  // Drawer-front boundaries — draggable when onDrawerDivider is given
+  // (drawer-type cabinets only). Redistributes height between the two
+  // adjacent drawers; everything else about the stack stays put.
+  const drawerFaces = faces.filter((f) => f.kind === "drawer" || f.kind === "false");
+  const dividers = [];
+  if (typeof onDrawerDivider === "function") {
+    for (let i = 0; i < drawerFaces.length - 1; i++) {
+      const boundaryY = oy + drawerFaces[i].y + drawerFaces[i].h + (drawerFaces[i + 1].y - (drawerFaces[i].y + drawerFaces[i].h)) / 2;
+      const onDividerDrag = dragTracker((svgY) => onDrawerDivider(i, Math.round(svgY - oy)));
+      dividers.push(
+        <rect key={"div" + i} x={ox + t} y={boundaryY - 12} width={W - 2 * t} height={24}
+          fill="transparent" style={{ cursor: "ns-resize" }} onPointerDown={onDividerDrag} />
+      );
+    }
   }
 
   return (
-    <svg viewBox={`0 0 ${vbW} ${vbH}`} width="100%" preserveAspectRatio="xMidYMid meet"
+    <svg ref={svgRef} viewBox={`0 0 ${vbW} ${vbH}`} width="100%" preserveAspectRatio="xMidYMid meet"
       style={{ display: "block", borderRadius: 10, minWidth: 0, maxWidth: "100%" }} role="img"
       aria-label={`Front elevation of a ${W} mm cabinet`}>
       <rect x="0" y="0" width={vbW} height={vbH} fill={getColors().mat} />
@@ -1006,6 +1077,7 @@ function Elevation({ W, p, shelfQty, faces }) {
           )}
         </g>
       ))}
+      {dividers}
 
       {/* width dim */}
       <line x1={ox} y1={oy + H + 70} x2={ox + W} y2={oy + H + 70} stroke={getColors().amber} strokeWidth={fs * 0.06} />
@@ -1081,7 +1153,7 @@ function TopView({ W, D, p }) {
 }
 
 /* Profile (side) view: shows depth × height, with shelf/drawer partition lines */
-function SideView({ D, H, p, shelfQty, faces }) {
+function SideView({ D, H, p, shelfQty, faces, shelfPositions }) {
   const t = p.t;
   const pad = Math.max(90, Math.max(D, H) * 0.18);
   const vbW = D + pad * 2, vbH = H + pad * 2;
@@ -1093,9 +1165,12 @@ function SideView({ D, H, p, shelfQty, faces }) {
     const s = fs * 0.5;
     return <line x1={x - s} y1={y - s} x2={x + s} y2={y + s} stroke={getColors().amber} strokeWidth={fs * 0.07} />;
   };
+  // Same custom-or-even shelf positions as the elevation view, so a shelf
+  // dragged there shows at the matching height here too.
+  const shelfPos = (shelfPositions && shelfPositions.length === shelfQty) ? shelfPositions : evenShelfPositions(shelfQty, p, H);
   const shelves = [];
-  for (let i = 1; i <= shelfQty; i++) {
-    const y = openTop + ((openBot - openTop) * i) / (shelfQty + 1);
+  for (let i = 0; i < shelfQty; i++) {
+    const y = oy + shelfPos[i];
     shelves.push(<line key={i} x1={ox} y1={y} x2={ox + D} y2={y} stroke={getColors().panelEdge} strokeWidth={fs * 0.08} strokeDasharray={dash} />);
   }
   // Horizontal partitions from the front faces (door/drawer boundaries), same y positions
@@ -1312,7 +1387,7 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 22 }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Front</div>
-            <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces} />
+            <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces} shelfPositions={cab.shelfPositions} />
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Top</div>
@@ -1320,7 +1395,7 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Side</div>
-            <SideView D={D} H={H} p={p} shelfQty={cab.shelfQty} faces={data.faces} />
+            <SideView D={D} H={H} p={p} shelfQty={cab.shelfQty} faces={data.faces} shelfPositions={cab.shelfPositions} />
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Isometric</div>
@@ -1814,6 +1889,24 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
   const effectiveDoorH = p.doorH - buildUp;
   const heights = (cab.drawerHeights && cab.drawerHeights.length > 0) ? cab.drawerHeights : splitHeights(effectiveDoorH, cab.drawerCount || 3, p.doorGap);
 
+  // Drag-to-resize in the elevation preview: moving the divider between
+  // drawer i and i+1 redistributes height between just that pair, keeping
+  // their combined height (and every other drawer) unchanged.
+  const dragDrawerDivider = (i, boundaryYFromTop) => {
+    const gap = p.doorGap || 3;
+    const arr = heights.slice();
+    const MIN_H = 60;
+    const pairTotal = arr[i] + arr[i + 1];
+    if (pairTotal < 2 * MIN_H) return;
+    let topOfI = buildUp;
+    for (let k = 0; k < i; k++) topOfI += arr[k] + gap;
+    let newHi = Math.round(boundaryYFromTop - topOfI);
+    newHi = Math.max(MIN_H, Math.min(pairTotal - MIN_H, newHi));
+    arr[i] = newHi;
+    arr[i + 1] = pairTotal - newHi;
+    onChange({ drawerHeights: arr });
+  };
+
   // When base build-up (or door height) changes, rescale existing drawer heights
   // proportionally so the fronts keep filling the opening exactly.
   // Depends ONLY on effectiveDoorH — never on drawerHeights — so it cannot fight typing.
@@ -2090,7 +2183,10 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
       {data && cab.type !== "filler" && (
         <>
           <div className="cab-mat cab-noprint" style={{ marginBottom: 8, maxWidth: 380, width: "100%", minWidth: 0, overflow: "hidden" }}>
-            <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces} />
+            <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces}
+              shelfPositions={cab.shelfPositions}
+              onShelfPositionsChange={(next) => onChange({ shelfPositions: next })}
+              onDrawerDivider={cab.type === "drawers" ? dragDrawerDivider : undefined} />
           </div>
           <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
             <button onClick={() => setShowAllViews(true)} className="cab-noprint" style={{
