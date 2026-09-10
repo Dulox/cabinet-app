@@ -476,6 +476,7 @@ const translations = {
     "est.": "aprox.", "used": "usado", "incl.": "incl.", "kerf": "de corte",
     "parts may rotate": "las piezas pueden rotar", "grain fixed": "veta fija",
     "parts may rotate (grain-marked pieces kept fixed)": "las piezas pueden rotar (las piezas con veta se mantienen fijas)",
+    "Download DXF (CNC nesting)": "Descargar DXF (anidado CNC)",
     "part(s) bigger than a board!": "pieza(s) más grande(s) que un tablero!",
     "Layout estimate — real nesting varies. Buy at least one spare board for offcuts and mistakes.":
       "Estimado de despiece — el anidado real varía. Compra al menos un tablero extra para recortes y errores.",
@@ -825,6 +826,123 @@ function estimateBoards(items, p) {
   const used = items.reduce((s, it) => s + it.w * it.h, 0);
   const total = boards.length * BW * BH;
   return { boards: boards.length, oversize, utilization: total ? used / total : 0 };
+}
+
+/* Same shelf-packing heuristic as estimateBoards(), but also records where
+   each part actually landed (x,y,w,h + whether it got rotated), so a real
+   cutting layout can be drawn from it (DXF export) instead of just a board
+   count. Grain-locked items never take the rotated orientation, same rule
+   as estimateBoards(). */
+function packBoardsWithLayout(items, p) {
+  const BW = p.boardW, BH = p.boardH, k = p.kerf, rot = p.allowRotate;
+  let oversize = 0;
+  const parts = [];
+  items.forEach((it) => {
+    const w = it.w + k, h = it.h + k;
+    const canRotate = rot && !it.locked;
+    const fits = (w <= BW && h <= BH) || (canRotate && h <= BW && w <= BH);
+    if (!fits) { oversize++; return; }
+    parts.push({ ...it, w, h });
+  });
+  parts.sort((a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h));
+
+  const orientations = (pp) => {
+    const o = [{ w: pp.w, h: pp.h, rotated: false }];
+    if (rot && !pp.locked) o.push({ w: pp.h, h: pp.w, rotated: true });
+    return o.filter((d) => d.w <= BW && d.h <= BH);
+  };
+  const boards = [];
+  const placeOnBoard = (b, pp) => {
+    const os = orientations(pp);
+    for (const d of os)
+      for (const sh of b.shelves)
+        if (d.h <= sh.height && sh.usedW + d.w <= BW) {
+          b.rects.push({ x: sh.usedW, y: sh.y, w: d.w - k, h: d.h - k, rotated: d.rotated, item: pp });
+          sh.usedW += d.w;
+          return true;
+        }
+    let best = null;
+    for (const d of os)
+      if (d.w <= BW && b.usedH + d.h <= BH && (!best || d.h < best.h)) best = d;
+    if (best) {
+      const y = b.usedH;
+      b.rects.push({ x: 0, y, w: best.w - k, h: best.h - k, rotated: best.rotated, item: pp });
+      b.shelves.push({ height: best.h, usedW: best.w, y });
+      b.usedH += best.h;
+      return true;
+    }
+    return false;
+  };
+  parts.forEach((pp) => {
+    for (const b of boards) if (placeOnBoard(b, pp)) return;
+    const b = { shelves: [], usedH: 0, rects: [] };
+    boards.push(b);
+    placeOnBoard(b, pp);
+  });
+  return { boards, oversize };
+}
+
+/* ------------------------------- DXF ------------------------------- *
+ * Hand-written, dependency-free DXF R12 ASCII writer — same "no external
+ * library" approach as MiniPDF. Only LINE / CIRCLE / TEXT entities, which
+ * every DXF-reading CAM/CNC package supports back to the oldest versions.
+ * ------------------------------------------------------------------- */
+function dxfLine(x1, y1, x2, y2, layer) {
+  return `0\nLINE\n8\n${layer}\n10\n${x1}\n20\n${y1}\n30\n0.0\n11\n${x2}\n21\n${y2}\n31\n0.0\n`;
+}
+function dxfRect(x, y, w, h, layer) {
+  return dxfLine(x, y, x + w, y, layer) + dxfLine(x + w, y, x + w, y + h, layer)
+    + dxfLine(x + w, y + h, x, y + h, layer) + dxfLine(x, y + h, x, y, layer);
+}
+function dxfCircle(cx, cy, r, layer) {
+  return `0\nCIRCLE\n8\n${layer}\n10\n${cx}\n20\n${cy}\n30\n0.0\n40\n${r}\n`;
+}
+function dxfText(x, y, h, str, layer) {
+  const safe = String(str).replace(/[\r\n]/g, " ");
+  return `0\nTEXT\n8\n${layer}\n10\n${x}\n20\n${y}\n30\n0.0\n40\n${h}\n1\n${safe}\n`;
+}
+
+/* Builds one DXF document laying out every board packBoardsWithLayout()
+   placed parts on — boards side by side with a gap — with each part's
+   outline, a name/size label, and (Side panels only) the real 32mm shelf-
+   pin line already used elsewhere in the app. Hinge/cam-lock hole boring
+   isn't included: this app doesn't commit to exact hinge-system specs
+   (cup inset, distance from edge) anywhere else, and guessing those would
+   risk a bad CNC cut. */
+function buildNestingDxf(items, p) {
+  const { boards } = packBoardsWithLayout(items, p);
+  const BW = p.boardW, BH = p.boardH;
+  const GAP = 200; // mm between boards in the drawing
+  const PIN_INSET = 37, PIN_DIA = 5; // matches shelfPinHoles()'s own 37mm start + the app's documented 5mm bit
+  let ents = "";
+  boards.forEach((b, bi) => {
+    const ox = bi * (BW + GAP);
+    ents += dxfRect(ox, 0, BW, BH, "BOARD");
+    ents += dxfText(ox + 10, BH + 30, 60, `Board ${bi + 1}`, "BOARD");
+    b.rects.forEach((r) => {
+      const x = ox + r.x, y = r.y;
+      ents += dxfRect(x, y, r.w, r.h, "CUT");
+      ents += dxfText(x + 8, y + r.h - 40, 26, `${r.item.label || "Part"} ${Math.round(r.w)}x${Math.round(r.h)}`, "CUT");
+      // Shelf-pin line — Sides are always grain-locked (never rotated), so
+      // r.w/r.h map directly to the part's own depth/height, no need to
+      // branch on r.rotated here.
+      if (r.item.isSide) {
+        shelfPinHoles(r.item.sideH).forEach((yFromTop) => {
+          const holeY = y + r.h - yFromTop;
+          ents += dxfCircle(x + PIN_INSET, holeY, PIN_DIA / 2, "DRILL");
+          ents += dxfCircle(x + r.w - PIN_INSET, holeY, PIN_DIA / 2, "DRILL");
+        });
+      }
+    });
+  });
+  const header = "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n0\nENDSEC\n";
+  const tables = "0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLAYER\n70\n3\n"
+    + "0\nLAYER\n2\nBOARD\n70\n0\n62\n8\n6\nCONTINUOUS\n"
+    + "0\nLAYER\n2\nCUT\n70\n0\n62\n7\n6\nCONTINUOUS\n"
+    + "0\nLAYER\n2\nDRILL\n70\n0\n62\n1\n6\nCONTINUOUS\n"
+    + "0\nENDTAB\n0\nENDSEC\n";
+  const entities = "0\nSECTION\n2\nENTITIES\n" + ents + "0\nENDSEC\n";
+  return header + tables + entities + "0\nEOF\n";
 }
 
 /* ----------------------------- Diagram ---------------------------- */
@@ -4436,12 +4554,13 @@ export default function CabinetProject() {
         // Same rule the Desglose sheet uses to mark vetas: a part with a height
         // axis has directional grain and can't be rotated 90° when nesting.
         const locked = vetaAxis(x.aLabel, x.bLabel, x.a, x.b) !== "";
-        for (let i = 0; i < x.qty * cabQty; i++) items.push({ w: x.a, h: x.b, locked });
+        for (let i = 0; i < x.qty * cabQty; i++)
+          items.push({ w: x.a, h: x.b, locked, label: x.part, isSide: x.part === "Side", sideH: p.sideH });
       });
     });
     const p = (selectedCab && selectedCab.params) || DEFAULTS;
     const board = estimateBoards(items, p);
-    return { area, pieces, n, board, hbArea, hbPieces, shelfPins: totalShelfPins, hinges: totalHinges, slides: totalSlides, handles: totalHandles };
+    return { area, pieces, n, board, items, hbArea, hbPieces, shelfPins: totalShelfPins, hinges: totalHinges, slides: totalSlides, handles: totalHandles };
   }, [cabs, selectedCab]);
 
   const exportProjectToPDF = async () => {
@@ -4938,6 +5057,21 @@ export default function CabinetProject() {
           <div style={{ fontSize: 11, color: getColors().mut, marginTop: 4, opacity: 0.7 }}>
             {t("Layout estimate — real nesting varies. Buy at least one spare board for offcuts and mistakes.")}
           </div>
+          {summary.board.boards > 0 && (
+            <button onClick={() => {
+              const dxf = buildNestingDxf(summary.items, p);
+              const blob = new Blob([dxf], { type: "application/dxf" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url; a.download = `${currentProjectName || "cutlist"} - nesting.dxf`;
+              document.body.appendChild(a); a.click(); a.remove();
+              setTimeout(() => URL.revokeObjectURL(url), 5000);
+            }} className="cab-noprint" style={{
+              marginTop: 10, padding: "8px 14px", background: "transparent", color: getColors().amber,
+              border: `1px solid ${getColors().amber}`, borderRadius: 8, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
+              📐 {t("Download DXF (CNC nesting)")}
+            </button>
+          )}
           {summary.hbPieces > 0 && (
             <div style={{ borderTop: `1px solid ${getColors().hair}`, marginTop: 12, paddingTop: 12,
               display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8 }}>
