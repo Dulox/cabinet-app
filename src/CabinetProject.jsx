@@ -2531,12 +2531,15 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         if (o.ranura === "L") existing.rl = "X";
         if (o.ranura === "A") existing.ra = "X";
       } else {
+        const isHardboardPart = part.material === "hardboard";
         map.set(key, {
           id: key, largo: L, ancho: A, grosor: G, cant: qty, nombre: name,
           cabNums: new Set(cabNum != null ? [cabNum] : []),
-          // Canteado: banded on all 4 edges by default (waterproofing), regardless
-          // of part type — still editable by hand per cell.
-          cl1: "X", cl2: "X", ca1: "X", ca2: "X",
+          // Canteado: banded on all 4 edges by default (waterproofing) — except
+          // hardboard (thin back panel), which sits hidden in a groove and never
+          // gets edge banding. Still editable by hand per cell either way.
+          cl1: isHardboardPart ? "" : "X", cl2: isHardboardPart ? "" : "X",
+          ca1: isHardboardPart ? "" : "X", ca2: isHardboardPart ? "" : "X",
           vetas: o.vetas || "",
           // Ranuras: back-panel groove, marked on whichever single edge (Largo or Ancho) faces the back
           rl: o.ranura === "L" ? "X" : "",
@@ -2544,7 +2547,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
           // Bisagras: hinge drills into the door's own height edge, marked on whichever of Largo/Ancho that is
           hbl: o.bisagra === "L" ? "X" : "",
           hba: o.bisagra === "A" ? "X" : "",
-          material: (o && o.cabMaterial) || "", isHardboard: part.material === "hardboard",
+          material: (o && o.cabMaterial) || "", isHardboard: isHardboardPart,
           cabType: o.cabType || "",
         });
       }
