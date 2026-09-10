@@ -483,6 +483,10 @@ const translations = {
     "This share link looks invalid or corrupted.": "Este enlace parece inválido o dañado.",
     "Loaded shared project:": "Proyecto compartido cargado:",
     "Undo": "Deshacer", "Redo": "Rehacer",
+    "Depth comparison": "Comparación de profundidad", "Before": "Antes", "After": "Después",
+    "boards": "tableros", "board.": "tablero.", "boards.": "tableros.",
+    "Reducing depth": "Reducir la profundidad", "across every cabinet saves": "en todos los gabinetes ahorra",
+    "Apply to all cabinets": "Aplicar a todos los gabinetes",
     "part(s) bigger than a board!": "pieza(s) más grande(s) que un tablero!",
     "Layout estimate — real nesting varies. Buy at least one spare board for offcuts and mistakes.":
       "Estimado de despiece — el anidado real varía. Compra al menos un tablero extra para recortes y errores.",
@@ -843,6 +847,30 @@ function estimateBoards(items, p) {
   const used = items.reduce((s, it) => s + it.w * it.h, 0);
   const total = boards.length * BW * BH;
   return { boards: boards.length, oversize, utilization: total ? used / total : 0 };
+}
+
+/* Rebuilds the flat "one entry per physical piece" item list estimateBoards()
+   packs, the same way the material-total summary does, but with every
+   cabinet's depth (sideD) uniformly reduced by deltaMm first — the "what if
+   we ran this project 5/10/15mm shallower" simulation behind the depth
+   comparison suggestion. Cabinets without a usable width (fillers, blanks)
+   are skipped, same as the real summary. */
+function itemsForCabsWithDepthDelta(cabs, deltaMm) {
+  const items = [];
+  cabs.forEach((c) => {
+    const W = parseFloat(c.width);
+    const baseP = c.params || DEFAULTS;
+    const p = deltaMm ? { ...baseP, sideD: Math.max(250, baseP.sideD - deltaMm) } : baseP;
+    if (isNaN(W) || W <= 2 * p.t + 10) return;
+    const cabQty = c.qty || 1;
+    const d = buildCutList(W, p, c);
+    d.parts.forEach((x) => {
+      if (x.material === "hardboard") return;
+      const locked = vetaAxis(x.aLabel, x.bLabel, x.a, x.b) !== "";
+      for (let i = 0; i < x.qty * cabQty; i++) items.push({ w: x.a, h: x.b, locked });
+    });
+  });
+  return items;
 }
 
 /* Same shelf-packing heuristic as estimateBoards(), but also records where
@@ -4798,6 +4826,34 @@ export default function CabinetProject() {
     return { area, pieces, n, board, items, hbArea, hbPieces, shelfPins: totalShelfPins, hinges: totalHinges, slides: totalSlides, handles: totalHandles };
   }, [cabs, selectedCab]);
 
+  // Comparison view: try a handful of small uniform depth cuts across every
+  // cabinet and see if any of them save a whole board — same nesting math
+  // as the summary above, just re-run "what if the project were N mm
+  // shallower". Reports the smallest cut that helps; no suggestion if none
+  // of the candidates change the board count.
+  const depthSuggestion = useMemo(() => {
+    const p = (selectedCab && selectedCab.params) || DEFAULTS;
+    const baseline = summary.board;
+    for (const delta of [5, 10, 15, 20, 25, 30]) {
+      const items = itemsForCabsWithDepthDelta(cabs, delta);
+      if (items.length === 0) continue;
+      const board = estimateBoards(items, p);
+      if (board.boards < baseline.boards) {
+        return { delta, before: baseline, after: board, savedBoards: baseline.boards - board.boards };
+      }
+    }
+    return null;
+  }, [cabs, selectedCab, summary.board]);
+
+  const applyDepthSuggestion = () => {
+    if (!depthSuggestion) return;
+    const delta = depthSuggestion.delta;
+    setCabs((cs) => cs.map((c) => {
+      const base = c.params || DEFAULTS;
+      return { ...c, params: { ...base, sideD: Math.max(250, base.sideD - delta) } };
+    }));
+  };
+
   const exportProjectToPDF = async () => {
     try {
       const doc = new MiniPDF();
@@ -5300,6 +5356,34 @@ export default function CabinetProject() {
           <div style={{ fontSize: 11, color: getColors().mut, marginTop: 4, opacity: 0.7 }}>
             {t("Layout estimate — real nesting varies. Buy at least one spare board for offcuts and mistakes.")}
           </div>
+          {depthSuggestion && (
+            <div style={{ marginTop: 12, padding: "12px 14px", background: "rgba(46,160,67,0.08)",
+              border: `1px solid ${getColors().hair}`, borderRadius: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: getColors().amber, marginBottom: 8 }}>
+                💡 {t("Depth comparison")}
+              </div>
+              <div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontFamily: "'JetBrains Mono', monospace", fontSize: 12.5 }}>
+                <div>
+                  <div style={{ color: getColors().mut, fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("Before")}</div>
+                  <div>{depthSuggestion.before.boards} {t("boards")} · {Math.round(depthSuggestion.before.utilization * 100)}% {t("used")}</div>
+                </div>
+                <div>
+                  <div style={{ color: getColors().mut, fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    {t("After")} ({-depthSuggestion.delta}mm {t("depth")})</div>
+                  <div style={{ color: "#2ea043", fontWeight: 700 }}>
+                    {depthSuggestion.after.boards} {t("boards")} · {Math.round(depthSuggestion.after.utilization * 100)}% {t("used")}</div>
+                </div>
+              </div>
+              <div style={{ fontSize: 12, marginTop: 8, marginBottom: 10 }}>
+                {t("Reducing depth")} {depthSuggestion.delta}mm {t("across every cabinet saves")} {depthSuggestion.savedBoards} {t(depthSuggestion.savedBoards === 1 ? "board." : "boards.")}
+              </div>
+              <button onClick={applyDepthSuggestion} className="cab-noprint" style={{
+                padding: "7px 13px", background: getColors().buttonBg, color: getColors().buttonText,
+                border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                {t("Apply to all cabinets")}
+              </button>
+            </div>
+          )}
           {summary.board.boards > 0 && (
             <button onClick={() => {
               const dxf = buildNestingDxf(summary.items, p);
