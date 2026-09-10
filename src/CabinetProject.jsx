@@ -2579,13 +2579,11 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
       .sort((a, b) => b.largo - a.largo || b.ancho - a.ancho);
   };
 
-  const [rows, setRows] = React.useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem("savedDesgloseSheets") || "[]");
-      if (saved.length > 0 && saved[0].rows && saved[0].rows.length > 0) return saved[0].rows;
-    } catch {}
-    return buildRows(cabs);
-  });
+  // Always build fresh from the current project's cabinets on open — do NOT
+  // silently reuse a sheet saved earlier for a different project (that stale
+  // data used to load here and could show wrong quantities). Loading a past
+  // sheet on purpose is still available via "Hojas guardadas" → loadSheet().
+  const [rows, setRows] = React.useState(() => buildRows(cabs));
   const [globalMaterial, setGlobalMaterial] = React.useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("savedDesgloseSheets") || "[]");
