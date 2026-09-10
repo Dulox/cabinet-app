@@ -2526,13 +2526,8 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         existing.cant += qty;
         if (cabNum != null) existing.cabNums.add(cabNum);
         // Update flags when merging: if this variant should have the flag, mark it
-        if (o.hasBisagra && o.sideH) {
-          // Mark on the dimension closest to cabinet height
-          const distL = Math.abs(o.doorL - o.sideH);
-          const distA = Math.abs(o.doorA - o.sideH);
-          if (distL <= distA) { existing.hbl = "X"; }  // doorL is closer to sideH
-          else { existing.hba = "X"; }  // doorA is closer to sideH
-        }
+        if (o.bisagra === "L") existing.hbl = "X";
+        if (o.bisagra === "A") existing.hba = "X";
         if (o.ranura === "L") existing.rl = "X";
         if (o.ranura === "A") existing.ra = "X";
       } else {
@@ -2544,9 +2539,9 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
           // Ranuras: back-panel groove, marked on whichever single edge (Largo or Ancho) faces the back
           rl: o.ranura === "L" ? "X" : "",
           ra: o.ranura === "A" ? "X" : "",
-          // Bisagras: mark on dimension closest to cabinet height (where hinge attaches)
-          hbl: (o.hasBisagra && o.sideH && Math.abs(L - o.sideH) <= Math.abs(A - o.sideH)) ? "X" : "",
-          hba: (o.hasBisagra && o.sideH && Math.abs(A - o.sideH) < Math.abs(L - o.sideH)) ? "X" : "",
+          // Bisagras: hinge drills into the door's own height edge, marked on whichever of Largo/Ancho that is
+          hbl: o.bisagra === "L" ? "X" : "",
+          hba: o.bisagra === "A" ? "X" : "",
           material: (o && o.cabMaterial) || "", isHardboard: part.material === "hardboard",
           cabType: o.cabType || "",
         });
@@ -2598,16 +2593,17 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         if (part.part === "Side") {
           const totalSides = part.qty * cabQty;      // usually 2 × cabQty
           // Emit all sides as plain, no hinge marking
-          emitPart(map, "Side", L, A, G, totalSides, part, { ranura, hasBisagra: false, cabMaterial, cabType: cab.type, vetas }, cabNum);
+          emitPart(map, "Side", L, A, G, totalSides, part, { ranura, cabMaterial, cabType: cab.type, vetas }, cabNum);
           return;
         }
 
         const sideLabel = part.part;
         const totalQty = part.qty * cabQty;
-        // Mark door parts: bisagra attaches on whichever dimension is closer to cabinet height
+        // Mark door parts: bisagra drills into the door's own height edge (vetas already
+        // tells us whether that edge became Largo ("V") or Ancho ("H") for this part)
         const isDoorPart = sideLabel.includes("Door");
-        const sideH = p.sideH;  // cabinet's side panel height
-        emitPart(map, sideLabel, L, A, G, totalQty, part, { ranura, hasBisagra: isDoorPart, cabMaterial, cabType: cab.type, sideH, doorL: L, doorA: A, vetas }, cabNum);
+        const bisagra = isDoorPart ? (vetas === "V" ? "L" : "A") : "";
+        emitPart(map, sideLabel, L, A, G, totalQty, part, { ranura, bisagra, cabMaterial, cabType: cab.type, vetas }, cabNum);
       });
     });
     return Array.from(map.values())
