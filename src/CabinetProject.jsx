@@ -3257,7 +3257,14 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 await new Promise((r) => { script.onload = r; });
               }
               const XLSX = window.XLSX;
-              const headers = ["No","Cab.","Material","Type","Nombre","Vetas","Largo (mm)","Ancho (mm)","Grosor (mm)","Cant.","L1","L2","A1","A2","R-L","R-A","HB-L","HB-A"];
+              const fullHeaders = ["No","Cab.","Material","Type","Nombre","Vetas","Largo (mm)","Ancho (mm)","Grosor (mm)","Cant.","L1","L2","A1","A2","R-L","R-A","HB-L","HB-A"];
+              // Production copy: same data, just without the Cab./Type/Nombre columns
+              const prodHeaders = fullHeaders.filter(h => h !== "Cab." && h !== "Type" && h !== "Nombre");
+              const colWidths = {
+                "No": 4, "Cab.": 24, "Material": 12, "Type": 22, "Nombre": 6, "Vetas": 10,
+                "Largo (mm)": 10, "Ancho (mm)": 9, "Grosor (mm)": 6, "Cant.": 4,
+                "L1": 4, "L2": 4, "A1": 4, "A2": 4, "R-L": 4, "R-A": 5, "HB-L": 5, "HB-A": 5,
+              };
               const data = sortedRows.map((row, i) => ({
                 "No": i + 1,
                 "Cab.": row.cabNums && row.cabNums.length > 0 ? row.cabNums.join(",") : "",
@@ -3274,15 +3281,15 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 "R-L": row.rl || "", "R-A": row.ra || "",
                 "HB-L": row.hbl || "", "HB-A": row.hba || "",
               }));
-              const ws = XLSX.utils.json_to_sheet(data, { header: headers });
-              // Set column widths
-              ws["!cols"] = [
-                {wch:4},{wch:24},{wch:12},{wch:22},{wch:6},{wch:10},{wch:10},{wch:9},{wch:6},
-                {wch:4},{wch:4},{wch:4},{wch:4},{wch:4},{wch:4},{wch:5},{wch:5}
-              ];
-              const wb = XLSX.utils.book_new();
-              XLSX.utils.book_append_sheet(wb, ws, "Desglose");
-              XLSX.writeFile(wb, (activeProjectName || "desglose") + ".xlsx");
+              const saveXlsx = (headers, suffix) => {
+                const ws = XLSX.utils.json_to_sheet(data, { header: headers });
+                ws["!cols"] = headers.map(h => ({ wch: colWidths[h] || 10 }));
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Desglose");
+                XLSX.writeFile(wb, `${activeProjectName || "desglose"} - ${suffix}.xlsx`);
+              };
+              saveXlsx(fullHeaders, "full");
+              saveXlsx(prodHeaders, "production");
             }}
               style={{ padding: "9px 20px", border: "none", borderRadius: 8, background: "#1D6F42",
                 color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
