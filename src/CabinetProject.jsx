@@ -1226,6 +1226,179 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
 }
 
 
+/* Real 3D preview: a rotatable/zoomable Three.js model of the closed
+   cabinet, built from the same width/depth/height + faces data as the
+   other views. Three.js (with OrbitControls) is dynamically imported
+   only when this modal opens, so it never adds to the main bundle for
+   users who don't use it — same "load on demand" pattern already used
+   for the Excel export's SheetJS script. Geometry is a simplified box
+   model (carcass panels + door/drawer fronts), not a literal joinery
+   model — good enough for a visual walk-around, not for fabrication. */
+function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
+  const mountRef = React.useRef(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    let renderer, scene, camera, controls, frameId, resizeObserver;
+    let disposed = false;
+
+    (async () => {
+      let THREE, OrbitControls;
+      try {
+        THREE = await import("three");
+        ({ OrbitControls } = await import("three/examples/jsm/controls/OrbitControls.js"));
+      } catch (e) {
+        if (!disposed) { setError("Could not load the 3D viewer."); setLoading(false); }
+        return;
+      }
+      if (disposed || !mountRef.current) return;
+
+      const H = p.sideH, D = p.sideD;
+      const el = mountRef.current;
+      const w0 = el.clientWidth || 800, h0 = el.clientHeight || 560;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x1b1c20);
+
+      camera = new THREE.PerspectiveCamera(40, w0 / h0, 10, 20000);
+      const diag = Math.sqrt(W * W + D * D + H * H);
+      camera.position.set(W * 0.9, H * 0.85, D * 2.1 + diag * 0.3);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(w0, h0);
+      el.innerHTML = "";
+      el.appendChild(renderer.domElement);
+
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.target.set(0, H / 2, 0);
+      controls.minDistance = Math.max(200, diag * 0.4);
+      controls.maxDistance = diag * 4;
+      controls.maxPolarAngle = Math.PI * 0.49;
+      controls.update();
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+      const key = new THREE.DirectionalLight(0xffffff, 0.9);
+      key.position.set(W * 1.2, H * 2, D * 2.5);
+      scene.add(key);
+      const fill = new THREE.DirectionalLight(0xffffff, 0.35);
+      fill.position.set(-W, H, -D);
+      scene.add(fill);
+
+      // Ground shadow-ish disc for grounding, no real shadow map (keeps it cheap)
+      const ground = new THREE.Mesh(
+        new THREE.CircleGeometry(diag * 0.9, 48),
+        new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25 })
+      );
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -0.5;
+      scene.add(ground);
+
+      const panelMat = new THREE.MeshStandardMaterial({ color: 0xd9d2c1, roughness: 0.75, metalness: 0.02 });
+      const doorMat = new THREE.MeshStandardMaterial({ color: 0xe7e1d3, roughness: 0.6, metalness: 0.02 });
+      const blindMat = new THREE.MeshStandardMaterial({ color: 0xc24628, roughness: 0.7, metalness: 0.02 });
+      const edgeMat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.18 });
+
+      const group = new THREE.Group();
+      // Cabinet coords: x centered on width, y from floor(0) to H, z centered on depth
+      const box = (cx, cy, cz, sx, sy, sz, mat) => {
+        const geo = new THREE.BoxGeometry(Math.max(sx, 1), Math.max(sy, 1), Math.max(sz, 1));
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(cx, cy, cz);
+        group.add(mesh);
+        const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgeMat);
+        edges.position.copy(mesh.position);
+        group.add(edges);
+      };
+
+      const innerW = W - 2 * t;
+      // Sides
+      box(-W / 2 + t / 2, H / 2, 0, t, H, D, panelMat);
+      box(W / 2 - t / 2, H / 2, 0, t, H, D, panelMat);
+      // Bottom
+      box(0, t / 2, 0, innerW, t, D, panelMat);
+      // Back (thin strip near the back edge)
+      box(0, H / 2, -D / 2 + t / 2, innerW, H - t, t, panelMat);
+      // Top rail (front stretcher)
+      const railH = p.railH || 100;
+      box(0, H - railH / 2, D / 2 - t / 2, innerW, railH, t, panelMat);
+
+      // Door / drawer fronts from the same faces data as the 2D elevation
+      (data.faces || []).forEach((f) => {
+        const fw = f.w, fh = f.h, doorT = t;
+        const cx = f.x + fw / 2 - W / 2;
+        const cy = H - f.y - fh / 2;
+        const cz = D / 2 + doorT / 2;
+        box(cx, cy, cz, fw, fh, doorT, f.kind === "blind" ? blindMat : doorMat);
+      });
+
+      group.position.y = 0;
+      scene.add(group);
+
+      const animate = () => {
+        if (disposed) return;
+        controls.update();
+        renderer.render(scene, camera);
+        frameId = requestAnimationFrame(animate);
+      };
+      animate();
+      setLoading(false);
+
+      const resize = () => {
+        if (!mountRef.current || disposed) return;
+        const w1 = mountRef.current.clientWidth || w0, h1 = mountRef.current.clientHeight || h0;
+        camera.aspect = w1 / h1;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w1, h1);
+      };
+      resizeObserver = new ResizeObserver(resize);
+      resizeObserver.observe(el);
+    })();
+
+    return () => {
+      disposed = true;
+      if (frameId) cancelAnimationFrame(frameId);
+      if (resizeObserver) resizeObserver.disconnect();
+      if (controls) controls.dispose();
+      if (renderer) {
+        renderer.dispose();
+        renderer.domElement?.remove();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2100,
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+      onClick={onClose}>
+      <div style={{ background: "#17181c", borderRadius: 16, padding: 16, width: "100%", maxWidth: 1000,
+        boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}
+        onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>
+            🧊 3D preview — drag to rotate, scroll to zoom
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#9a9ba2", lineHeight: 1 }}>×</button>
+        </div>
+        <div ref={mountRef} style={{ width: "100%", height: "62vh", minHeight: 380, borderRadius: 10, overflow: "hidden", position: "relative" }}>
+          {loading && !error && (
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#9a9ba2", fontSize: 13, background: "#1b1c20" }}>Loading 3D viewer…</div>
+          )}
+          {error && (
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#e06a5a", fontSize: 13, background: "#1b1c20", padding: 20, textAlign: "center" }}>{error}</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function NumField({ label, value, onChange, suffix = "mm", w = 92 }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -1377,6 +1550,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
   const data = valid ? buildCutList(W, p, cab) : null;
   const [pinsOpen, setPinsOpen] = useState(false);
   const [showAllViews, setShowAllViews] = useState(false);
+  const [show3D, setShow3D] = useState(false);
 
   const pickType = (e) => {
     const k = e.target.value, s = TYPES[k].set;
@@ -1690,13 +1864,23 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
           <div className="cab-mat cab-noprint" style={{ marginBottom: 8, maxWidth: 380, width: "100%", minWidth: 0, overflow: "hidden" }}>
             <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces} />
           </div>
-          <button onClick={() => setShowAllViews(true)} className="cab-noprint" style={{
-            marginBottom: 12, padding: "8px 14px", background: getColors().buttonBg, color: getColors().buttonText,
-            border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
-            ⛶ {t ? t("All views & dimensions") : "All views & dimensions"}
-          </button>
+          <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+            <button onClick={() => setShowAllViews(true)} className="cab-noprint" style={{
+              padding: "8px 14px", background: getColors().buttonBg, color: getColors().buttonText,
+              border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
+              ⛶ {t ? t("All views & dimensions") : "All views & dimensions"}
+            </button>
+            <button onClick={() => setShow3D(true)} className="cab-noprint" style={{
+              padding: "8px 14px", background: getColors().buttonBg, color: getColors().buttonText,
+              border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
+              🧊 {t ? t("3D view") : "3D view"}
+            </button>
+          </div>
           {showAllViews && (
             <AllViewsModal cab={cab} W={W} p={p} data={data} t={t} idx={index} onClose={() => setShowAllViews(false)} />
+          )}
+          {show3D && (
+            <Cabinet3DModal cab={cab} W={W} p={p} data={data} t={t} onClose={() => setShow3D(false)} />
           )}
           <div style={{ border: `1px solid ${getColors().hair}`, borderRadius: 10, overflow: "hidden", background: "#fff" }}>
             {data.parts.map((x, i) => (
