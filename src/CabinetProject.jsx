@@ -1031,6 +1031,20 @@ function vetasFor(a, b) {
   return a >= b ? "V" : "H";
 }
 
+// Grain always runs along the physically wider/longer edge of a panel —
+// but that edge can be either the cabinet's vertical (height) axis or one
+// of its horizontal axes (width/depth/length), so the resulting label
+// varies per part. Parts with no height axis at all (bottom/top/rails,
+// which lie flat) have no vertical face to grain-match, so left unmarked.
+function vetaAxis(aLabel, bLabel, a, b) {
+  const aIsHeight = aLabel === "height";
+  const bIsHeight = bLabel === "height";
+  if (!aIsHeight && !bIsHeight) return "";
+  const heightVal = aIsHeight ? a : b;
+  const otherVal = aIsHeight ? b : a;
+  return heightVal >= otherVal ? "V" : "H";
+}
+
 function PartDiagram({ a, b, size = 60 }) {
   const long = Math.max(a, b), short = Math.min(a, b);
   const aspect = short / long;
@@ -2511,7 +2525,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
           id: key, largo: L, ancho: A, grosor: G, cant: qty, nombre: name,
           cabNums: new Set(cabNum != null ? [cabNum] : []),
           cl1: "X", cl2: "X", ca1: "X", ca2: "X",
-          vetas: "",
+          vetas: o.vetas || "",
           // Ranuras: auto-mark on parts whose height matches cabinet height (back panel groove)
           rl: o.hasRanura ? "X" : "",
           ra: o.hasRanura ? "X" : "",
@@ -2548,6 +2562,11 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
       if (isNaN(W) || W <= 2 * p.t + 10) return;
       const d = buildCutList(W, p, cab);
       const cabMaterial = cab.material || "";
+      // Reference grain direction for this cabinet (from the Side panels' own
+      // height vs. depth) — flat parts with no height axis of their own
+      // (Bottom, Top, ...) follow this so the whole cabinet's grain runs the
+      // same way, instead of being left unmarked.
+      const cabVetas = vetaAxis("depth", "height", p.sideD, p.sideH);
       d.parts.forEach((part) => {
         const L = Math.round(Math.max(part.a, part.b));
         const A = Math.round(Math.min(part.a, part.b));
@@ -2559,10 +2578,12 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
 
         // Side panels: all sides are plain (no "with doors" variant).
         // Doors will be marked with X in HB-L/HB-A to show they're fixed to the side.
+        const vetas = vetaAxis(part.aLabel, part.bLabel, part.a, part.b) || cabVetas;
+
         if (part.part === "Side") {
           const totalSides = part.qty * cabQty;      // usually 2 × cabQty
           // Emit all sides as plain, no hinge marking
-          emitPart(map, "Side", L, A, G, totalSides, part, { hasRanura: true, hasBisagra: false, cabMaterial, cabType: cab.type }, cabNum);
+          emitPart(map, "Side", L, A, G, totalSides, part, { hasRanura: true, hasBisagra: false, cabMaterial, cabType: cab.type, vetas }, cabNum);
           return;
         }
 
@@ -2571,7 +2592,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         // Mark door parts: bisagra attaches on whichever dimension is closer to cabinet height
         const isDoorPart = sideLabel.includes("Door");
         const sideH = p.sideH;  // cabinet's side panel height
-        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: isDoorPart, cabMaterial, cabType: cab.type, sideH, doorL: L, doorA: A }, cabNum);
+        emitPart(map, sideLabel, L, A, G, totalQty, part, { hasRanura, hasBisagra: isDoorPart, cabMaterial, cabType: cab.type, sideH, doorL: L, doorA: A, vetas }, cabNum);
       });
     });
     return Array.from(map.values())
