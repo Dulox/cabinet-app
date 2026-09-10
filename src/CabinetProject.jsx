@@ -475,6 +475,7 @@ const translations = {
     "Boards needed": "Tableros necesarios",
     "est.": "aprox.", "used": "usado", "incl.": "incl.", "kerf": "de corte",
     "parts may rotate": "las piezas pueden rotar", "grain fixed": "veta fija",
+    "parts may rotate (grain-marked pieces kept fixed)": "las piezas pueden rotar (las piezas con veta se mantienen fijas)",
     "part(s) bigger than a board!": "pieza(s) más grande(s) que un tablero!",
     "Layout estimate — real nesting varies. Buy at least one spare board for offcuts and mistakes.":
       "Estimado de despiece — el anidado real varía. Compra al menos un tablero extra para recortes y errores.",
@@ -788,15 +789,19 @@ function estimateBoards(items, p) {
   const parts = [];
   items.forEach((it) => {
     const w = it.w + k, h = it.h + k;
-    const fits = (w <= BW && h <= BH) || (rot && h <= BW && w <= BH);
+    // Grain-locked parts (vetas marked V/H) can never rotate 90°, even when
+    // "allowRotate" is on for the rest of the sheet — rotating would run the
+    // grain the wrong way.
+    const canRotate = rot && !it.locked;
+    const fits = (w <= BW && h <= BH) || (canRotate && h <= BW && w <= BH);
     if (!fits) { oversize++; return; }
-    parts.push({ w, h });
+    parts.push({ w, h, locked: it.locked });
   });
   parts.sort((a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h));
 
   const orientations = (pp) => {
     const o = [{ w: pp.w, h: pp.h }];
-    if (rot) o.push({ w: pp.h, h: pp.w });
+    if (rot && !pp.locked) o.push({ w: pp.h, h: pp.w });
     return o.filter((d) => d.w <= BW && d.h <= BH);
   };
   const boards = [];
@@ -4428,7 +4433,10 @@ export default function CabinetProject() {
       totalHandles += d.hardware.handles * cabQty;
       d.parts.forEach((x) => {
         if (x.material === "hardboard") return;
-        for (let i = 0; i < x.qty * cabQty; i++) items.push({ w: x.a, h: x.b });
+        // Same rule the Desglose sheet uses to mark vetas: a part with a height
+        // axis has directional grain and can't be rotated 90° when nesting.
+        const locked = vetaAxis(x.aLabel, x.bLabel, x.a, x.b) !== "";
+        for (let i = 0; i < x.qty * cabQty; i++) items.push({ w: x.a, h: x.b, locked });
       });
     });
     const p = (selectedCab && selectedCab.params) || DEFAULTS;
@@ -4924,7 +4932,7 @@ export default function CabinetProject() {
               ≈ {summary.board.boards}</span>
           </div>
           <div style={{ fontSize: 11.5, color: getColors().mut, marginTop: 6, fontFamily: "'JetBrains Mono', monospace" }}>
-            {t("est.")} {Math.round(summary.board.utilization * 100)}% {t("used")} · {t("incl.")} {p.kerf}mm {t("kerf")}{p.allowRotate ? ` · ${t("parts may rotate")}` : ` · ${t("grain fixed")}`}
+            {t("est.")} {Math.round(summary.board.utilization * 100)}% {t("used")} · {t("incl.")} {p.kerf}mm {t("kerf")}{p.allowRotate ? ` · ${t("parts may rotate (grain-marked pieces kept fixed)")}` : ` · ${t("grain fixed")}`}
             {summary.board.oversize > 0 ? ` · ${summary.board.oversize} ${t("part(s) bigger than a board!")}` : ""}
           </div>
           <div style={{ fontSize: 11, color: getColors().mut, marginTop: 4, opacity: 0.7 }}>
