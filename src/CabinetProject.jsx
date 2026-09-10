@@ -2534,7 +2534,13 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         map.set(key, {
           id: key, largo: L, ancho: A, grosor: G, cant: qty, nombre: name,
           cabNums: new Set(cabNum != null ? [cabNum] : []),
-          cl1: "X", cl2: "X", ca1: "X", ca2: "X",
+          // Canteado: doors/fronts banded on all 4 edges, front-facing structural
+          // panels (Side/Top/Bottom/Shelf/Separator) on just their front edge,
+          // hidden/structural parts (Rail, Back, ...) on none.
+          cl1: (o.band === "all" || o.band === "frontL") ? "X" : "",
+          cl2: o.band === "all" ? "X" : "",
+          ca1: (o.band === "all" || o.band === "frontA") ? "X" : "",
+          ca2: o.band === "all" ? "X" : "",
           vetas: o.vetas || "",
           // Ranuras: back-panel groove, marked on whichever single edge (Largo or Ancho) faces the back
           rl: o.ranura === "L" ? "X" : "",
@@ -2559,7 +2565,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         if (fW > 0 && fH > 0) {
           const L = Math.max(fW, fH), A = Math.min(fW, fH);
           const fakePart = { material: "melamine" };
-          emitPart(map, "Filler", L, A, fT, cabQty, fakePart, { cabMaterial: cab.material || "" }, cabNum);
+          emitPart(map, "Filler", L, A, fT, cabQty, fakePart, { band: "all", cabMaterial: cab.material || "" }, cabNum);
           // Override grosor since emitPart uses a fixed G — update it after
           const key = "Filler|" + L + "-" + A + "-" + fT;
           if (map.has(key)) map.get(key).grosor = fT;
@@ -2582,9 +2588,24 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         const A = Math.round(Math.min(part.a, part.b));
         const G = part.material === "hardboard" ? Math.round(p.grooveDepth || 5.5) : p.t;
 
-        // Auto-detect ranura (back panel groove) and bisagra (hinge drilling)
-        const ranuraParts = new Set(["Side", "Bottom", "Top"]);
-        const ranura = ranuraParts.has(part.part) ? ranuraSide(part.aLabel, part.bLabel, part.a, part.b) : "";
+        // Non-depth axis — used both for the back-panel groove (ranura) and
+        // for which single edge gets front edge-banding.
+        const nonDepthAxis = ranuraSide(part.aLabel, part.bLabel, part.a, part.b);
+
+        // Ranura only applies when this cabinet actually has a grooved-in thin
+        // hardboard back — a full melamine back is screwed on, not grooved in.
+        const grooveParts = new Set(["Side", "Bottom", "Top"]);
+        const ranura = (p.backType === "thin" && grooveParts.has(part.part)) ? nonDepthAxis : "";
+
+        // Canteado: doors/fronts get all 4 edges banded; front-facing structural
+        // panels (Side/Top/Bottom/Shelf/Separator) get just their front edge
+        // (same axis as the groove — the opposite edge along it); everything
+        // hidden/structural (Rail, Back, ...) gets none.
+        const bandAllParts = new Set(["Door", "Door (pair)", "Door (flap, stacked)", "False front", "False drawer front", "Drawer front", "Blind / filler panel"]);
+        const bandFrontParts = new Set(["Side", "Top", "Bottom", "Shelf", "Separator (fixed)"]);
+        const band = bandAllParts.has(part.part) ? "all"
+          : bandFrontParts.has(part.part) ? (nonDepthAxis === "L" ? "frontL" : nonDepthAxis === "A" ? "frontA" : "")
+          : "";
 
         // Side panels: all sides are plain (no "with doors" variant).
         // Doors will be marked with X in HB-L/HB-A to show they're fixed to the side.
@@ -2593,7 +2614,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         if (part.part === "Side") {
           const totalSides = part.qty * cabQty;      // usually 2 × cabQty
           // Emit all sides as plain, no hinge marking
-          emitPart(map, "Side", L, A, G, totalSides, part, { ranura, cabMaterial, cabType: cab.type, vetas }, cabNum);
+          emitPart(map, "Side", L, A, G, totalSides, part, { ranura, band, cabMaterial, cabType: cab.type, vetas }, cabNum);
           return;
         }
 
@@ -2603,7 +2624,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         // tells us whether that edge became Largo ("V") or Ancho ("H") for this part)
         const isDoorPart = sideLabel.includes("Door");
         const bisagra = isDoorPart ? (vetas === "V" ? "L" : "A") : "";
-        emitPart(map, sideLabel, L, A, G, totalQty, part, { ranura, bisagra, cabMaterial, cabType: cab.type, vetas }, cabNum);
+        emitPart(map, sideLabel, L, A, G, totalQty, part, { ranura, bisagra, band, cabMaterial, cabType: cab.type, vetas }, cabNum);
       });
     });
     return Array.from(map.values())
