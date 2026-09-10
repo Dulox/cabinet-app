@@ -1386,7 +1386,12 @@ function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#9a9ba2", lineHeight: 1 }}>×</button>
         </div>
-        <div ref={mountRef} style={{ width: "100%", height: "62vh", minHeight: 380, borderRadius: 10, overflow: "hidden", position: "relative" }}>
+        <div style={{ width: "100%", height: "62vh", minHeight: 380, borderRadius: 10, overflow: "hidden", position: "relative" }}>
+          {/* Exclusively owned by the imperative Three.js code below — never
+              gets React-rendered children, so React and the manual DOM
+              mutation never fight over the same node (that mismatch caused
+              a "removeChild: not a child of this node" crash on close). */}
+          <div ref={mountRef} style={{ position: "absolute", inset: 0 }} />
           {loading && !error && (
             <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
               color: "#9a9ba2", fontSize: 13, background: "#1b1c20" }}>Loading 3D viewer…</div>
