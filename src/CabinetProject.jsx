@@ -487,6 +487,9 @@ const translations = {
     "boards": "tableros", "board.": "tablero.", "boards.": "tableros.",
     "Reducing depth": "Reducir la profundidad", "across every cabinet saves": "en todos los gabinetes ahorra",
     "Apply to all cabinets": "Aplicar a todos los gabinetes",
+    "Assembly guide": "Guía de armado", "steps done": "pasos completados",
+    "Not enough part data to build a guide for this cabinet.": "No hay suficientes datos de piezas para generar una guía de este gabinete.",
+    "Reset progress": "Reiniciar progreso",
     "part(s) bigger than a board!": "pieza(s) más grande(s) que un tablero!",
     "Layout estimate — real nesting varies. Buy at least one spare board for offcuts and mistakes.":
       "Estimado de despiece — el anidado real varía. Compra al menos un tablero extra para recortes y errores.",
@@ -1720,6 +1723,140 @@ function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
   );
 }
 
+/* Sequences the already-computed cut list into a hand-cabinetmaking build
+   order, with real dimensions/counts pulled from data.parts and
+   data.hardware rather than invented specs. Deliberately stays at the same
+   level of detail the rest of the app already commits to (e.g. no hinge
+   cup positions — see buildNestingDxf's own note on that) so nothing here
+   promises fabrication precision the app doesn't actually have. */
+function buildAssemblySteps(cab, p, data) {
+  if (!data || cab.type === "filler") return [];
+  const steps = [];
+  const findPart = (name) => data.parts.find((x) => x.part === name);
+  const fmt = (part) => `${Math.round(part.a)}×${Math.round(part.b)}mm`;
+  const side = findPart("Side");
+  const bottom = findPart("Bottom");
+  const backPart = data.parts.find((x) => (x.part || "").startsWith("Back"));
+  const railParts = data.parts.filter((x) => (x.part || "").startsWith("Rail"));
+  const blindPart = findPart("Blind / filler panel");
+  const shelfQty = cab.shelfQty || 0;
+  const isDrawers = cab.type === "drawers";
+
+  if (shelfQty > 0 && side) {
+    const holes = shelfPinHoles(p.sideH);
+    steps.push({ title: "Drill shelf-pin holes",
+      detail: `On the inside face of both Side panels (${fmt(side)}), drill ${holes.length} holes per row — 5mm diameter, starting ${holes[0]}mm from the top, 32mm spacing — one row near the front edge, one near the back.` });
+  }
+  if (bottom && side) {
+    steps.push({ title: "Attach the Bottom between the Sides",
+      detail: `Fix the Bottom panel (${fmt(bottom)}) flush with the bottom and back edges of both Side panels (${fmt(side)}) — glue + confirmat screws (or dowels), checking square as you go.` });
+  }
+  if (backPart) {
+    if (p.backType === "thin") {
+      steps.push({ title: "Slide the Back panel into the grooves",
+        detail: `The ${fmt(backPart)} hardboard Back slides into the grooves in the Sides (and Bottom) as you bring the carcass together — fit it before the Bottom joint's glue sets.` });
+    } else {
+      steps.push({ title: "Attach the Back panel",
+        detail: `Once the carcass is square, screw the ${fmt(backPart)} melamine Back onto the rear edges of the Sides (and Bottom) — this also locks the cabinet square.` });
+    }
+  }
+  if (railParts.length > 0) {
+    steps.push({ title: railParts.length > 1 ? "Attach the top rails" : "Attach the top rail",
+      detail: `Fix ${railParts.map(fmt).join(" and ")} across the front top edge between the Sides, flush with the top.` });
+  }
+  if (blindPart) {
+    steps.push({ title: "Attach the blind/filler panel",
+      detail: `Fix the ${fmt(blindPart)} blind panel to close off the non-door side of the opening before hanging the door.` });
+  }
+  steps.push({ title: "Square the carcass",
+    detail: "Measure both corner-to-corner diagonals — they should match. Adjust before any glue sets." });
+  if (shelfQty > 0) {
+    steps.push({ title: "Fit shelf pins and drop in the shelves",
+      detail: `Insert ${data.hardware.shelfPins} shelf pins (4 per shelf) into the drilled holes, then set the ${shelfQty} shelf${shelfQty > 1 ? "ves" : ""} on top.` });
+  }
+  if (isDrawers) {
+    if (data.hardware.drawerSlides > 0) {
+      steps.push({ title: "Install drawer slides",
+        detail: `Mount ${data.hardware.drawerSlides} pair${data.hardware.drawerSlides > 1 ? "s" : ""} of slides on the inside faces of the Sides, spaced to match your ${cab.drawerCount || 3} drawer fronts.` });
+    }
+    steps.push({ title: "Build and hang the drawer boxes",
+      detail: "Assemble each drawer box, mount it on its slide pair, then attach the drawer front — check reveals are even top to bottom before final fixing." });
+  } else {
+    const doorPart = data.parts.find((x) => (x.part || "").startsWith("Door"));
+    if (doorPart && data.hardware.hinges > 0) {
+      steps.push({ title: "Mount hinges and hang the doors",
+        detail: `Bore hinge cups and mount ${data.hardware.hinges} hinges (2 per door) on the door(s) (${fmt(doorPart)}), then hang on the marked hinge edge.` });
+    }
+  }
+  if (data.hardware.handles > 0) {
+    steps.push({ title: "Attach handles / knobs",
+      detail: `Fit ${data.hardware.handles} handle${data.hardware.handles > 1 ? "s" : ""} to the doors/drawer fronts.` });
+  }
+  return steps;
+}
+
+function AssemblyGuideModal({ cab, p, data, t, projectId, onClose }) {
+  const steps = React.useMemo(() => buildAssemblySteps(cab, p, data), [cab, p, data]);
+  const storageKey = `assemblyProgress:${projectId || "local"}:${cab.id}`;
+  const [checked, setChecked] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem(storageKey) || "[]"); } catch { return []; }
+  });
+  React.useEffect(() => {
+    try { localStorage.setItem(storageKey, JSON.stringify(checked)); } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checked]);
+  const toggle = (i) => setChecked((c) => { const next = c.slice(); next[i] = !next[i]; return next; });
+  const doneCount = checked.filter(Boolean).length;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2100,
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+      onClick={onClose}>
+      <div style={{ background: "#17181c", borderRadius: 16, padding: 20, width: "100%", maxWidth: 640,
+        maxHeight: "86vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}
+        onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>
+            📋 {t ? t("Assembly guide") : "Assembly guide"}
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#9a9ba2", lineHeight: 1 }}>×</button>
+        </div>
+        {steps.length > 0 && (
+          <div style={{ fontSize: 12, color: "#9a9ba2", marginBottom: 14 }}>
+            {doneCount}/{steps.length} {t ? t("steps done") : "steps done"}
+          </div>
+        )}
+        {steps.length === 0 && (
+          <div style={{ color: "#9a9ba2", fontSize: 13, marginTop: 10 }}>
+            {t ? t("Not enough part data to build a guide for this cabinet.") : "Not enough part data to build a guide for this cabinet."}
+          </div>
+        )}
+        {steps.map((s, i) => (
+          <label key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "10px 0",
+            borderTop: i ? "1px solid rgba(255,255,255,0.08)" : "none", cursor: "pointer" }}>
+            <input type="checkbox" checked={!!checked[i]} onChange={() => toggle(i)}
+              style={{ marginTop: 3, width: 16, height: 16, flexShrink: 0 }} />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 13.5, color: checked[i] ? "#6b7280" : "#fff",
+                textDecoration: checked[i] ? "line-through" : "none" }}>
+                {i + 1}. {s.title}
+              </div>
+              <div style={{ fontSize: 12.5, color: "#9a9ba2", marginTop: 3, lineHeight: 1.5 }}>{s.detail}</div>
+            </div>
+          </label>
+        ))}
+        {steps.length > 0 && (
+          <button onClick={() => setChecked([])} className="cab-noprint" style={{
+            marginTop: 14, padding: "7px 13px", background: "transparent", color: "#9a9ba2",
+            border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+            {t ? t("Reset progress") : "Reset progress"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function NumField({ label, value, onChange, suffix = "mm", w = 92 }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -1877,7 +2014,7 @@ function trNote(note, lang) {
   return s;
 }
 
-function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
+function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, projectId }) {
   const p = cab.params || DEFAULTS;
   const W = parseFloat(cab.width);
   const valid = !isNaN(W) && W > 2 * p.t + 10;
@@ -1885,6 +2022,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
   const [pinsOpen, setPinsOpen] = useState(false);
   const [showAllViews, setShowAllViews] = useState(false);
   const [show3D, setShow3D] = useState(false);
+  const [showAssembly, setShowAssembly] = useState(false);
 
   const pickType = (e) => {
     const k = e.target.value, s = TYPES[k].set;
@@ -2230,12 +2368,22 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove }) {
               border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
               🧊 {t ? t("3D view") : "3D view"}
             </button>
+            {cab.type !== "filler" && (
+              <button onClick={() => setShowAssembly(true)} className="cab-noprint" style={{
+                padding: "8px 14px", background: getColors().buttonBg, color: getColors().buttonText,
+                border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
+                📋 {t ? t("Assembly guide") : "Assembly guide"}
+              </button>
+            )}
           </div>
           {showAllViews && (
             <AllViewsModal cab={cab} W={W} p={p} data={data} t={t} idx={index} onClose={() => setShowAllViews(false)} />
           )}
           {show3D && (
             <Cabinet3DModal cab={cab} W={W} p={p} data={data} t={t} onClose={() => setShow3D(false)} />
+          )}
+          {showAssembly && (
+            <AssemblyGuideModal cab={cab} p={p} data={data} t={t} projectId={projectId} onClose={() => setShowAssembly(false)} />
           )}
           <div style={{ border: `1px solid ${getColors().hair}`, borderRadius: 10, overflow: "hidden", background: "#fff" }}>
             {data.parts.map((x, i) => (
@@ -5313,7 +5461,7 @@ export default function CabinetProject() {
           {/* RIGHT: selected cabinet + totals */}
           <div className="cab-main">
             {selectedCab ? (
-              <CabinetCard key={selectedCab.id} index={selectedIndex} cab={selectedCab} t={t} lang={lang} canRemove={cabs.length > 1}
+              <CabinetCard key={selectedCab.id} index={selectedIndex} cab={selectedCab} t={t} lang={lang} canRemove={cabs.length > 1} projectId={currentProjectId}
                 onChange={isLocked ? () => {} : (patch) => updateCab(selectedCab.id, patch)} onRemove={isLocked ? undefined : () => removeCab(selectedCab.id)} />
             ) : (
               <>
