@@ -807,48 +807,115 @@ function buildCutList(W, p, cab) {
   return { parts, area, pieces, hbArea, hbPieces, faces, hardware };
 }
 
-/* ----------------------- board estimate --------------------------- */
-function estimateBoards(items, p) {
+/* ------------------------- board nesting ---------------------------- *
+ * MaxRects bin-packing (Jylänki, "A Thousand Ways to Pack the Bin") — a
+ * real 2D nester, not a shelf/guillotine heuristic. Keeps the set of
+ * maximal free rectangles on each board; each part goes into whichever
+ * free rectangle (and orientation) leaves the least leftover area
+ * (Best-Area-Fit, tie-broken by Best-Short-Side-Fit), then that free
+ * rectangle set is re-split and pruned back down to a maximal set. This
+ * is what pushes real material usage well above a simple row-by-row
+ * shelf packer, matching what dedicated cutlist optimizers advertise.
+ * Grain-locked parts (vetas marked V/H) never take the rotated
+ * orientation, even when "allow rotate" is on for the rest of the sheet.
+ * ---------------------------------------------------------------------- */
+function rectsIntersect(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+function rectContains(outer, inner) {
+  return inner.x >= outer.x && inner.y >= outer.y &&
+    inner.x + inner.w <= outer.x + outer.w && inner.y + inner.h <= outer.y + outer.h;
+}
+function pruneFreeRects(rects) {
+  const out = [];
+  for (let i = 0; i < rects.length; i++) {
+    const ri = rects[i];
+    let drop = false;
+    for (let j = 0; j < rects.length; j++) {
+      if (i === j) continue;
+      const rj = rects[j];
+      const isEqual = rj.x === ri.x && rj.y === ri.y && rj.w === ri.w && rj.h === ri.h;
+      if (isEqual) { if (j < i) { drop = true; break; } continue; } // keep only the first of exact duplicates
+      if (rectContains(rj, ri)) { drop = true; break; }
+    }
+    if (!drop) out.push(ri);
+  }
+  return out;
+}
+function maxRectsPackBoards(items, p) {
   const BW = p.boardW, BH = p.boardH, k = p.kerf, rot = p.allowRotate;
   let oversize = 0;
   const parts = [];
   items.forEach((it) => {
     const w = it.w + k, h = it.h + k;
-    // Grain-locked parts (vetas marked V/H) can never rotate 90°, even when
-    // "allowRotate" is on for the rest of the sheet — rotating would run the
-    // grain the wrong way.
     const canRotate = rot && !it.locked;
     const fits = (w <= BW && h <= BH) || (canRotate && h <= BW && w <= BH);
     if (!fits) { oversize++; return; }
-    parts.push({ w, h, locked: it.locked });
+    parts.push({ ...it, w, h });
   });
-  parts.sort((a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h));
+  // Largest-first — standard MaxRects placement order.
+  parts.sort((a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h) || (b.w * b.h - a.w * a.h));
 
-  const orientations = (pp) => {
-    const o = [{ w: pp.w, h: pp.h }];
-    if (rot && !pp.locked) o.push({ w: pp.h, h: pp.w });
-    return o.filter((d) => d.w <= BW && d.h <= BH);
+  const orientationsFor = (part) => {
+    const o = [{ w: part.w, h: part.h, rotated: false }];
+    if (rot && !part.locked) o.push({ w: part.h, h: part.w, rotated: true });
+    return o;
   };
-  const boards = [];
-  const placeOnBoard = (b, pp) => {
-    const os = orientations(pp);
-    for (const d of os)
-      for (const sh of b.shelves)
-        if (d.h <= sh.height && sh.usedW + d.w <= BW) { sh.usedW += d.w; return true; }
+  const bestSpotOnBoard = (board, part) => {
     let best = null;
-    for (const d of os)
-      if (d.w <= BW && b.usedH + d.h <= BH && (!best || d.h < best.h)) best = d;
-    if (best) { b.shelves.push({ height: best.h, usedW: best.w }); b.usedH += best.h; return true; }
-    return false;
+    for (const free of board.freeRects) {
+      for (const o of orientationsFor(part)) {
+        if (o.w > free.w || o.h > free.h) continue;
+        const leftoverArea = free.w * free.h - o.w * o.h;
+        const shortSideFit = Math.min(free.w - o.w, free.h - o.h);
+        if (!best || leftoverArea < best.leftoverArea ||
+          (leftoverArea === best.leftoverArea && shortSideFit < best.shortSideFit)) {
+          best = { free, o, leftoverArea, shortSideFit };
+        }
+      }
+    }
+    return best;
   };
-  parts.forEach((pp) => {
-    for (const b of boards) if (placeOnBoard(b, pp)) return;
-    const b = { shelves: [], usedH: 0 };
-    boards.push(b);
-    placeOnBoard(b, pp);
+  const placeOnBoard = (board, x, y, w, h) => {
+    const placed = { x, y, w, h };
+    const next = [];
+    for (const free of board.freeRects) {
+      if (!rectsIntersect(free, placed)) { next.push(free); continue; }
+      if (placed.x > free.x) next.push({ x: free.x, y: free.y, w: placed.x - free.x, h: free.h });
+      if (placed.x + placed.w < free.x + free.w) next.push({ x: placed.x + placed.w, y: free.y, w: free.x + free.w - (placed.x + placed.w), h: free.h });
+      if (placed.y > free.y) next.push({ x: free.x, y: free.y, w: free.w, h: placed.y - free.y });
+      if (placed.y + placed.h < free.y + free.h) next.push({ x: free.x, y: placed.y + placed.h, w: free.w, h: free.y + free.h - (placed.y + placed.h) });
+    }
+    board.freeRects = pruneFreeRects(next);
+  };
+  const newBoard = () => ({ freeRects: [{ x: 0, y: 0, w: BW, h: BH }], rects: [] });
+
+  const boards = [];
+  parts.forEach((part) => {
+    let spot = null, board = null;
+    for (const b of boards) {
+      const s = bestSpotOnBoard(b, part);
+      if (s && (!spot || s.leftoverArea < spot.leftoverArea)) { spot = s; board = b; }
+    }
+    if (!spot) {
+      board = newBoard();
+      spot = bestSpotOnBoard(board, part);
+      boards.push(board);
+    }
+    const { free, o } = spot;
+    board.rects.push({ x: free.x, y: free.y, w: o.w - k, h: o.h - k, rotated: o.rotated, item: part });
+    placeOnBoard(board, free.x, free.y, o.w, o.h);
   });
-  const used = items.reduce((s, it) => s + it.w * it.h, 0);
-  const total = boards.length * BW * BH;
+  return { boards, oversize };
+}
+
+function estimateBoards(items, p) {
+  const { boards, oversize } = maxRectsPackBoards(items, p);
+  // Only count area that actually got placed — an oversized item (counted
+  // in `oversize`, never packed onto any board) would otherwise inflate
+  // utilization, since it added to the numerator but not the denominator.
+  const used = boards.reduce((s, b) => s + b.rects.reduce((s2, r) => s2 + r.w * r.h, 0), 0);
+  const total = boards.length * p.boardW * p.boardH;
   return { boards: boards.length, oversize, utilization: total ? used / total : 0 };
 }
 
@@ -876,58 +943,11 @@ function itemsForCabsWithDepthDelta(cabs, deltaMm) {
   return items;
 }
 
-/* Same shelf-packing heuristic as estimateBoards(), but also records where
-   each part actually landed (x,y,w,h + whether it got rotated), so a real
-   cutting layout can be drawn from it (DXF export) instead of just a board
-   count. Grain-locked items never take the rotated orientation, same rule
-   as estimateBoards(). */
+/* Same MaxRects nester as estimateBoards(), just returning the full
+   per-board layout (each board's .rects) instead of collapsing it down to
+   a count — this is what buildNestingDxf() draws. */
 function packBoardsWithLayout(items, p) {
-  const BW = p.boardW, BH = p.boardH, k = p.kerf, rot = p.allowRotate;
-  let oversize = 0;
-  const parts = [];
-  items.forEach((it) => {
-    const w = it.w + k, h = it.h + k;
-    const canRotate = rot && !it.locked;
-    const fits = (w <= BW && h <= BH) || (canRotate && h <= BW && w <= BH);
-    if (!fits) { oversize++; return; }
-    parts.push({ ...it, w, h });
-  });
-  parts.sort((a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h));
-
-  const orientations = (pp) => {
-    const o = [{ w: pp.w, h: pp.h, rotated: false }];
-    if (rot && !pp.locked) o.push({ w: pp.h, h: pp.w, rotated: true });
-    return o.filter((d) => d.w <= BW && d.h <= BH);
-  };
-  const boards = [];
-  const placeOnBoard = (b, pp) => {
-    const os = orientations(pp);
-    for (const d of os)
-      for (const sh of b.shelves)
-        if (d.h <= sh.height && sh.usedW + d.w <= BW) {
-          b.rects.push({ x: sh.usedW, y: sh.y, w: d.w - k, h: d.h - k, rotated: d.rotated, item: pp });
-          sh.usedW += d.w;
-          return true;
-        }
-    let best = null;
-    for (const d of os)
-      if (d.w <= BW && b.usedH + d.h <= BH && (!best || d.h < best.h)) best = d;
-    if (best) {
-      const y = b.usedH;
-      b.rects.push({ x: 0, y, w: best.w - k, h: best.h - k, rotated: best.rotated, item: pp });
-      b.shelves.push({ height: best.h, usedW: best.w, y });
-      b.usedH += best.h;
-      return true;
-    }
-    return false;
-  };
-  parts.forEach((pp) => {
-    for (const b of boards) if (placeOnBoard(b, pp)) return;
-    const b = { shelves: [], usedH: 0, rects: [] };
-    boards.push(b);
-    placeOnBoard(b, pp);
-  });
-  return { boards, oversize };
+  return maxRectsPackBoards(items, p);
 }
 
 /* ------------------------------- DXF ------------------------------- *
