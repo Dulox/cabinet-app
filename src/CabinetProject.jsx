@@ -1306,7 +1306,7 @@ function SideView({ D, H, p, shelfQty, faces, shelfPositions }) {
    "near" face is z=D, not z=0 — the front/door faces must be placed at
    z=D (not z=0), otherwise the front face's polygon area overlaps the
    top face's instead of sharing just an edge with it. */
-function IsoView({ W, D, p, faces }) {
+function IsoView({ W, D, p, faces, grain = "V" }) {
   const H = p.sideH;
   const ANGLE = Math.PI / 6; // 30°
   const cosA = Math.cos(ANGLE), sinA = Math.sin(ANGLE);
@@ -1333,6 +1333,17 @@ function IsoView({ W, D, p, faces }) {
   const ox = -minX + pad, oy = -minY + pad;
   const fs = Math.max(vbW / 34, 20);
   const toPts = (quad) => quad.map((pt) => `${pt.px + ox},${pt.py + oy}`).join(" ");
+  // Grain lines on a face from origin o spanned by U (the "V" direction: height, or depth for the top) and V.
+  const faceGrain = (o, U, Vv) => {
+    const [along, across] = grain === "V" ? [U, Vv] : [Vv, U];
+    const len = Math.hypot(...across), n = Math.max(3, Math.min(12, Math.round(len / 70)));
+    return Array.from({ length: n }, (_, i) => {
+      const t = (i + 0.5) / n;
+      const s = [0, 1, 2].map((k) => o[k] + across[k] * t);
+      const a = proj(s[0], s[1], s[2]), b = proj(s[0] + along[0], s[1] + along[1], s[2] + along[2]);
+      return <line key={i} x1={a.px + ox} y1={a.py + oy} x2={b.px + ox} y2={b.py + oy} stroke="#8a6d3f" strokeWidth="1" opacity="0.55" />;
+    });
+  };
 
   return (
     <svg viewBox={`0 0 ${vbW} ${vbH}`} width="100%" preserveAspectRatio="xMidYMid meet"
@@ -1342,17 +1353,21 @@ function IsoView({ W, D, p, faces }) {
       {/* top face — lightened */}
       <polygon points={toPts(topFace)} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
       <polygon points={toPts(topFace)} fill="#ffffff" opacity="0.10" />
+      {faceGrain([0, H, 0], [0, 0, D], [W, 0, 0])}
       {/* right-side face — darkened */}
       <polygon points={toPts(sideFace)} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
       <polygon points={toPts(sideFace)} fill="#000000" opacity="0.22" />
+      {faceGrain([W, 0, 0], [0, H, 0], [0, 0, D])}
       {/* front face — plain (rail/reveal areas not covered by a door show through here) */}
       <polygon points={toPts(frontFace)} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
+      {faceGrain([0, 0, D], [0, H, 0], [W, 0, 0])}
       {/* door / drawer fronts, popped forward */}
       {doorPolys.map((d, i) => (
         <g key={i}>
           <polygon points={toPts(d.quad)}
             fill={d.f.kind === "blind" ? "rgba(194,70,40,0.18)" : getColors().panel}
             stroke={getColors().amber} strokeWidth="1.6" />
+          {faceGrain([d.f.x, H - d.f.y - d.f.h, D + pop], [0, d.f.h, 0], [d.f.w, 0, 0])}
           {d.f.split === 2 && (() => {
             const midX = d.f.x + d.f.w / 2, yTop = H - d.f.y, yBot = H - d.f.y - d.f.h, z = D + pop;
             const p1 = proj(midX, yTop, z), p2 = proj(midX, yBot, z);
@@ -1538,7 +1553,7 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Isometric</div>
-            <IsoView W={W} D={D} p={p} faces={data.faces} />
+            <IsoView W={W} D={D} p={p} faces={data.faces} grain={cabGrain(cab)} />
           </div>
         </div>
 
