@@ -2551,12 +2551,18 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
 
       {data && cab.type !== "filler" && (
         <>
-          <div className="cab-mat cab-noprint" style={{ marginBottom: 8, maxWidth: 380, width: "100%", minWidth: 0, overflow: "hidden" }}>
-            <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces}
-              shelfPositions={cab.shelfPositions}
-              onShelfPositionsChange={(next) => onChange({ shelfPositions: next })}
-              onDrawerDivider={cab.type === "drawers" ? dragDrawerDivider : undefined}
-              grain={cabGrain(cab)} />
+          <div className="cab-noprint" style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start", marginBottom: 8 }}>
+            <div className="cab-mat" style={{ flex: "1 1 260px", maxWidth: 380, minWidth: 0, overflow: "hidden" }}>
+              <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces}
+                shelfPositions={cab.shelfPositions}
+                onShelfPositionsChange={(next) => onChange({ shelfPositions: next })}
+                onDrawerDivider={cab.type === "drawers" ? dragDrawerDivider : undefined}
+                grain={cabGrain(cab)} />
+            </div>
+            <div className="cab-mat" style={{ flex: "1 1 260px", maxWidth: 380, minWidth: 0, overflow: "hidden" }}>
+              <SideView D={p.sideD} H={p.sideH} p={p} shelfQty={cab.shelfQty} faces={data.faces}
+                shelfPositions={cab.shelfPositions} grain={cabGrain(cab)} />
+            </div>
           </div>
           <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
             <button onClick={() => setShowAllViews(true)} className="cab-noprint" style={{

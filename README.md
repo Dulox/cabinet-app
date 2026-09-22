@@ -23,8 +23,9 @@ hardware totals across a whole project, and export-ready cut sheets.
   whole project at once. The choice shows up everywhere: a "Grain:" line
   and a part diagram with grain arrow on each part in the cabinet card, the
   All-views table and its part diagrams, grain arrows on the door/drawer
-  fronts in the front elevation, grain lines in
-  the top, side and isometric views and the 3D preview (Show/Hide vetas toggles in
+  fronts in the front elevation, grain lines on the side view shown next to
+  it in the cabinet card, grain lines in the top, side and isometric views
+  and the 3D preview (Show/Hide vetas toggles in
   All views and the 3D preview),
   the Desglose, every export, and board nesting.
 - **Material & hardware totals**: combined sheet area, piece counts, a
