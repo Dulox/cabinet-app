@@ -39,7 +39,8 @@ hardware totals across a whole project, and export-ready cut sheets.
   material and grain all match. Saveable/loadable, multiple sheets per
   browser.
 - **Exports**: PDF cut sheet, shop drawing PDF and project PDF (each with a
-  small part outline + grain arrow per part), Excel (a "full" copy and a
+  small part outline + grain arrow per part; the shop drawing elevation also
+  marks each door/drawer front with a grain arrow and a "veta" label), Excel (a "full" copy and a
   "production" copy with the internal-only columns dropped; a "Pieza"
   column shows ↔ for grain along the Largo, ↕ across it), and a DXF nesting
   layout for CNC/CAM software (part outlines + shelf-pin holes on real 32mm

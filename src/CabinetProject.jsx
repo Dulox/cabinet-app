@@ -325,7 +325,7 @@ MiniPDF.prototype.save = function (fname) {
    Mirrors the on-screen Elevation: carcass panels, dashed face outlines,
    hinge dots, and width / height / opening dimensions. Print-optimised
    (white ground, dark lines) for taping up at the bench. */
-function drawCabinetElevation(doc, x0, y0, boxW, boxH, W, p, shelfQty, faces) {
+function drawCabinetElevation(doc, x0, y0, boxW, boxH, W, p, shelfQty, faces, grain) {
   const t = p.t, H = p.sideH, railH = p.railH;
   const PANEL = [225, 222, 210], EDGE = [150, 142, 124], INK = [28, 30, 22];
   const DOOR = [40, 44, 34], BLIND = [246, 224, 218], DIM = [120, 86, 50];
@@ -359,6 +359,14 @@ function drawCabinetElevation(doc, x0, y0, boxW, boxH, W, p, shelfQty, faces) {
       const hx = f.hinge === "left" ? f.x + inset : f.x + f.w - inset;
       doc.circle(PX(hx), PY(f.y + f.h / 2), 1.05, { fill: DOOR });
     }
+    if (grain) {
+      const n = f.split === 2 ? 2 : 1, pw = f.w / n;
+      for (let k = 0; k < n; k++) {
+        const horiz = grain === "H", span = horiz ? S(pw) : S(f.h);
+        const cx = PX(f.x + pw * (k + 0.5)), cy = PY(f.y + f.h * (horiz && f.kind === "door" ? 0.32 : 0.5));
+        pdfArrow(doc, cx, cy, horiz, Math.min(span * 0.5, 40), Math.min(1.6, span * 0.08), 0.45);
+      }
+    }
   });
 
   // dimensions
@@ -378,6 +386,7 @@ function drawCabinetElevation(doc, x0, y0, boxW, boxH, W, p, shelfQty, faces) {
   // opening (top)
   doc.setFontSize(6.5); doc.setTextColor(150, 120, 90);
   doc.text(`opening ${fmt(W - 2 * t)} mm`, gx + dW / 2, gy - 3, { align: "center" });
+  if (grain) { doc.setTextColor(200, 0, 0); doc.text(`veta: ${grain === "H" ? "horizontal" : "vertical"}`, x0 + boxW - mR, gy - 3, { align: "right" }); }
 }
 
 const translations = {
@@ -1460,15 +1469,21 @@ function pdfGrainGlyph(doc, x, yTop, part, cab, w = 8, hMin = 2.6, hMax = 5) {
   const h = along ? Math.max(hMin, Math.min(hMax, (w * A) / L)) : hMax;
   yTop += (hMax - h) / 2;
   doc.rect(x, yTop, w, h, { stroke: [85, 85, 85], lineWidth: 0.2 });
-  const red = { color: [200, 0, 0], lineWidth: 0.3 };
-  const cx = x + w / 2, cy = yTop + h / 2, hd = Math.min(0.9, h / 3);
-  if (along) {
-    const x1 = x + 0.8, x2 = x + w - 0.8;
+  const cx = x + w / 2, cy = yTop + h / 2;
+  if (along) pdfArrow(doc, cx, cy, true, w - 1.6, Math.min(0.9, h / 3));
+  else pdfArrow(doc, cx, cy, false, h - 0.6, Math.min(0.9, h / 4.5));
+}
+
+// Red double-headed grain arrow centred on (cx, cy), horizontal or vertical.
+function pdfArrow(doc, cx, cy, horizontal, len, hd, lineWidth = 0.3) {
+  const red = { color: [200, 0, 0], lineWidth };
+  if (horizontal) {
+    const x1 = cx - len / 2, x2 = cx + len / 2;
     doc.line(x1, cy, x2, cy, red);
     doc.line(x1, cy, x1 + hd, cy - hd, red); doc.line(x1, cy, x1 + hd, cy + hd, red);
     doc.line(x2, cy, x2 - hd, cy - hd, red); doc.line(x2, cy, x2 - hd, cy + hd, red);
   } else {
-    const y1 = yTop + 0.3, y2 = yTop + h - 0.3, hd = Math.min(0.9, h / 4.5);
+    const y1 = cy - len / 2, y2 = cy + len / 2;
     doc.line(cx, y1, cx, y2, red);
     doc.line(cx, y1, cx - hd, y1 + hd, red); doc.line(cx, y1, cx + hd, y1 + hd, red);
     doc.line(cx, y2, cx - hd, y2 - hd, red); doc.line(cx, y2, cx + hd, y2 - hd, red);
@@ -5357,7 +5372,7 @@ export default function CabinetProject() {
         doc.setDrawColor(20); doc.setLineWidth(0.4); doc.line(M, y, right, y); y += 3;
         // elevation
         const boxY = y, boxH = 124;
-        drawCabinetElevation(doc, M, boxY, right - M, boxH, Wd, cp, c.shelfQty, d.faces);
+        drawCabinetElevation(doc, M, boxY, right - M, boxH, Wd, cp, c.shelfQty, d.faces, cabGrain(c));
         y = boxY + boxH + 2;
         doc.setDrawColor(185); doc.setLineWidth(0.25); doc.line(M, y, right, y); y += 5;
         // cut list
