@@ -1496,11 +1496,12 @@ function GrainDiagram({ largo, ancho, alongLargo }) {
   );
 }
 
-function PartDiagram({ a, b, size = 60 }) {
+function PartDiagram({ a, b, size = 60, grainAlongA }) {
   const long = Math.max(a, b), short = Math.min(a, b);
   const aspect = short / long;
   const isWide = a >= b;
-  const boxLong = size - 22, boxShort = Math.max(10, boxLong * aspect);
+  const acrossShort = grainAlongA != null && grainAlongA !== isWide;
+  const boxLong = size - 22, boxShort = Math.max(acrossShort ? 18 : 10, boxLong * aspect);
   const w = isWide ? boxLong : boxShort;
   const h = isWide ? boxShort : boxLong;
   const vb = size;
@@ -1509,6 +1510,19 @@ function PartDiagram({ a, b, size = 60 }) {
   return (
     <svg viewBox={`0 0 ${vb} ${vb + 14}`} width={vb} height={vb + 14} style={{ display: "block", flexShrink: 0 }}>
       <rect x={ox} y={oy} width={w} height={h} fill={getColors().mat} stroke={getColors().amber} strokeWidth="1.3" />
+      {grainAlongA != null && (() => {
+        const cx = ox + w / 2, cy = oy + h / 2;
+        if (grainAlongA) {
+          const x1 = ox + 3, x2 = ox + w - 3, hd = Math.min(3, (x2 - x1) / 4);
+          return <g stroke="#c00" strokeWidth="1.3" fill="none"><line x1={x1} y1={cy} x2={x2} y2={cy} />
+            <polyline points={`${x1 + hd},${cy - hd} ${x1},${cy} ${x1 + hd},${cy + hd}`} />
+            <polyline points={`${x2 - hd},${cy - hd} ${x2},${cy} ${x2 - hd},${cy + hd}`} /></g>;
+        }
+        const y1 = oy + 2, y2 = oy + h - 2, hd = Math.min(3, (y2 - y1) / 4);
+        return <g stroke="#c00" strokeWidth="1.3" fill="none"><line x1={cx} y1={y1} x2={cx} y2={y2} />
+          <polyline points={`${cx - hd},${y1 + hd} ${cx},${y1} ${cx + hd},${y1 + hd}`} />
+          <polyline points={`${cx - hd},${y2 - hd} ${cx},${y2} ${cx + hd},${y2 - hd}`} /></g>;
+      })()}
       {/* top (a) dimension */}
       <line x1={ox} y1={oy - 4} x2={ox + w} y2={oy - 4} stroke={getColors().amber} strokeWidth="0.8" />
       <text x={ox + w / 2} y={oy - 6} fill={getColors().amber} fontSize={fs} textAnchor="middle"
@@ -1578,7 +1592,7 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
           {data.parts.map((x, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: "60px 1fr 70px 70px 110px 110px 110px", gap: 8, padding: "9px 13px",
               fontSize: 13, borderTop: i ? "1px solid #f0f0f0" : "none", color: "#222", alignItems: "center" }}>
-              <PartDiagram a={x.a} b={x.b} />
+              <PartDiagram a={x.a} b={x.b} grainAlongA={grainAlongLargo({ vetas: cabGrain(cab), vAxis: vAxisFor(x) }) === (x.a >= x.b)} />
               <div style={{ fontWeight: 600 }}>{tName(x.part, t)}</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", color: getColors().rust, fontWeight: 700 }}>{x.qty * (cab.qty || 1)}×</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: getColors().amber }}>{cabGrain(cab)}</div>
