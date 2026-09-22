@@ -4307,9 +4307,9 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 XLSX.writeFile(wb, `${activeProjectName || "desglose"} - ${suffix}.xlsx`);
               };
               const allKeys = cols.map(([k]) => k);
-              saveXlsx(allKeys, "full");
+              saveXlsx(allKeys, ms("full", "completo"));
               // Production copy: same data without the Cab./Type/Name columns
-              saveXlsx(allKeys.filter((k) => k !== "cab" && k !== "type" && k !== "nombre"), "production");
+              saveXlsx(allKeys.filter((k) => k !== "cab" && k !== "type" && k !== "nombre"), ms("production", "producción"));
             }}
               style={{ padding: "9px 20px", border: "none", borderRadius: 8, background: "#1D6F42",
                 color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
