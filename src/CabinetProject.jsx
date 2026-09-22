@@ -931,6 +931,14 @@ function estimateBoards(items, p) {
    we ran this project 5/10/15mm shallower" simulation behind the depth
    comparison suggestion. Cabinets without a usable width (fillers, blanks)
    are skipped, same as the real summary. */
+// Board footprint of a part. Grain-locked parts keep height along the board's
+// H axis for Vertical grain; Horizontal grain turns them 90° on the board.
+function nestItem(cab, x) {
+  const locked = getVetaForCabinet(cab, x.aLabel, x.bLabel) !== "";
+  const grainRot = locked && cabGrain(cab) === "H";
+  return grainRot ? { w: x.b, h: x.a, locked, grainRot } : { w: x.a, h: x.b, locked, grainRot };
+}
+
 function itemsForCabsWithDepthDelta(cabs, deltaMm) {
   const items = [];
   cabs.forEach((c) => {
@@ -942,8 +950,8 @@ function itemsForCabsWithDepthDelta(cabs, deltaMm) {
     const d = buildCutList(W, p, c);
     d.parts.forEach((x) => {
       if (x.material === "hardboard") return;
-      const locked = getVetaForCabinet(c, x.aLabel, x.bLabel) !== "";
-      for (let i = 0; i < x.qty * cabQty; i++) items.push({ w: x.a, h: x.b, locked });
+      const it = nestItem(c, x);
+      for (let i = 0; i < x.qty * cabQty; i++) items.push({ ...it });
     });
   });
   return items;
@@ -997,14 +1005,19 @@ function buildNestingDxf(items, p) {
       const x = ox + r.x, y = r.y;
       ents += dxfRect(x, y, r.w, r.h, "CUT");
       ents += dxfText(x + 8, y + r.h - 40, 26, `${r.item.label || "Part"} ${Math.round(r.w)}x${Math.round(r.h)}`, "CUT");
-      // Shelf-pin line — Sides are always grain-locked (never rotated), so
-      // r.w/r.h map directly to the part's own depth/height, no need to
-      // branch on r.rotated here.
+      // Sides are grain-locked (never rotated by the nester); a Horizontal-grain
+      // side is placed turned 90°, so its height — and the pin rows — run along x.
       if (r.item.isSide) {
-        shelfPinHoles(r.item.sideH).forEach((yFromTop) => {
-          const holeY = y + r.h - yFromTop;
-          ents += dxfCircle(x + PIN_INSET, holeY, PIN_DIA / 2, "DRILL");
-          ents += dxfCircle(x + r.w - PIN_INSET, holeY, PIN_DIA / 2, "DRILL");
+        shelfPinHoles(r.item.sideH).forEach((fromTop) => {
+          if (r.item.grainRot) {
+            const holeX = x + r.w - fromTop;
+            ents += dxfCircle(holeX, y + PIN_INSET, PIN_DIA / 2, "DRILL");
+            ents += dxfCircle(holeX, y + r.h - PIN_INSET, PIN_DIA / 2, "DRILL");
+          } else {
+            const holeY = y + r.h - fromTop;
+            ents += dxfCircle(x + PIN_INSET, holeY, PIN_DIA / 2, "DRILL");
+            ents += dxfCircle(x + r.w - PIN_INSET, holeY, PIN_DIA / 2, "DRILL");
+          }
         });
       }
     });
@@ -4998,9 +5011,9 @@ export default function CabinetProject() {
         if (x.material === "hardboard") return;
         // Same rule the Desglose sheet uses to mark vetas: a part with a height
         // axis has directional grain and can't be rotated 90° when nesting.
-        const locked = getVetaForCabinet(c, x.aLabel, x.bLabel) !== "";
+        const it = nestItem(c, x);
         for (let i = 0; i < x.qty * cabQty; i++)
-          items.push({ w: x.a, h: x.b, locked, label: x.part, isSide: x.part === "Side", sideH: p.sideH });
+          items.push({ ...it, label: x.part, isSide: x.part === "Side", sideH: p.sideH });
       });
     });
     const p = (selectedCab && selectedCab.params) || DEFAULTS;
