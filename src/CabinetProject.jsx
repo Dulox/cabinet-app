@@ -931,12 +931,12 @@ function estimateBoards(items, p) {
    we ran this project 5/10/15mm shallower" simulation behind the depth
    comparison suggestion. Cabinets without a usable width (fillers, blanks)
    are skipped, same as the real summary. */
-// Board footprint of a part. Grain-locked parts keep height along the board's
-// H axis for Vertical grain; Horizontal grain turns them 90° on the board.
+// Board footprint of a part. Board grain runs along boardW (2800 side), so a
+// Vertical-grain part lays its height (always bLabel) along the board's x axis.
 function nestItem(cab, x) {
   const locked = getVetaForCabinet(cab, x.aLabel, x.bLabel) !== "";
-  const grainRot = locked && cabGrain(cab) === "H";
-  return grainRot ? { w: x.b, h: x.a, locked, grainRot } : { w: x.a, h: x.b, locked, grainRot };
+  const heightAlongX = locked && cabGrain(cab) === "V";
+  return heightAlongX ? { w: x.b, h: x.a, locked, heightAlongX } : { w: x.a, h: x.b, locked, heightAlongX };
 }
 
 function itemsForCabsWithDepthDelta(cabs, deltaMm) {
@@ -1005,11 +1005,11 @@ function buildNestingDxf(items, p) {
       const x = ox + r.x, y = r.y;
       ents += dxfRect(x, y, r.w, r.h, "CUT");
       ents += dxfText(x + 8, y + r.h - 40, 26, `${r.item.label || "Part"} ${Math.round(r.w)}x${Math.round(r.h)}`, "CUT");
-      // Sides are grain-locked (never rotated by the nester); a Horizontal-grain
-      // side is placed turned 90°, so its height — and the pin rows — run along x.
+      // Sides are grain-locked (never rotated by the nester); when its height runs
+      // along x (Vertical grain), the pin rows run along x too.
       if (r.item.isSide) {
         shelfPinHoles(r.item.sideH).forEach((fromTop) => {
-          if (r.item.grainRot) {
+          if (r.item.heightAlongX) {
             const holeX = x + r.w - fromTop;
             ents += dxfCircle(holeX, y + PIN_INSET, PIN_DIA / 2, "DRILL");
             ents += dxfCircle(holeX, y + r.h - PIN_INSET, PIN_DIA / 2, "DRILL");
