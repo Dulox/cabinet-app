@@ -5052,6 +5052,9 @@ export default function CabinetProject() {
   const applyGrainToAll = () => {
     setCabs((cs) => cs.map((c) => ({ ...c, grainDir: globalGrainToApply })));
   };
+  const resetAllGrainToAuto = () => {
+    setCabs((cs) => cs.map((c) => ({ ...c, grainDir: "auto" })));
+  };
 
   const exportProjectToPDF = async () => {
     try {
@@ -5604,6 +5607,11 @@ export default function CabinetProject() {
                   padding: "7px 13px", background: getColors().buttonBg, color: getColors().buttonText,
                   border: "none", borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
                   {t("Apply to all cabinets")}
+                </button>
+                <button onClick={resetAllGrainToAuto} className="cab-noprint" title="Reset all cabinets to Auto (dimension-based) grain" style={{
+                  padding: "7px 13px", background: getColors().hair, color: getColors().ink,
+                  border: `1px solid ${getColors().hair}`, borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  ↺ Auto
                 </button>
               </div>
             </div>
