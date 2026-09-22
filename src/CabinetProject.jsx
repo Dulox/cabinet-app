@@ -3754,7 +3754,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               <tr>
                 {/* Despiece sub-headers */}
                 <th style={hdrStyle({ width: 52 })}>Pieza</th>
-                <th style={hdrStyle({ width: 28 })}>Vetas a favor del largo</th>
+                <th style={hdrStyle({ width: 28 })}>Vetas</th>
                 <th style={hdrStyle({ width: 60 })}>Largo (mm)</th>
                 <th style={hdrStyle({ width: 60 })}>Ancho (mm)</th>
                 <th style={hdrStyle({ width: 46 })}>Grosor (mm)</th>
