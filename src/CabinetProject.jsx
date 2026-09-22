@@ -1427,6 +1427,11 @@ function ranuraSide(aLabel, bLabel, a, b) {
   return otherVal >= depthVal ? "L" : "A";
 }
 
+// true = grain along Largo, false = along Ancho, null = no veta marked.
+function grainAlongLargo(row) {
+  return row.vetas ? (row.vetas === "V") === ((row.vAxis || "L") === "L") : null;
+}
+
 // Desglose thumbnail: Largo drawn horizontally, red double arrow along the grain.
 function GrainDiagram({ largo, ancho, alongLargo }) {
   const L = Math.max(1, Number(largo) || 1), A = Math.max(1, Number(ancho) || 1);
@@ -3798,7 +3803,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                   </td>
                   <td style={{ ...cellStyle({ width: 52 }), padding: "2px" }}>
                     <GrainDiagram largo={row.largo} ancho={row.ancho}
-                      alongLargo={row.vetas ? (row.vetas === "V") === ((row.vAxis || "L") === "L") : null} />
+                      alongLargo={grainAlongLargo(row)} />
                   </td>
                   {/* Vetas */}
                   <td style={{ ...cellStyle({ width: 34 }), padding: 0 }}>
@@ -4118,11 +4123,11 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 await new Promise((r) => { script.onload = r; });
               }
               const XLSX = window.XLSX;
-              const fullHeaders = ["No","Cab.","Material","Type","Nombre","Vetas","Largo (mm)","Ancho (mm)","Grosor (mm)","Cant.","L1","L2","A1","A2","R-L","R-A","HB-L","HB-A"];
+              const fullHeaders = ["No","Cab.","Material","Type","Nombre","Pieza","Vetas","Largo (mm)","Ancho (mm)","Grosor (mm)","Cant.","L1","L2","A1","A2","R-L","R-A","HB-L","HB-A"];
               // Production copy: same data, just without the Cab./Type/Nombre columns
               const prodHeaders = fullHeaders.filter(h => h !== "Cab." && h !== "Type" && h !== "Nombre");
               const colWidths = {
-                "No": 4, "Cab.": 24, "Material": 12, "Type": 22, "Nombre": 6, "Vetas": 10,
+                "No": 4, "Cab.": 24, "Material": 12, "Type": 22, "Nombre": 6, "Pieza": 6, "Vetas": 10,
                 "Largo (mm)": 10, "Ancho (mm)": 9, "Grosor (mm)": 6, "Cant.": 4,
                 "L1": 4, "L2": 4, "A1": 4, "A2": 4, "R-L": 4, "R-A": 5, "HB-L": 5, "HB-A": 5,
               };
@@ -4132,6 +4137,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 "Material": row.material || "",
                 "Type": row.cabType || "",
                 "Nombre": displayNombre(row),
+                "Pieza": { true: "↔", false: "↕", null: "" }[grainAlongLargo(row)],
                 "Vetas": row.vetas || "",
                 "Largo (mm)": row.largo,
                 "Ancho (mm)": row.ancho,
