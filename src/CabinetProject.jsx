@@ -480,6 +480,7 @@ const translations = {
     "Hide vetas": "Ocultar vetas",
     "Apply grain to all": "Aplicar veta a todos",
     "Front view": "Vista frontal", "Side view": "Vista lateral", "Top view": "Vista superior",
+    "opening": "abertura", "back": "atrás", "front": "frente", "front (open)": "frente (abierto)",
     "millimetres": "milímetros",
     "Shelf pins:": "Soportes de estante:",
     "Hinges (2 per door):": "Bisagras (2 por puerta):",
@@ -1043,7 +1044,7 @@ function buildNestingDxf(items, p) {
 }
 
 /* ----------------------------- Diagram ---------------------------- */
-function Elevation({ W, p, shelfQty, faces, shelfPositions, onShelfPositionsChange, onDrawerDivider, grain }) {
+function Elevation({ W, p, shelfQty, faces, shelfPositions, onShelfPositionsChange, onDrawerDivider, grain, tr = (k) => k }) {
   const t = p.t, H = p.sideH;
   const padX = Math.max(120, W * 0.22), padTop = 60, padBot = 150;
   const vbW = W + padX * 2, vbH = H + padTop + padBot;
@@ -1189,14 +1190,14 @@ function Elevation({ W, p, shelfQty, faces, shelfPositions, onShelfPositionsChan
         style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{H} mm</text>
       <line x1={ox + t} y1={oy - 34} x2={ox + W - t} y2={oy - 34} stroke={getColors().mut} strokeWidth={fs * 0.045} opacity="0.65" />
       <text x={ox + W / 2} y={oy - 44} fill={getColors().mut} fontSize={fs * 0.78} textAnchor="middle"
-        style={{ fontFamily: "'JetBrains Mono', monospace" }}>opening {W - 2 * t}</text>
+        style={{ fontFamily: "'JetBrains Mono', monospace" }}>{tr("opening")} {W - 2 * t}</text>
     </svg>
 
   );
 }
 
 /* Plan (top-down) view: shows width × depth footprint */
-function TopView({ W, D, p, grain = null }) {
+function TopView({ W, D, p, grain = null, tr = (k) => k }) {
   const t = p.t;
   const pad = Math.max(90, Math.max(W, D) * 0.18);
   const vbW = W + pad * 2, vbH = D + pad * 2;
@@ -1237,9 +1238,9 @@ function TopView({ W, D, p, grain = null }) {
       {/* back panel band */}
       <rect x={ox + t} y={oy} width={W - 2 * t} height={t} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
       <text x={ox + W / 2} y={oy - 14} fill={getColors().mut} fontSize={fs * 0.72} textAnchor="middle"
-        style={{ fontFamily: "'JetBrains Mono', monospace" }}>back</text>
+        style={{ fontFamily: "'JetBrains Mono', monospace" }}>{tr("back")}</text>
       <text x={ox + W / 2} y={oy + D + fs * 1.1} fill={getColors().mut} fontSize={fs * 0.72} textAnchor="middle"
-        style={{ fontFamily: "'JetBrains Mono', monospace" }}>front (open)</text>
+        style={{ fontFamily: "'JetBrains Mono', monospace" }}>{tr("front (open)")}</text>
 
       {/* width dim */}
       <line x1={ox} y1={oy + D + 46} x2={ox + W} y2={oy + D + 46} stroke={getColors().amber} strokeWidth={fs * 0.06} />
@@ -1257,7 +1258,7 @@ function TopView({ W, D, p, grain = null }) {
 }
 
 /* Profile (side) view: shows depth × height, with shelf/drawer partition lines */
-function SideView({ D, H, p, shelfQty, faces, shelfPositions, grain = null }) {
+function SideView({ D, H, p, shelfQty, faces, shelfPositions, grain = null, tr = (k) => k }) {
   const t = p.t;
   const pad = Math.max(90, Math.max(D, H) * 0.18);
   const vbW = D + pad * 2, vbH = H + pad * 2;
@@ -1318,7 +1319,7 @@ function SideView({ D, H, p, shelfQty, faces, shelfPositions, grain = null }) {
       {partitions}
       {shelves}
       <text x={ox + D / 2} y={oy - 14} fill={getColors().mut} fontSize={fs * 0.72} textAnchor="middle"
-        style={{ fontFamily: "'JetBrains Mono', monospace" }}>back ← → front</text>
+        style={{ fontFamily: "'JetBrains Mono', monospace" }}>{tr("back")} ← → {tr("front")}</text>
 
       {/* depth dim */}
       <line x1={ox} y1={oy + H + 46} x2={ox + D} y2={oy + H + 46} stroke={getColors().amber} strokeWidth={fs * 0.06} />
@@ -1614,16 +1615,16 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 22 }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Front</div>
-            <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces} shelfPositions={cab.shelfPositions} grain={cabGrain(cab)} />
+            <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces} shelfPositions={cab.shelfPositions} grain={cabGrain(cab)} tr={t} />
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Top</div>
-            <TopView W={W} D={D} p={p} grain={showVetas ? cabGrain(cab) : null} />
+            <TopView W={W} D={D} p={p} grain={showVetas ? cabGrain(cab) : null} tr={t} />
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Side</div>
             <SideView D={D} H={H} p={p} shelfQty={cab.shelfQty} faces={data.faces} shelfPositions={cab.shelfPositions}
-              grain={showVetas ? cabGrain(cab) : null} />
+              grain={showVetas ? cabGrain(cab) : null} tr={t} />
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Isometric</div>
@@ -2560,16 +2561,16 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
                 shelfPositions={cab.shelfPositions}
                 onShelfPositionsChange={(next) => onChange({ shelfPositions: next })}
                 onDrawerDivider={cab.type === "drawers" ? dragDrawerDivider : undefined}
-                grain={cabGrain(cab)} />
+                grain={cabGrain(cab)} tr={t} />
             </div>
             <div className="cab-mat" style={{ flex: "1 1 200px", maxWidth: 380, minWidth: 0, overflow: "hidden" }}>
               <div style={viewTitleCss}>{t("Side view")}</div>
               <SideView D={p.sideD} H={p.sideH} p={p} shelfQty={cab.shelfQty} faces={data.faces}
-                shelfPositions={cab.shelfPositions} grain={cabGrain(cab)} />
+                shelfPositions={cab.shelfPositions} grain={cabGrain(cab)} tr={t} />
             </div>
             <div className="cab-mat" style={{ flex: "1 1 200px", maxWidth: 380, minWidth: 0, overflow: "hidden" }}>
               <div style={viewTitleCss}>{t("Top view")}</div>
-              <TopView W={W} D={p.sideD} p={p} grain={cabGrain(cab)} />
+              <TopView W={W} D={p.sideD} p={p} grain={cabGrain(cab)} tr={t} />
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
