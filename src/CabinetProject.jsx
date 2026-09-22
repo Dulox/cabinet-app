@@ -484,6 +484,8 @@ const translations = {
     "Isometric": "Isométrica", "Every cut — dimensions": "Todos los cortes — medidas",
     "Diagram": "Diagrama", "Part": "Pieza", "Qty": "Cant.", "Size": "Medida",
     "all views & dimensions": "todas las vistas y medidas", "All views & dimensions": "Todas las vistas y medidas", "3D view": "Vista 3D",
+    "3D preview — drag to rotate, scroll to zoom": "Vista 3D — arrastra para girar, rueda para acercar",
+    "Loading 3D viewer…": "Cargando visor 3D…", "Could not load the 3D viewer.": "No se pudo cargar el visor 3D.",
     "millimetres": "milímetros",
     "Shelf pins:": "Soportes de estante:",
     "Hinges (2 per door):": "Bisagras (2 por puerta):",
@@ -1671,6 +1673,7 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
    model (carcass panels + door/drawer fronts), not a literal joinery
    model — good enough for a visual walk-around, not for fabrication. */
 function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
+  const tr = t || ((k) => k);
   const mountRef = React.useRef(null);
   const grainGroupRef = React.useRef(null);
   const [loading, setLoading] = React.useState(true);
@@ -1888,14 +1891,14 @@ function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
         onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>
-            🧊 3D preview — drag to rotate, scroll to zoom
+            🧊 {tr("3D preview — drag to rotate, scroll to zoom")}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <button onClick={toggleVetas} style={{
               padding: "6px 12px", borderRadius: 7, fontWeight: 700, fontSize: 12, cursor: "pointer",
               border: showVetas ? "1px solid #8a6d3f" : "1px solid #3a3b42",
               background: showVetas ? "#8a6d3f" : "transparent", color: "#fff" }}>
-              🌾 {showVetas ? (t ? t("Hide vetas") : "Hide vetas") : (t ? t("Show vetas") : "Show vetas")}
+              🌾 {showVetas ? tr("Hide vetas") : tr("Show vetas")}
             </button>
             <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#9a9ba2", lineHeight: 1 }}>×</button>
           </div>
@@ -1908,11 +1911,11 @@ function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
           <div ref={mountRef} style={{ position: "absolute", inset: 0 }} />
           {loading && !error && (
             <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#9a9ba2", fontSize: 13, background: "#1b1c20" }}>Loading 3D viewer…</div>
+              color: "#9a9ba2", fontSize: 13, background: "#1b1c20" }}>{tr("Loading 3D viewer…")}</div>
           )}
           {error && (
             <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#e06a5a", fontSize: 13, background: "#1b1c20", padding: 20, textAlign: "center" }}>{error}</div>
+              color: "#e06a5a", fontSize: 13, background: "#1b1c20", padding: 20, textAlign: "center" }}>{tr(error)}</div>
           )}
         </div>
       </div>
