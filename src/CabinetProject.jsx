@@ -3497,6 +3497,8 @@ function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
  * Summarises all cabinet cut lists into one editable table
  * matching the Madesol workshop form format.
  * ================================================================ */
+const CAB_TYPE_ES = { base: "base", drawers: "gaveteros", wall: "pared", sink: "fregadero", stove: "estufa", corner: "esquinero", deepwall: "pared (prof.)", filler: "relleno" };
+
 function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProjects = [] }) {
   const today = new Date().toLocaleDateString("es-DO");
   const confirmClose = () => {
@@ -3774,7 +3776,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
     setSavedSheets(updated);
     try { localStorage.setItem("savedDesgloseSheets", JSON.stringify(updated)); } catch {}
     setSaveSheetName("");
-    alert("Hoja guardada: " + name);
+    alert(ms("Sheet saved: ", "Hoja guardada: ") + name);
   };
 
   const loadSheet = (sheet) => {
@@ -3842,16 +3844,16 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         {/* Close */}
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 15 }}>FORMULARIO DE SERVICIO: CORTE Y CANTEADO</div>
+          <div style={{ fontWeight: 700, fontSize: 15 }}>{ms("SERVICE FORM: CUTTING AND EDGE BANDING", "FORMULARIO DE SERVICIO: CORTE Y CANTEADO")}</div>
           <div style={{ fontSize: 11, color: "#555", textAlign: "right" }}>
-            <div>Fecha: <strong>{today}</strong></div>
-            <div>Proyecto: <strong>{activeProjectName}</strong></div>
+            <div>{ms("Date", "Fecha")}: <strong>{today}</strong></div>
+            <div>{ms("Project", "Proyecto")}: <strong>{activeProjectName}</strong></div>
           </div>
         </div>
 
         {/* Client info */}
         <div className="desglose-noprint" style={{ display: "flex", gap: 16, marginBottom: 12, flexWrap: "wrap" }}>
-          {[["Factura No.", factura, setFactura, 100], ["Nombre", nombre, setNombre, 200], ["Número tel.", telefono, setTelefono, 140]].map(([label, val, setter, w]) => (
+          {[[ms("Invoice No.", "Factura No."), factura, setFactura, 100], [ms("Name", "Nombre"), nombre, setNombre, 200], [ms("Phone", "Número tel."), telefono, setTelefono, 140]].map(([label, val, setter, w]) => (
             <label key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
               <span style={{ whiteSpace: "nowrap" }}>{label}</span>
               <input value={val} onChange={e => setter(e.target.value)}
@@ -3896,32 +3898,32 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 <th style={hdrStyle({ width: 30 })} rowSpan={2}>No</th>
                 <th style={hdrStyle({ width: 44 })} rowSpan={2}>Cab.</th>
                 <th style={hdrStyle({ minWidth: 80 })} rowSpan={2}>Material</th>
-                <th style={hdrStyle({ minWidth: 60 })} rowSpan={2}>Type</th>
+                <th style={hdrStyle({ minWidth: 60 })} rowSpan={2}>{ms("Type", "Tipo")}</th>
                 <th style={{ ...hdrStyle({ minWidth: 100 }), cursor: "pointer" }} rowSpan={2}
                   onClick={() => toggleSort("nombre")}>
-                  Nombre {sortField === "nombre" ? (sortDir === 1 ? "▲" : "▼") : "↕"}
+                  {ms("Name", "Nombre")} {sortField === "nombre" ? (sortDir === 1 ? "▲" : "▼") : "↕"}
                 </th>
-                <th style={hdrStyle({})} colSpan={6}>Despiece</th>
-                <th style={hdrStyle({})} colSpan={4}>Canteado de pieza</th>
-                <th style={hdrStyle({})} colSpan={2}>Ranuras</th>
-                <th style={hdrStyle({})} colSpan={2}>Bisagras</th>
+                <th style={hdrStyle({})} colSpan={6}>{ms("Cut list", "Despiece")}</th>
+                <th style={hdrStyle({})} colSpan={4}>{ms("Edge banding", "Canteado de pieza")}</th>
+                <th style={hdrStyle({})} colSpan={2}>{ms("Grooves", "Ranuras")}</th>
+                <th style={hdrStyle({})} colSpan={2}>{ms("Hinges", "Bisagras")}</th>
               </tr>
               <tr>
                 {/* Despiece sub-headers */}
-                <th style={hdrStyle({ width: 52 })}>Pieza</th>
-                <th style={hdrStyle({ width: 28 })}>Vetas</th>
-                <th style={hdrStyle({ width: 60 })}>Largo (mm)</th>
-                <th style={hdrStyle({ width: 60 })}>Ancho (mm)</th>
-                <th style={hdrStyle({ width: 46 })}>Grosor (mm)</th>
+                <th style={hdrStyle({ width: 52 })}>{ms("Part", "Pieza")}</th>
+                <th style={hdrStyle({ width: 28 })}>{ms("Grain", "Vetas")}</th>
+                <th style={hdrStyle({ width: 60 })}>{ms("Length (mm)", "Largo (mm)")}</th>
+                <th style={hdrStyle({ width: 60 })}>{ms("Width (mm)", "Ancho (mm)")}</th>
+                <th style={hdrStyle({ width: 46 })}>{ms("Thickness (mm)", "Grosor (mm)")}</th>
                 <th style={{ ...hdrStyle({ width: 36 }), cursor: "pointer" }}
                   onClick={() => toggleSort("cant")}>
-                  Cant. {sortField === "cant" ? (sortDir === 1 ? "▲" : "▼") : "↕"}
+                  {ms("Qty", "Cant.")} {sortField === "cant" ? (sortDir === 1 ? "▲" : "▼") : "↕"}
                 </th>
                 {/* Canteado sub-headers: Largo1, Largo2, Ancho1, Ancho2 */}
-                <th style={hdrStyle({ width: 38 })}>Largo 1</th>
-                <th style={hdrStyle({ width: 38 })}>Largo 2</th>
-                <th style={hdrStyle({ width: 38 })}>Ancho 1</th>
-                <th style={hdrStyle({ width: 38 })}>Ancho 2</th>
+                <th style={hdrStyle({ width: 38 })}>{ms("Length 1", "Largo 1")}</th>
+                <th style={hdrStyle({ width: 38 })}>{ms("Length 2", "Largo 2")}</th>
+                <th style={hdrStyle({ width: 38 })}>{ms("Width 1", "Ancho 1")}</th>
+                <th style={hdrStyle({ width: 38 })}>{ms("Width 2", "Ancho 2")}</th>
                 {/* Ranuras */}
                 <th style={hdrStyle({ width: 32 })}>R-L</th>
                 <th style={hdrStyle({ width: 32 })}>R-A</th>
@@ -3945,7 +3947,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                   </td>
                   {/* Type (Base/Wall) */}
                   <td style={cellStyle({ textAlign: "center", minWidth: 60, fontSize: 10, color: "#666", fontWeight: 500 })}>
-                    {row.cabType || "—"}
+                    {row.cabType ? ms(row.cabType, CAB_TYPE_ES[row.cabType] || row.cabType) : "—"}
                   </td>
                   {/* Nombre */}
                   <td style={cellStyle({ textAlign: "left", minWidth: 100, fontSize: 10, color: "#555" })}>
@@ -4011,7 +4013,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                     <button onClick={() => setRows(rs => rs.filter(r => r.id !== row.id))}
                       style={{ background: "none", border: "none", color: "#ccc", cursor: "pointer",
                         fontSize: 14, padding: "0 2px", lineHeight: 1 }}
-                      title="Eliminar fila">×</button>
+                      title={ms("Delete row", "Eliminar fila")}>×</button>
                   </td>
                 </tr>
               ))}
@@ -4036,16 +4038,16 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
             }]);
           }} style={{ padding: "6px 16px", background: "#f5f5f5", border: "1.5px dashed #bbb",
             borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#444" }}>
-            + Agregar fila manual
+            {ms("+ Add manual row", "+ Agregar fila manual")}
           </button>
         </div>
 
         {/* Notes */}
         <div className="desglose-noprint" style={{ marginTop: 14, fontSize: 10, color: "#555", maxWidth: 420,
           border: "1px solid #ccc", padding: "8px 12px", borderRadius: 4 }}>
-          <strong>NOTAS:</strong><br/>
-          1. Sobrantes deben ser retirados con la producción de lo contrario no somos responsables de los mismos.<br/>
-          2. Después de notificados que su trabajo está listo deben retirar en un plazo no mayor de 72 horas de lo contrario se cobrará un servicio de almacenamiento de RD$1,000.00 diarios por producción.
+          <strong>{ms("NOTES:", "NOTAS:")}</strong><br/>
+          {ms("1. Offcuts must be collected with the order, otherwise we are not responsible for them.", "1. Sobrantes deben ser retirados con la producción de lo contrario no somos responsables de los mismos.")}<br/>
+          {ms("2. Once notified that your work is ready, it must be collected within 72 hours, otherwise a storage fee of RD$1,000.00 per day per order will be charged.", "2. Después de notificados que su trabajo está listo deben retirar en un plazo no mayor de 72 horas de lo contrario se cobrará un servicio de almacenamiento de RD$1,000.00 diarios por producción.")}
         </div>
 
         {/* Custom Materials Modal */}
@@ -4058,27 +4060,27 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               boxShadow: "0 12px 48px rgba(0,0,0,0.3)", padding: 24 }}
               onClick={e => e.stopPropagation()}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <div style={{ fontWeight: 800, fontSize: 16 }}>⭐ Mis Materiales</div>
+                <div style={{ fontWeight: 800, fontSize: 16 }}>⭐ {ms("My materials", "Mis Materiales")}</div>
                 <button onClick={() => setShowCustomMat(false)}
                   style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#888" }}>×</button>
               </div>
               {/* Add new */}
               <div style={{ background: "#f5f5f5", borderRadius: 8, padding: 14, marginBottom: 16 }}>
-                <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 10, color: "#444" }}>Agregar material</div>
+                <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 10, color: "#444" }}>{ms("Add material", "Agregar material")}</div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <input value={newMatCode} onChange={e => setNewMatCode(e.target.value)}
-                    placeholder="Código (ej. L021)" maxLength={12}
+                    placeholder={ms("Code (e.g. L021)", "Código (ej. L021)")} maxLength={12}
                     style={{ border: "1px solid #ddd", borderRadius: 6, padding: "6px 10px", fontSize: 12, width: 110 }} />
                   <input value={newMatName} onChange={e => setNewMatName(e.target.value)}
-                    placeholder="Nombre del material *"
+                    placeholder={ms("Material name *", "Nombre del material *")}
                     style={{ border: "1px solid #ddd", borderRadius: 6, padding: "6px 10px", fontSize: 12, flex: 1, minWidth: 140 }} />
                   <input type="color" value={newMatColor} onChange={e => setNewMatColor(e.target.value)}
-                    title="Color del swatch"
+                    title={ms("Swatch colour", "Color del swatch")}
                     style={{ width: 38, height: 34, border: "1px solid #ddd", borderRadius: 6, cursor: "pointer", padding: 2 }} />
                   <button onClick={saveCustomMat}
                     style={{ padding: "6px 14px", background: "#E4572E", color: "#fff", border: "none",
                       borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
-                    + Agregar
+                    {ms("+ Add", "+ Agregar")}
                   </button>
                 </div>
               </div>
@@ -4086,7 +4088,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               <div style={{ overflowY: "auto", flex: 1 }}>
                 {customMaterials.length === 0 && (
                   <div style={{ color: "#aaa", textAlign: "center", padding: 30, fontSize: 13 }}>
-                    No tienes materiales guardados aún.
+                    {ms("You have no saved materials yet.", "No tienes materiales guardados aún.")}
                   </div>
                 )}
                 {customMaterials.map((m, i) => (
@@ -4103,7 +4105,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                       setShowCustomMat(false);
                     }} style={{ padding: "4px 10px", background: "#f0f0f0", border: "none",
                       borderRadius: 5, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
-                      Usar
+                      {ms("Use", "Usar")}
                     </button>
                     <button onClick={() => deleteCustomMat(i)}
                       style={{ background: "none", border: "none", color: "#e74c3c", cursor: "pointer", fontSize: 16 }}>×</button>
@@ -4144,7 +4146,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 }
               }}
               style={{ border: "1px solid #bbb", borderRadius: 6, padding: "7px 10px", fontSize: 12, width: 220, background: "#fff" }}>
-              <option value="__new__">— Nueva hoja —</option>
+              <option value="__new__">{ms("— New sheet —", "— Nueva hoja —")}</option>
               {savedSheets.map((s, i) => (
                 <option key={i} value={s.name}>{s.name} · {s.date}</option>
               ))}
@@ -4165,15 +4167,15 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               }
               setSavedSheets(updated);
               try { localStorage.setItem("savedDesgloseSheets", JSON.stringify(updated)); } catch {}
-              alert("Hoja guardada: " + name);
+              alert(ms("Sheet saved: ", "Hoja guardada: ") + name);
               onClose();
             }}
               style={{ padding: "8px 14px", background: "#276221", color: "#fff", border: "none",
                 borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
-              💾 Guardar hoja
+              💾 {ms("Save sheet", "Guardar hoja")}
             </button>
             <button onClick={() => {
-              if (window.confirm("Rebuild? Your X marks, material, and client info will be kept.")) {
+              if (window.confirm(ms("Rebuild? Your X marks, material, and client info will be kept.", "¿Reconstruir? Se conservarán tus marcas X, el material y los datos del cliente."))) {
                 const fresh = buildRows(activeCabs);
                 setRows(fresh.map(newRow => {
                   const existing = rows.find(r => r.nombre === newRow.nombre && r.largo === newRow.largo && r.ancho === newRow.ancho);
@@ -4192,12 +4194,12 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
             }}
               style={{ padding: "8px 14px", background: "#555", color: "#fff", border: "none",
                 borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
-              🔄 Rebuild
+              🔄 {ms("Rebuild", "Reconstruir")}
             </button>
             <button onClick={() => setShowSaved(true)}
               style={{ padding: "8px 14px", background: "#f0f0f0", color: "#333", border: "1px solid #ddd",
                 borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
-              📂 Hojas guardadas {savedSheets.length > 0 ? `(${savedSheets.length})` : ""}
+              📂 {ms("Saved sheets", "Hojas guardadas")} {savedSheets.length > 0 ? `(${savedSheets.length})` : ""}
             </button>
           </div>
           <div style={{ display: "flex", gap: 10 }}>
@@ -4228,9 +4230,9 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 '.cinfo label{display:flex;gap:3px;align-items:center}',
                 '.cinfo span{border-bottom:0.5px solid #888;min-width:50px;display:inline-block}',
               ].join('');
-              win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Corte y Canteado</title><style>' + css + '</style></head><body>');
-              win.document.write('<div class="hdr"><h1>FORMULARIO DE SERVICIO: CORTE Y CANTEADO</h1><div class="meta">Fecha: ' + new Date().toLocaleDateString('es-DO') + '<br>Proyecto: ' + (projectName || '') + '</div></div>');
-              win.document.write('<div class="cinfo"><label>Factura No.: <span>' + factura + '</span></label><label>Nombre: <span>' + nombre + '</span></label><label>Tel.: <span>' + telefono + '</span></label></div>');
+              win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + ms('Cutting and Edge Banding', 'Corte y Canteado') + '</title><style>' + css + '</style></head><body>');
+              win.document.write('<div class="hdr"><h1>' + ms('SERVICE FORM: CUTTING AND EDGE BANDING', 'FORMULARIO DE SERVICIO: CORTE Y CANTEADO') + '</h1><div class="meta">' + ms('Date', 'Fecha') + ': ' + new Date().toLocaleDateString('es-DO') + '<br>' + ms('Project', 'Proyecto') + ': ' + (projectName || '') + '</div></div>');
+              win.document.write('<div class="cinfo"><label>' + ms('Invoice No.', 'Factura No.') + ': <span>' + factura + '</span></label><label>' + ms('Name', 'Nombre') + ': <span>' + nombre + '</span></label><label>' + ms('Phone', 'Tel.') + ': <span>' + telefono + '</span></label></div>');
               const tbl = el.querySelector('table');
               if (tbl) {
                 const clone = tbl.cloneNode(true);
@@ -4262,7 +4264,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
             }}
               style={{ padding: "9px 20px", border: "none", borderRadius: 8, background: "#E4572E",
                 color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
-              🖨 Imprimir / Guardar PDF
+              🖨 {ms("Print / Save PDF", "Imprimir / Guardar PDF")}
             </button>
             <button onClick={async () => {
               // Load SheetJS from CDN if not already loaded
@@ -4325,14 +4327,14 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               boxShadow: "0 12px 48px rgba(0,0,0,0.3)" }}
               onClick={e => e.stopPropagation()}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <div style={{ fontWeight: 800, fontSize: 16 }}>📂 Hojas Guardadas</div>
+                <div style={{ fontWeight: 800, fontSize: 16 }}>📂 {ms("Saved sheets", "Hojas Guardadas")}</div>
                 <button onClick={() => setShowSaved(false)}
                   style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#888" }}>×</button>
               </div>
               <div style={{ overflowY: "auto", flex: 1 }}>
                 {savedSheets.length === 0 && (
                   <div style={{ color: "#aaa", textAlign: "center", padding: 30, fontSize: 13 }}>
-                    No hay hojas guardadas aún.
+                    {ms("No saved sheets yet.", "No hay hojas guardadas aún.")}
                   </div>
                 )}
                 {[...savedSheets].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((s) => {
@@ -4354,16 +4356,16 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                       ) : (
                         <div style={{ fontWeight: 700, fontSize: 13, color: "#111", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
                       )}
-                      <div style={{ fontSize: 11, color: "#888" }}>{s.date} · {s.rows?.length || 0} piezas</div>
+                      <div style={{ fontSize: 11, color: "#888" }}>{s.date} · {s.rows?.length || 0} {ms("parts", "piezas")}</div>
                     </div>
                     {!isRenaming && (
                       <button onClick={() => { setRenamingIdx(realIdx); setRenameValue(s.name); }}
-                        title="Rename" style={{ background: "none", border: "none", color: "#888", cursor: "pointer", fontSize: 15, padding: "4px 6px" }}>✎</button>
+                        title={ms("Rename", "Renombrar")} style={{ background: "none", border: "none", color: "#888", cursor: "pointer", fontSize: 15, padding: "4px 6px" }}>✎</button>
                     )}
                     <button onClick={() => loadSheet(s)}
                       style={{ padding: "5px 12px", background: "#E4572E", color: "#fff",
                         border: "none", borderRadius: 5, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
-                      Cargar
+                      {ms("Load", "Cargar")}
                     </button>
                     <button onClick={() => deleteSavedSheet(realIdx)}
                       style={{ background: "none", border: "none", color: "#e74c3c", cursor: "pointer", fontSize: 18 }}>×</button>
