@@ -1929,8 +1929,10 @@ function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
    level of detail the rest of the app already commits to (e.g. no hinge
    cup positions — see buildNestingDxf's own note on that) so nothing here
    promises fabrication precision the app doesn't actually have. */
-function buildAssemblySteps(cab, p, data) {
+function buildAssemblySteps(cab, p, data, lang = "en") {
   if (!data || cab.type === "filler") return [];
+  const es = lang === "es";
+  const L = (en, esText) => (es ? esText : en);
   const steps = [];
   const findPart = (name) => data.parts.find((x) => x.part === name);
   const fmt = (part) => `${Math.round(part.a)}×${Math.round(part.b)}mm`;
@@ -1941,62 +1943,77 @@ function buildAssemblySteps(cab, p, data) {
   const blindPart = findPart("Blind / filler panel");
   const shelfQty = cab.shelfQty || 0;
   const isDrawers = cab.type === "drawers";
+  const hw = data.hardware;
 
   if (shelfQty > 0 && side) {
     const holes = shelfPinHoles(p.sideH);
-    steps.push({ title: "Drill shelf-pin holes",
-      detail: `On the inside face of both Side panels (${fmt(side)}), drill ${holes.length} holes per row — 5mm diameter, starting ${holes[0]}mm from the top, 32mm spacing — one row near the front edge, one near the back.` });
+    steps.push({ title: L("Drill shelf-pin holes", "Taladrar agujeros para soportes de estante"),
+      detail: L(`On the inside face of both Side panels (${fmt(side)}), drill ${holes.length} holes per row — 5mm diameter, starting ${holes[0]}mm from the top, 32mm spacing — one row near the front edge, one near the back.`,
+        `En la cara interior de ambos laterales (${fmt(side)}), taladra ${holes.length} agujeros por fila — 5mm de diámetro, empezando a ${holes[0]}mm desde arriba, cada 32mm — una fila cerca del borde frontal y otra cerca del trasero.`) });
   }
   if (bottom && side) {
-    steps.push({ title: "Attach the Bottom between the Sides",
-      detail: `Fix the Bottom panel (${fmt(bottom)}) flush with the bottom and back edges of both Side panels (${fmt(side)}) — glue + confirmat screws (or dowels), checking square as you go.` });
+    steps.push({ title: L("Attach the Bottom between the Sides", "Fijar el fondo entre los laterales"),
+      detail: L(`Fix the Bottom panel (${fmt(bottom)}) flush with the bottom and back edges of both Side panels (${fmt(side)}) — glue + confirmat screws (or dowels), checking square as you go.`,
+        `Fija el fondo (${fmt(bottom)}) a ras de los bordes inferior y trasero de ambos laterales (${fmt(side)}) — cola + tornillos confirmat (o tarugos), comprobando la escuadra sobre la marcha.`) });
   }
   if (backPart) {
     if (p.backType === "thin") {
-      steps.push({ title: "Slide the Back panel into the grooves",
-        detail: `The ${fmt(backPart)} hardboard Back slides into the grooves in the Sides (and Bottom) as you bring the carcass together — fit it before the Bottom joint's glue sets.` });
+      steps.push({ title: L("Slide the Back panel into the grooves", "Deslizar la espalda en las ranuras"),
+        detail: L(`The ${fmt(backPart)} hardboard Back slides into the grooves in the Sides (and Bottom) as you bring the carcass together — fit it before the Bottom joint's glue sets.`,
+          `La espalda de hardboard de ${fmt(backPart)} se desliza en las ranuras de los laterales (y del fondo) al cerrar el cuerpo — colócala antes de que fragüe la cola de la unión del fondo.`) });
     } else {
-      steps.push({ title: "Attach the Back panel",
-        detail: `Once the carcass is square, screw the ${fmt(backPart)} melamine Back onto the rear edges of the Sides (and Bottom) — this also locks the cabinet square.` });
+      steps.push({ title: L("Attach the Back panel", "Fijar la espalda"),
+        detail: L(`Once the carcass is square, screw the ${fmt(backPart)} melamine Back onto the rear edges of the Sides (and Bottom) — this also locks the cabinet square.`,
+          `Con el cuerpo a escuadra, atornilla la espalda de melamina de ${fmt(backPart)} a los cantos traseros de los laterales (y del fondo) — esto además fija la escuadra del mueble.`) });
     }
   }
   if (railParts.length > 0) {
-    steps.push({ title: railParts.length > 1 ? "Attach the top rails" : "Attach the top rail",
-      detail: `Fix ${railParts.map(fmt).join(" and ")} across the front top edge between the Sides, flush with the top.` });
+    steps.push({ title: railParts.length > 1 ? L("Attach the top rails", "Fijar los rieles superiores") : L("Attach the top rail", "Fijar el riel superior"),
+      detail: L(`Fix ${railParts.map(fmt).join(" and ")} across the front top edge between the Sides, flush with the top.`,
+        `Fija ${railParts.map(fmt).join(" y ")} en el borde superior frontal entre los laterales, a ras de arriba.`) });
   }
   if (blindPart) {
-    steps.push({ title: "Attach the blind/filler panel",
-      detail: `Fix the ${fmt(blindPart)} blind panel to close off the non-door side of the opening before hanging the door.` });
+    steps.push({ title: L("Attach the blind/filler panel", "Fijar el panel ciego / relleno"),
+      detail: L(`Fix the ${fmt(blindPart)} blind panel to close off the non-door side of the opening before hanging the door.`,
+        `Fija el panel ciego de ${fmt(blindPart)} para cerrar el lado sin puerta de la abertura antes de colgar la puerta.`) });
   }
-  steps.push({ title: "Square the carcass",
-    detail: "Measure both corner-to-corner diagonals — they should match. Adjust before any glue sets." });
+  steps.push({ title: L("Square the carcass", "Escuadrar el cuerpo"),
+    detail: L("Measure both corner-to-corner diagonals — they should match. Adjust before any glue sets.",
+      "Mide las dos diagonales de esquina a esquina — deben coincidir. Ajusta antes de que fragüe la cola.") });
   if (shelfQty > 0) {
-    steps.push({ title: "Fit shelf pins and drop in the shelves",
-      detail: `Insert ${data.hardware.shelfPins} shelf pins (4 per shelf) into the drilled holes, then set the ${shelfQty} shelf${shelfQty > 1 ? "ves" : ""} on top.` });
+    steps.push({ title: L("Fit shelf pins and drop in the shelves", "Colocar los soportes y los estantes"),
+      detail: L(`Insert ${hw.shelfPins} shelf pins (4 per shelf) into the drilled holes, then set the ${shelfQty} ${shelfQty > 1 ? "shelves" : "shelf"} on top.`,
+        `Coloca ${hw.shelfPins} soportes de estante (4 por estante) en los agujeros taladrados y apoya ${shelfQty > 1 ? `los ${shelfQty} estantes` : "el estante"} encima.`) });
   }
   if (isDrawers) {
-    if (data.hardware.drawerSlides > 0) {
-      steps.push({ title: "Install drawer slides",
-        detail: `Mount ${data.hardware.drawerSlides} pair${data.hardware.drawerSlides > 1 ? "s" : ""} of slides on the inside faces of the Sides, spaced to match your ${cab.drawerCount || 3} drawer fronts.` });
+    if (hw.drawerSlides > 0) {
+      const n = hw.drawerSlides, fronts = cab.drawerCount || 3;
+      steps.push({ title: L("Install drawer slides", "Instalar las correderas"),
+        detail: L(`Mount ${n} pair${n > 1 ? "s" : ""} of slides on the inside faces of the Sides, spaced to match your ${fronts} drawer fronts.`,
+          `Monta ${n} ${n > 1 ? "pares" : "par"} de correderas en las caras interiores de los laterales, repartidas según tus ${fronts} frentes de gaveta.`) });
     }
-    steps.push({ title: "Build and hang the drawer boxes",
-      detail: "Assemble each drawer box, mount it on its slide pair, then attach the drawer front — check reveals are even top to bottom before final fixing." });
+    steps.push({ title: L("Build and hang the drawer boxes", "Armar y colgar las cajas de gaveta"),
+      detail: L("Assemble each drawer box, mount it on its slide pair, then attach the drawer front — check reveals are even top to bottom before final fixing.",
+        "Arma cada caja de gaveta, móntala en su par de correderas y luego fija el frente — comprueba que los huelgos queden parejos de arriba abajo antes de fijar del todo.") });
   } else {
     const doorPart = data.parts.find((x) => (x.part || "").startsWith("Door"));
-    if (doorPart && data.hardware.hinges > 0) {
-      steps.push({ title: "Mount hinges and hang the doors",
-        detail: `Bore hinge cups and mount ${data.hardware.hinges} hinges (2 per door) on the door(s) (${fmt(doorPart)}), then hang on the marked hinge edge.` });
+    if (doorPart && hw.hinges > 0) {
+      steps.push({ title: L("Mount hinges and hang the doors", "Montar bisagras y colgar las puertas"),
+        detail: L(`Bore hinge cups and mount ${hw.hinges} hinges (2 per door) on the door(s) (${fmt(doorPart)}), then hang on the marked hinge edge.`,
+          `Taladra las cazoletas y monta ${hw.hinges} bisagras (2 por puerta) en la(s) puerta(s) (${fmt(doorPart)}), luego cuélgala(s) por el canto de bisagra marcado.`) });
     }
   }
-  if (data.hardware.handles > 0) {
-    steps.push({ title: "Attach handles / knobs",
-      detail: `Fit ${data.hardware.handles} handle${data.hardware.handles > 1 ? "s" : ""} to the doors/drawer fronts.` });
+  if (hw.handles > 0) {
+    const n = hw.handles;
+    steps.push({ title: L("Attach handles / knobs", "Colocar tiradores / pomos"),
+      detail: L(`Fit ${n} handle${n > 1 ? "s" : ""} to the doors/drawer fronts.`,
+        `Coloca ${n} ${n > 1 ? "tiradores" : "tirador"} en las puertas / frentes de gaveta.`) });
   }
   return steps;
 }
 
-function AssemblyGuideModal({ cab, p, data, t, projectId, onClose }) {
-  const steps = React.useMemo(() => buildAssemblySteps(cab, p, data), [cab, p, data]);
+function AssemblyGuideModal({ cab, p, data, t, lang, projectId, onClose }) {
+  const steps = React.useMemo(() => buildAssemblySteps(cab, p, data, lang), [cab, p, data, lang]);
   const storageKey = `assemblyProgress:${projectId || "local"}:${cab.id}`;
   const [checked, setChecked] = React.useState(() => {
     try { return JSON.parse(localStorage.getItem(storageKey) || "[]"); } catch { return []; }
@@ -2605,7 +2622,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
             <Cabinet3DModal cab={cab} W={W} p={p} data={data} t={t} onClose={() => setShow3D(false)} />
           )}
           {showAssembly && (
-            <AssemblyGuideModal cab={cab} p={p} data={data} t={t} projectId={projectId} onClose={() => setShowAssembly(false)} />
+            <AssemblyGuideModal cab={cab} p={p} data={data} t={t} lang={lang} projectId={projectId} onClose={() => setShowAssembly(false)} />
           )}
           <div style={{ border: `1px solid ${getColors().hair}`, borderRadius: 10, overflow: "hidden", background: "#fff" }}>
             {data.parts.map((x, i) => (
