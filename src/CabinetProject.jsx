@@ -4275,40 +4275,41 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                 await new Promise((r) => { script.onload = r; });
               }
               const XLSX = window.XLSX;
-              const fullHeaders = ["No","Cab.","Material","Type","Nombre","Pieza","Vetas","Largo (mm)","Ancho (mm)","Grosor (mm)","Cant.","L1","L2","A1","A2","R-L","R-A","HB-L","HB-A"];
-              // Production copy: same data, just without the Cab./Type/Nombre columns
-              const prodHeaders = fullHeaders.filter(h => h !== "Cab." && h !== "Type" && h !== "Nombre");
-              const colWidths = {
-                "No": 4, "Cab.": 8, "Material": 22, "Type": 8, "Nombre": 26, "Pieza": 6, "Vetas": 6,
-                "Largo (mm)": 10, "Ancho (mm)": 10, "Grosor (mm)": 10, "Cant.": 6,
-                "L1": 4, "L2": 4, "A1": 4, "A2": 4, "R-L": 5, "R-A": 5, "HB-L": 5, "HB-A": 5,
-              };
-              const data = sortedRows.map((row, i) => ({
-                "No": i + 1,
-                "Cab.": row.cabNums && row.cabNums.length > 0 ? row.cabNums.join(",") : "",
-                "Material": row.material || "",
-                "Type": row.cabType || "",
-                "Nombre": displayNombre(row),
-                "Pieza": { true: "↔", false: "↕", null: "" }[grainAlongLargo(row)],
-                "Vetas": row.vetas || "",
-                "Largo (mm)": row.largo,
-                "Ancho (mm)": row.ancho,
-                "Grosor (mm)": row.grosor,
-                "Cant.": row.cant,
-                "L1": row.cl1 || "", "L2": row.cl2 || "",
-                "A1": row.ca1 || "", "A2": row.ca2 || "",
-                "R-L": row.rl || "", "R-A": row.ra || "",
-                "HB-L": row.hbl || "", "HB-A": row.hba || "",
+              // [key, English header, Spanish header, width]
+              const cols = [
+                ["no", "No", "No", 4], ["cab", "Cab.", "Cab.", 8], ["material", "Material", "Material", 22],
+                ["type", "Type", "Tipo", 10], ["nombre", "Name", "Nombre", 26], ["pieza", "Part", "Pieza", 6],
+                ["vetas", "Grain", "Vetas", 6], ["largo", "Length (mm)", "Largo (mm)", 11], ["ancho", "Width (mm)", "Ancho (mm)", 11],
+                ["grosor", "Thickness (mm)", "Grosor (mm)", 13], ["cant", "Qty", "Cant.", 6],
+                ["cl1", "L1", "L1", 4], ["cl2", "L2", "L2", 4], ["ca1", "W1", "A1", 4], ["ca2", "W2", "A2", 4],
+                ["rl", "R-L", "R-L", 5], ["ra", "R-A", "R-A", 5], ["hbl", "HB-L", "HB-L", 5], ["hba", "HB-A", "HB-A", 5],
+              ];
+              const values = sortedRows.map((row, i) => ({
+                no: i + 1,
+                cab: row.cabNums && row.cabNums.length > 0 ? row.cabNums.join(",") : "",
+                material: row.material || "",
+                type: row.cabType ? ms(row.cabType, CAB_TYPE_ES[row.cabType] || row.cabType) : "",
+                nombre: displayNombre(row),
+                pieza: { true: "↔", false: "↕", null: "" }[grainAlongLargo(row)],
+                vetas: row.vetas || "",
+                largo: row.largo, ancho: row.ancho, grosor: row.grosor, cant: row.cant,
+                cl1: row.cl1 || "", cl2: row.cl2 || "", ca1: row.ca1 || "", ca2: row.ca2 || "",
+                rl: row.rl || "", ra: row.ra || "", hbl: row.hbl || "", hba: row.hba || "",
               }));
-              const saveXlsx = (headers, suffix) => {
+              const saveXlsx = (keys, suffix) => {
+                const use = cols.filter(([k]) => keys.includes(k));
+                const headers = use.map(([, en, es]) => ms(en, es));
+                const data = values.map((v) => Object.fromEntries(use.map(([k, en, es]) => [ms(en, es), v[k]])));
                 const ws = XLSX.utils.json_to_sheet(data, { header: headers });
-                ws["!cols"] = headers.map(h => ({ wch: colWidths[h] || 10 }));
+                ws["!cols"] = use.map(([, , , w]) => ({ wch: w }));
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "Desglose");
                 XLSX.writeFile(wb, `${activeProjectName || "desglose"} - ${suffix}.xlsx`);
               };
-              saveXlsx(fullHeaders, "full");
-              saveXlsx(prodHeaders, "production");
+              const allKeys = cols.map(([k]) => k);
+              saveXlsx(allKeys, "full");
+              // Production copy: same data without the Cab./Type/Name columns
+              saveXlsx(allKeys.filter((k) => k !== "cab" && k !== "type" && k !== "nombre"), "production");
             }}
               style={{ padding: "9px 20px", border: "none", borderRadius: 8, background: "#1D6F42",
                 color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
