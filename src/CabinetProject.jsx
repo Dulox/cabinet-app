@@ -1432,6 +1432,27 @@ function grainAlongLargo(row) {
   return row.vetas ? (row.vetas === "V") === ((row.vAxis || "L") === "L") : null;
 }
 
+// MiniPDF version of GrainDiagram: part outline (Largo horizontal) + red grain arrow.
+function pdfGrainGlyph(doc, x, yTop, part, cab, w = 8, hMin = 2.6, hMax = 5) {
+  const L = Math.max(part.a, part.b), A = Math.min(part.a, part.b);
+  const along = grainAlongLargo({ vetas: cabGrain(cab), vAxis: vAxisFor(part) });
+  const h = along ? Math.max(hMin, Math.min(hMax, (w * A) / L)) : hMax;
+  doc.rect(x, yTop, w, h, { stroke: [85, 85, 85], lineWidth: 0.2 });
+  const red = { color: [200, 0, 0], lineWidth: 0.3 };
+  const cx = x + w / 2, cy = yTop + h / 2, hd = Math.min(0.9, h / 3);
+  if (along) {
+    const x1 = x + 0.8, x2 = x + w - 0.8;
+    doc.line(x1, cy, x2, cy, red);
+    doc.line(x1, cy, x1 + hd, cy - hd, red); doc.line(x1, cy, x1 + hd, cy + hd, red);
+    doc.line(x2, cy, x2 - hd, cy - hd, red); doc.line(x2, cy, x2 - hd, cy + hd, red);
+  } else {
+    const y1 = yTop + 0.3, y2 = yTop + h - 0.3, hd = Math.min(0.9, h / 4.5);
+    doc.line(cx, y1, cx, y2, red);
+    doc.line(cx, y1, cx - hd, y1 + hd, red); doc.line(cx, y1, cx + hd, y1 + hd, red);
+    doc.line(cx, y2, cx - hd, y2 - hd, red); doc.line(cx, y2, cx + hd, y2 - hd, red);
+  }
+}
+
 // Desglose thumbnail: Largo drawn horizontally, red double arrow along the grain.
 function GrainDiagram({ largo, ancho, alongLargo }) {
   const L = Math.max(1, Number(largo) || 1), A = Math.max(1, Number(ancho) || 1);
@@ -5110,7 +5131,7 @@ export default function CabinetProject() {
       const doc = new MiniPDF();
       const pageW = 297, pageH = 210, M = 8;
       let y = M;
-      const col = { elem: M, nombre: M + 10, cant: M + 60, largo: M + 68, ancho: M + 76, grosor: M + 84, desc: M + 92, l1: M + 125, l2: M + 135, c1: M + 145, c2: M + 155 };
+      const col = { elem: M, nombre: M + 10, cant: M + 60, largo: M + 68, ancho: M + 76, grosor: M + 84, desc: M + 96, l1: M + 125, l2: M + 135, c1: M + 145, c2: M + 155 };
       const drawHeader = () => {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8);
@@ -5120,7 +5141,7 @@ export default function CabinetProject() {
         doc.text("Largo", col.largo, y);
         doc.text("Ancho", col.ancho, y);
         doc.text("Grosor", col.grosor, y);
-        doc.text("Desc", col.desc, y);
+        doc.text("Veta", col.desc, y);
         doc.text("L1", col.l1, y);
         doc.text("L2", col.l2, y);
         doc.text("C1", col.c1, y);
@@ -5151,6 +5172,7 @@ export default function CabinetProject() {
           doc.text(String(Math.round(longDim)), col.largo, y);
           doc.text(String(Math.round(shortDim)), col.ancho, y);
           doc.text(String(p2.t), col.grosor, y);
+          pdfGrainGlyph(doc, col.desc, y - 2.6, part, cab, 7, 1.6, 3.2);
           if (hasL) doc.text("x", col.l1, y);
           if (hasL) doc.text("x", col.l2, y);
           if (hasC) doc.text("x", col.c1, y);
@@ -5214,7 +5236,8 @@ export default function CabinetProject() {
           doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.setTextColor(20, 23, 15);
           doc.text(`${x.qty * cabQty}×  ${tName(x.part, t)}`, M, y);
           doc.setFont("courier", "bold"); doc.setFontSize(11);
-          doc.text(`${fmt(x.a)} × ${fmt(x.b)} mm`, right, y, { align: "right" }); y += 4.4;
+          doc.text(`${fmt(x.a)} × ${fmt(x.b)} mm`, right, y, { align: "right" });
+          pdfGrainGlyph(doc, right - doc._wMm(`${fmt(x.a)} × ${fmt(x.b)} mm`, 11) - 11, y - 3.8, x, c); y += 4.4;
           doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120, 124, 112);
           doc.text(noteLines, M, y); y += noteLines.length * 3.4 + 4;
         });
@@ -5299,7 +5322,8 @@ export default function CabinetProject() {
           doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(20, 23, 15);
           doc.text(`${x.qty * cabQty}x  ${tName(x.part, t)}`, M, y);
           doc.setFont("courier", "bold"); doc.setFontSize(10); doc.setTextColor(20, 23, 15);
-          doc.text(`${fmt(x.a)} × ${fmt(x.b)} mm`, right, y, { align: "right" }); y += 4;
+          doc.text(`${fmt(x.a)} × ${fmt(x.b)} mm`, right, y, { align: "right" });
+          pdfGrainGlyph(doc, right - doc._wMm(`${fmt(x.a)} × ${fmt(x.b)} mm`, 10) - 11, y - 3.6, x, c, 8, 2.6, 4.6); y += 4;
           if (x.note) {
             doc.setFont("courier", "normal"); doc.setFontSize(7.5); doc.setTextColor(125, 128, 116);
             const nl = doc.splitTextToSize(`${t(x.aLabel)} × ${t(x.bLabel)} — ${trNote(x.note, lang)}`, right - M);
