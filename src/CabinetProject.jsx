@@ -4127,9 +4127,9 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               // Production copy: same data, just without the Cab./Type/Nombre columns
               const prodHeaders = fullHeaders.filter(h => h !== "Cab." && h !== "Type" && h !== "Nombre");
               const colWidths = {
-                "No": 4, "Cab.": 24, "Material": 12, "Type": 22, "Nombre": 6, "Pieza": 6, "Vetas": 10,
-                "Largo (mm)": 10, "Ancho (mm)": 9, "Grosor (mm)": 6, "Cant.": 4,
-                "L1": 4, "L2": 4, "A1": 4, "A2": 4, "R-L": 4, "R-A": 5, "HB-L": 5, "HB-A": 5,
+                "No": 4, "Cab.": 8, "Material": 22, "Type": 8, "Nombre": 26, "Pieza": 6, "Vetas": 6,
+                "Largo (mm)": 10, "Ancho (mm)": 10, "Grosor (mm)": 10, "Cant.": 6,
+                "L1": 4, "L2": 4, "A1": 4, "A2": 4, "R-L": 5, "R-A": 5, "HB-L": 5, "HB-A": 5,
               };
               const data = sortedRows.map((row, i) => ({
                 "No": i + 1,
