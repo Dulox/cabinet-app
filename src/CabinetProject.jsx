@@ -484,6 +484,7 @@ const translations = {
     "Isometric": "Isométrica", "Every cut — dimensions": "Todos los cortes — medidas",
     "Diagram": "Diagrama", "Part": "Pieza", "Qty": "Cant.", "Size": "Medida",
     "Item": "Elem", "Name": "Nombre", "Length": "Largo", "Thick.": "Grosor",
+    "Board": "Tablero", "nesting": "anidado",
     "Base build-up strip": "Refuerzo superior base",
     "hinge": "bisagra", "slide pair": "par de correderas", "shelf pin": "soporte de estante", "handle": "tirador",
     "Building PDF…": "Generando PDF…", "Building shop drawings…": "Generando planos de taller…",
@@ -1013,7 +1014,7 @@ function dxfText(x, y, h, str, layer) {
    isn't included: this app doesn't commit to exact hinge-system specs
    (cup inset, distance from edge) anywhere else, and guessing those would
    risk a bad CNC cut. */
-function buildNestingDxf(items, p) {
+function buildNestingDxf(items, p, t = (k) => k) {
   const { boards } = packBoardsWithLayout(items, p);
   const BW = p.boardW, BH = p.boardH;
   const GAP = 200; // mm between boards in the drawing
@@ -1022,11 +1023,11 @@ function buildNestingDxf(items, p) {
   boards.forEach((b, bi) => {
     const ox = bi * (BW + GAP);
     ents += dxfRect(ox, 0, BW, BH, "BOARD");
-    ents += dxfText(ox + 10, BH + 30, 60, `Board ${bi + 1}`, "BOARD");
+    ents += dxfText(ox + 10, BH + 30, 60, `${t("Board")} ${bi + 1}`, "BOARD");
     b.rects.forEach((r) => {
       const x = ox + r.x, y = r.y;
       ents += dxfRect(x, y, r.w, r.h, "CUT");
-      ents += dxfText(x + 8, y + r.h - 40, 26, `${r.item.label || "Part"} ${Math.round(r.w)}x${Math.round(r.h)}`, "CUT");
+      ents += dxfText(x + 8, y + r.h - 40, 26, `${r.item.label ? tName(r.item.label, t) : t("Part")} ${Math.round(r.w)}x${Math.round(r.h)}`, "CUT");
       // Sides are grain-locked (never rotated by the nester); when its height runs
       // along x (Vertical grain), the pin rows run along x too.
       if (r.item.isSide) {
@@ -5852,11 +5853,11 @@ export default function CabinetProject() {
           )}
           {summary.board.boards > 0 && (
             <button onClick={() => {
-              const dxf = buildNestingDxf(summary.items, p);
+              const dxf = buildNestingDxf(summary.items, p, t);
               const blob = new Blob([dxf], { type: "application/dxf" });
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
-              a.href = url; a.download = `${currentProjectName || "cutlist"} - nesting.dxf`;
+              a.href = url; a.download = `${currentProjectName || t("Cut list")} - ${t("nesting")}.dxf`;
               document.body.appendChild(a); a.click(); a.remove();
               setTimeout(() => URL.revokeObjectURL(url), 5000);
             }} className="cab-noprint" style={{
