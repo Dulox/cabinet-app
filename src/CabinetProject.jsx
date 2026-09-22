@@ -1389,15 +1389,18 @@ function vetaAxis(aLabel, bLabel, a, b) {
 
 // Apply cabinet grain direction override: Vertical (auto), Horizontal (inverted), or auto
 function getVetaForCabinet(cab, aLabel, bLabel, a, b) {
-  const autoVeta = vetaAxis(aLabel, bLabel, a, b);
-  if (!autoVeta) return "";  // Parts with no grain (no height axis) stay empty
+  // Only grain-able parts (those with a height axis)
+  const aIsHeight = aLabel === "height";
+  const bIsHeight = bLabel === "height";
+  if (!aIsHeight && !bIsHeight) return "";
 
-  if (cab.grainDir === "H") {
-    // Horizontal mode: invert the auto calculation
-    return autoVeta === "V" ? "H" : "V";
+  // Manual override: use literal value for all parts (ensures consistency across cabinet)
+  if (cab.grainDir === "V" || cab.grainDir === "H") {
+    return cab.grainDir;
   }
-  // Auto or Vertical (default): use auto calculation as-is
-  return autoVeta;
+
+  // Auto (default): dimension-based calculation per part
+  return vetaAxis(aLabel, bLabel, a, b);
 }
 
 // The back-panel groove (ranura) is cut into Side/Bottom/Top panels near
