@@ -486,6 +486,28 @@ const translations = {
     "Item": "Elem", "Name": "Nombre", "Length": "Largo", "Thick.": "Grosor",
     "Board": "Tablero", "nesting": "anidado",
     "Shared project": "Proyecto compartido", "shared": "compartido", "copy": "copia",
+    "Account": "Cuenta", "Workbench": "Mesa de trabajo", "Specs": "Especificaciones", "Download": "Descargas",
+    "Material": "Material", "Depth": "Profundidad", "Height": "Alto", "Open": "Abrir", "Vetas": "Vetas",
+    "Saving...": "Guardando...", "No projects yet": "Aún no hay proyectos", "Lock": "Bloquear", "Unlock": "Desbloquear",
+    "Duplicate": "Duplicar", "Delete": "Borrar", "Menu": "Menú", "Loading...": "Cargando...",
+    "Cut-list Calculator": "Calculadora de lista de corte", "Generic Options": "Opciones genéricas",
+    "Export Project PDF": "Exportar PDF del proyecto", "PDF preview": "Vista previa del PDF",
+    "Preview below. If \"Save file\" does nothing, use the download / share button inside the preview, or \"Open in new tab\".": "Vista previa abajo. Si \"Guardar archivo\" no hace nada, usa el botón de descarga / compartir dentro de la vista previa, o \"Abrir en pestaña nueva\".",
+    "Reset all cabinets to Vertical grain": "Poner todos los gabinetes en veta vertical",
+    "Plain panel — no construction, just dimensions": "Panel simple — sin construcción, solo medidas",
+    "Thickness (mm)": "Grosor (mm)",
+    "Project unlock PIN": "PIN para desbloquear proyectos", "Enter PIN to unlock": "Ingresa el PIN para desbloquear",
+    "Incorrect PIN": "PIN incorrecto", "PIN must be 4-8 digits": "El PIN debe tener de 4 a 8 dígitos",
+    "Set a custom PIN": "Establecer un PIN personalizado", "Generate random PIN": "Generar PIN aleatorio",
+    "New PIN — shown only once": "PIN nuevo — se muestra una sola vez", "I've saved it": "Ya lo guardé",
+    "This project is locked. Unlock it from the project list to make changes.": "Este proyecto está bloqueado. Desbloquéalo desde la lista de proyectos para hacer cambios.",
+    "Anyone unlocking a locked project needs this PIN. Default is 1985 until you set a new one. For security, once set the current PIN is never shown again — only right after you set or generate it.": "Cualquiera que desbloquee un proyecto necesita este PIN. El predeterminado es 1985 hasta que pongas uno nuevo. Por seguridad, una vez establecido el PIN actual no se vuelve a mostrar — solo justo después de crearlo o generarlo.",
+    "Change password": "Cambiar contraseña", "Current password": "Contraseña actual",
+    "Enter your current password": "Ingresa tu contraseña actual", "Current password is incorrect": "La contraseña actual es incorrecta",
+    "Update password": "Actualizar contraseña", "Change email": "Cambiar correo", "New email": "Correo nuevo",
+    "Enter a valid email address": "Ingresa un correo válido", "That is already your email": "Ese ya es tu correo",
+    "Check your inbox to confirm the new email ✓": "Revisa tu bandeja para confirmar el correo nuevo ✓",
+    "Update email": "Actualizar correo",
     "Private · Invite only": "Privado · Solo por invitación",
     "Create account": "Crear cuenta", "Welcome back": "Bienvenido de nuevo",
     "Sign up for cabinet access": "Regístrate para acceder", "Log in to open your projects": "Inicia sesión para abrir tus proyectos",
@@ -2447,7 +2469,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
       {cab.type === "filler" && (
         <div className="cab-noprint">
           <div style={{ background: "#f9f9f9", borderRadius: 8, padding: "12px", marginBottom: 12 }}>
-            <div style={{ fontSize: 11, color: "#888", marginBottom: 10 }}>Plain panel — no construction, just dimensions</div>
+            <div style={{ fontSize: 11, color: "#888", marginBottom: 10 }}>{t("Plain panel — no construction, just dimensions")}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{t("Height")} (mm)</span>
@@ -2466,7 +2488,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
                     background: "#fff", color: "#111", outline: "none" }} />
               </label>
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>Thickness (mm)</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{t("Thickness (mm)")}</span>
                 <input type="number" value={cab.fillerT || ""} onChange={e => onChange({ fillerT: e.target.value })}
                   placeholder="18"
                   style={{ width: 80, padding: "7px 10px", fontSize: 18, fontWeight: 700,
@@ -2489,7 +2511,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
                 <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 15.5 }}>
                   {Math.max(Number(cab.fillerH) || 786, Number(cab.fillerW) || 0)} × {Math.min(Number(cab.fillerH) || 786, Number(cab.fillerW) || 0)}
                 </div>
-                <div style={{ fontSize: 10, color: getColors().mut }}>height × width</div>
+                <div style={{ fontSize: 10, color: getColors().mut }}>{t("height")} × {t("width")}</div>
               </div>
             </div>
           </div>
@@ -2791,7 +2813,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
 
           {cab.type === "filler" && (<>
           <div style={{ background: "#f9f9f9", borderRadius: 8, padding: "12px", marginBottom: 8 }}>
-            <div style={{ fontSize: 11, color: "#888", marginBottom: 10 }}>Plain panel — no construction, just dimensions</div>
+            <div style={{ fontSize: 11, color: "#888", marginBottom: 10 }}>{t("Plain panel — no construction, just dimensions")}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{t("Height")} (mm)</span>
@@ -2810,7 +2832,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
                     background: "#fff", color: "#111", outline: "none" }} />
               </label>
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>Thickness (mm)</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{t("Thickness (mm)")}</span>
                 <input type="number" value={cab.fillerT || ""} onChange={e => onChange({ fillerT: e.target.value })}
                   placeholder="18"
                   style={{ width: 80, padding: "7px 10px", fontSize: 18, fontWeight: 700,
@@ -2833,7 +2855,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
                 <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 15.5 }}>
                   {Math.max(Number(cab.fillerH) || 786, Number(cab.fillerW) || 0)} × {Math.min(Number(cab.fillerH) || 786, Number(cab.fillerW) || 0)}
                 </div>
-                <div style={{ fontSize: 10, color: getColors().mut }}>height × width</div>
+                <div style={{ fontSize: 10, color: getColors().mut }}>{t("height")} × {t("width")}</div>
               </div>
             </div>
           </div>
@@ -5600,7 +5622,7 @@ export default function CabinetProject() {
     return (
       <div style={{ minHeight: "100vh", background: getColors().paper, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Archivo', sans-serif" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: getColors().ink }}>Loading...</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: getColors().ink }}>{t("Loading...")}</div>
         </div>
       </div>
     );
@@ -5697,7 +5719,7 @@ export default function CabinetProject() {
         <aside className={`app-rail cab-noprint ${mobileNavOpen ? "open" : ""}`} style={{ background: getColors().card }}>
           <div style={{ display:"flex", alignItems:"center", gap:10, padding:"4px 8px 16px" }}>
             <div style={{ width:34, height:34, borderRadius:9, background:getColors().buttonBg, display:"grid", placeItems:"center", flexShrink:0, color:getColors().buttonText, fontWeight:800 }}>▣</div>
-            <div><div style={{ color:getColors().ink, fontWeight:700, fontSize:14 }}>Cabinet APP</div><div style={{ color:getColors().mut, fontSize:11 }}>Cut-list Calculator</div></div>
+            <div><div style={{ color:getColors().ink, fontWeight:700, fontSize:14 }}>Cabinet APP</div><div style={{ color:getColors().mut, fontSize:11 }}>{t("Cut-list Calculator")}</div></div>
           </div>
           {[
             ["workbench", t("Workbench") || "Workbench"],
@@ -5729,7 +5751,7 @@ export default function CabinetProject() {
           <div style={{ borderBottom: `1px solid ${getColors().canvasBorder}`, paddingBottom: 14, marginBottom: 18,
             display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
             <div style={{ display:"flex", alignItems:"center", gap:12, minWidth: 0, flex: 1 }}>
-              <button className="mobile-hamburger cab-noprint" onClick={()=>setMobileNavOpen(true)} aria-label="Menu">
+              <button className="mobile-hamburger cab-noprint" onClick={()=>setMobileNavOpen(true)} aria-label={t("Menu")}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
               </button>
               <div style={{ minWidth: 0 }}>
@@ -5767,9 +5789,9 @@ export default function CabinetProject() {
               <button onClick={() => { URL.revokeObjectURL(pdfUrl); setPdfUrl(null); }} style={btn("transparent", getColors().mut, `1px solid ${getColors().hair}`)}>{t("Close")}</button>
             </div>
             <div style={{ fontSize: 12, color: getColors().mut, marginBottom: 8 }}>
-              Preview below. If "Save file" does nothing, use the download / share button inside the preview, or "Open in new tab".
+              {t("Preview below. If \"Save file\" does nothing, use the download / share button inside the preview, or \"Open in new tab\".")}
             </div>
-            <iframe title="PDF preview" src={pdfUrl} style={{ width: "100%", height: 520, border: `1px solid ${getColors().hair}`, borderRadius: 10, background: "#fff" }} />
+            <iframe title={t("PDF preview")} src={pdfUrl} style={{ width: "100%", height: 520, border: `1px solid ${getColors().hair}`, borderRadius: 10, background: "#fff" }} />
           </div>
         )}
 
@@ -5912,7 +5934,7 @@ export default function CabinetProject() {
                   border: "none", borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
                   {t("Apply to all cabinets")}
                 </button>
-                <button onClick={resetAllGrainToVertical} className="cab-noprint" title="Reset all cabinets to Vertical grain" style={{
+                <button onClick={resetAllGrainToVertical} className="cab-noprint" title={t("Reset all cabinets to Vertical grain")} style={{
                   padding: "7px 13px", background: getColors().hair, color: getColors().ink,
                   border: `1px solid ${getColors().hair}`, borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
                   ↺ {t("Vertical")}
@@ -5975,10 +5997,10 @@ export default function CabinetProject() {
                     </div>
                     <div style={{ display:"flex", gap:6, marginTop:14 }}>
                       <button onClick={() => { switchProject(proj.id); setActiveView("workbench"); }} style={{ flex:1, padding:"8px", background:getColors().buttonBg, color:getColors().buttonText, border:"none", borderRadius:8, fontWeight:700, fontSize:12, cursor:"pointer" }}>{t("Open")}</button>
-                      <button onClick={() => proj.locked ? setUnlockModalProject(proj) : toggleLockProject(proj)} title="Lock" style={{ padding:"8px 10px", background:getColors().mat, color:getColors().ink, border:"none", borderRadius:8, cursor:"pointer", fontSize:13 }}>{proj.locked?"🔓":"🔒"}</button>
-                      <button onClick={() => duplicateProject(proj)} title="Duplicate" style={{ padding:"8px 10px", background:getColors().mat, color:getColors().ink, border:"none", borderRadius:8, cursor:"pointer", fontSize:13 }}>⧉</button>
+                      <button onClick={() => proj.locked ? setUnlockModalProject(proj) : toggleLockProject(proj)} title={t("Lock")} style={{ padding:"8px 10px", background:getColors().mat, color:getColors().ink, border:"none", borderRadius:8, cursor:"pointer", fontSize:13 }}>{proj.locked?"🔓":"🔒"}</button>
+                      <button onClick={() => duplicateProject(proj)} title={t("Duplicate")} style={{ padding:"8px 10px", background:getColors().mat, color:getColors().ink, border:"none", borderRadius:8, cursor:"pointer", fontSize:13 }}>⧉</button>
                       <button onClick={() => shareProject(proj)} title={t("Copy share link")} style={{ padding:"8px 10px", background:getColors().mat, color:getColors().ink, border:"none", borderRadius:8, cursor:"pointer", fontSize:13 }}>🔗</button>
-                      <button onClick={() => !proj.locked && deleteProject(proj.id)} title="Delete" style={{ padding:"8px 10px", background:getColors().mat, color:proj.locked?getColors().mut:"#e74c3c", border:"none", borderRadius:8, cursor:proj.locked?"not-allowed":"pointer", fontSize:13 }}>×</button>
+                      <button onClick={() => !proj.locked && deleteProject(proj.id)} title={t("Delete")} style={{ padding:"8px 10px", background:getColors().mat, color:proj.locked?getColors().mut:"#e74c3c", border:"none", borderRadius:8, cursor:proj.locked?"not-allowed":"pointer", fontSize:13 }}>×</button>
                     </div>
                   </div>
                 ))}
@@ -5992,7 +6014,7 @@ export default function CabinetProject() {
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:12 }}>
                 {[
                   [t("Download PDF"), downloadPDF],
-                  ["Export Project PDF", exportProjectToPDF],
+                  [t("Export Project PDF"), exportProjectToPDF],
                   [t("Shop drawing PDF"), downloadShopPDF],
                   ["Madesol / Desglose", () => setShowDesglose(true)],
                   [t("Copy text"), copyAll],
@@ -6019,10 +6041,10 @@ export default function CabinetProject() {
               {/* Tab buttons */}
               <div style={{ display: "flex", borderBottom: `1px solid ${getColors().hair}` }}>
                 <button onClick={() => setSpecTab("shared")} style={{ flex: 1, padding: "12px 14px", border: "none", background: specTab === "shared" ? getColors().card : "#f5f5f5", color: specTab === "shared" ? getColors().rust : getColors().mut, cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: "0.05em" }}>
-                  Shared Specifications
+                  {t("Shared specifications & assumptions")}
                 </button>
                 <button onClick={() => setSpecTab("generic")} style={{ flex: 1, padding: "12px 14px", border: "none", background: specTab === "generic" ? getColors().card : "#f5f5f5", color: specTab === "generic" ? getColors().rust : getColors().mut, cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: "0.05em" }}>
-                  Generic Options
+                  {t("Generic Options")}
                 </button>
               </div>
               
