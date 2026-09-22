@@ -1245,7 +1245,7 @@ function TopView({ W, D, p }) {
 }
 
 /* Profile (side) view: shows depth × height, with shelf/drawer partition lines */
-function SideView({ D, H, p, shelfQty, faces, shelfPositions }) {
+function SideView({ D, H, p, shelfQty, faces, shelfPositions, grain = null }) {
   const t = p.t;
   const pad = Math.max(90, Math.max(D, H) * 0.18);
   const vbW = D + pad * 2, vbH = H + pad * 2;
@@ -1291,6 +1291,15 @@ function SideView({ D, H, p, shelfQty, faces, shelfPositions }) {
       </defs>
       <rect x="0" y="0" width={vbW} height={vbH} fill="url(#gSide)" />
       <rect x={ox} y={oy} width={D} height={H} fill="none" stroke={getColors().amber} strokeWidth={fs * 0.09} strokeDasharray={dash} />
+      {grain && (() => {
+        const vert = grain === "V", across = vert ? D : H, n = Math.max(3, Math.min(12, Math.round(across / 70)));
+        return Array.from({ length: n }, (_, i) => {
+          const s = across * (i + 0.5) / n;
+          return vert
+            ? <line key={"v" + i} x1={ox + s} y1={oy} x2={ox + s} y2={oy + H} stroke="#8a6d3f" strokeWidth={fs * 0.05} opacity="0.55" />
+            : <line key={"v" + i} x1={ox} y1={oy + s} x2={ox + D} y2={oy + s} stroke="#8a6d3f" strokeWidth={fs * 0.05} opacity="0.55" />;
+        });
+      })()}
       {/* top rail / bottom panel bands */}
       <rect x={ox} y={oy} width={D} height={p.railH} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
       <rect x={ox} y={oy + H - t} width={D} height={t} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
@@ -1581,6 +1590,12 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
           <div style={{ fontSize: 18, fontWeight: 800, color: getColors().ink }}>
             {cabLabel(cab, idx || 0, t)} — {t ? t("all views & dimensions") : "all views & dimensions"}
           </div>
+          <button onClick={() => setShowVetas((v) => !v)} style={{
+            marginLeft: "auto", marginRight: 12, padding: "5px 10px", borderRadius: 7, fontWeight: 700, fontSize: 12, cursor: "pointer",
+            border: `1px solid ${showVetas ? "#8a6d3f" : getColors().hair}`,
+            background: showVetas ? "#8a6d3f" : "transparent", color: showVetas ? "#fff" : getColors().ink }}>
+            🌾 {showVetas ? t("Hide vetas") : t("Show vetas")}
+          </button>
           <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 26, cursor: "pointer", color: getColors().mut, lineHeight: 1 }}>×</button>
         </div>
 
@@ -1595,18 +1610,11 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Side</div>
-            <SideView D={D} H={H} p={p} shelfQty={cab.shelfQty} faces={data.faces} shelfPositions={cab.shelfPositions} />
+            <SideView D={D} H={H} p={p} shelfQty={cab.shelfQty} faces={data.faces} shelfPositions={cab.shelfPositions}
+              grain={showVetas ? cabGrain(cab) : null} />
           </div>
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut }}>Isometric</div>
-              <button onClick={() => setShowVetas((v) => !v)} style={{
-                padding: "3px 8px", borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: "pointer",
-                border: `1px solid ${showVetas ? "#8a6d3f" : getColors().hair}`,
-                background: showVetas ? "#8a6d3f" : "transparent", color: showVetas ? "#fff" : getColors().ink }}>
-                🌾 {showVetas ? t("Hide vetas") : t("Show vetas")}
-              </button>
-            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Isometric</div>
             <IsoView W={W} D={D} p={p} faces={data.faces} grain={showVetas ? cabGrain(cab) : null} />
           </div>
         </div>
