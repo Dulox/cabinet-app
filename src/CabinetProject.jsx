@@ -486,6 +486,42 @@ const translations = {
     "Item": "Elem", "Name": "Nombre", "Length": "Largo", "Thick.": "Grosor",
     "Board": "Tablero", "nesting": "anidado",
     "Shared project": "Proyecto compartido", "shared": "compartido", "copy": "copia",
+    "Private · Invite only": "Privado · Solo por invitación",
+    "Create account": "Crear cuenta", "Welcome back": "Bienvenido de nuevo",
+    "Sign up for cabinet access": "Regístrate para acceder", "Log in to open your projects": "Inicia sesión para abrir tus proyectos",
+    "Email": "Correo", "Password": "Contraseña", "Please wait...": "Espera...", "Sign up": "Registrarse",
+    "Already have an account?": "¿Ya tienes cuenta?", "No account?": "¿No tienes cuenta?", "Request access": "Solicitar acceso",
+    "New accounts are": "Las cuentas nuevas son", "reviewed by the owner": "revisadas por el propietario", "before access is granted.": "antes de dar acceso.",
+    "Password recovery": "Recuperar contraseña", "Set a new password": "Establece una contraseña nueva",
+    "Choose a new password for your account.": "Elige una contraseña nueva para tu cuenta.",
+    "New password": "Contraseña nueva", "Confirm new password": "Confirmar contraseña nueva",
+    "Password updated ✓ Redirecting...": "Contraseña actualizada ✓ Redirigiendo...", "Set new password": "Guardar contraseña",
+    "Pending approval": "Pendiente de aprobación", "You're on the list": "Estás en la lista",
+    "Thanks for signing up. Your account is waiting for the owner to approve access — you'll be able to log in as soon as it's approved.": "Gracias por registrarte. Tu cuenta espera que el propietario apruebe el acceso — podrás iniciar sesión en cuanto sea aprobada.",
+    "Checking...": "Comprobando...", "Check again": "Comprobar de nuevo",
+    "Admin panel": "Panel de administración", "User management": "Gestión de usuarios",
+    "App theme style": "Estilo del tema", "Monochrome": "Monocromo", "Glass": "Glass",
+    "Monochrome: black, white, and grey only. Glass: soft lavender canvas with an indigo/purple accent. Applies in light mode; dark mode looks the same either way.": "Monocromo: solo blanco, negro y gris. Glass: fondo lavanda suave con acento índigo/morado. Aplica en modo claro; el modo oscuro se ve igual en ambos.",
+    "Pending": "Pendiente", "awaiting approval": "esperando aprobación", "Total users": "Usuarios totales",
+    "with a profile": "con perfil", "Signed in as": "Sesión iniciada como", "Admin account": "Cuenta de administrador",
+    "Pending signups": "Registros pendientes", "All clear": "Todo al día", "No pending approvals.": "No hay aprobaciones pendientes.",
+    "Approve": "Aprobar", "All users": "Todos los usuarios", "Loading...": "Cargando...", "Refresh": "Actualizar",
+    "To create a new account, ask the person to sign up via \"Request access\" on the login screen, then approve them here.": "Para crear una cuenta nueva, pide a la persona que se registre con \"Solicitar acceso\" en la pantalla de inicio de sesión y luego apruébala aquí.",
+    "To change someone's password, send them a reset link — they set the new password themselves.": "Para cambiar la contraseña de alguien, envíale un enlace de restablecimiento — la persona elige la contraseña nueva.",
+    "Admin": "Admin", "Reset email sent ✓": "Correo de restablecimiento enviado ✓",
+    "Couldn't send reset email": "No se pudo enviar el correo de restablecimiento", "Password updated ✓": "Contraseña actualizada ✓",
+    "Couldn't set password (min. 6 characters, or Edge Function not deployed)": "No se pudo establecer la contraseña (mín. 6 caracteres, o la Edge Function no está desplegada)",
+    "Setting...": "Guardando...", "Save": "Guardar", "Revoke approval": "Revocar aprobación",
+    "Remove admin": "Quitar admin", "Make admin": "Hacer admin", "Sending...": "Enviando...",
+    "Send password reset": "Enviar restablecimiento", "Cancel": "Cancelar", "Set password": "Establecer contraseña",
+    "Revoke access": "Revocar acceso", "No users found.": "No se encontraron usuarios.",
+    "Remove your own admin access? You will lose access to this panel.": "¿Quitarte tu propio acceso de administrador? Perderás el acceso a este panel.",
+    "You can't revoke your own access.": "No puedes revocar tu propio acceso.",
+    "Revoke app access for": "¿Revocar el acceso a la app de",
+    "This removes their profile so they can no longer log into the app. Their Supabase login itself is not deleted — that requires direct database access.": "Esto elimina su perfil para que ya no pueda iniciar sesión en la app. Su login de Supabase no se borra — eso requiere acceso directo a la base de datos.",
+    "Supabase not loaded yet": "Supabase aún no ha cargado", "Login failed": "Error al iniciar sesión",
+    "Signup failed": "Error al registrarse", "Failed to create profile": "No se pudo crear el perfil",
+    "Account created! Now log in with your credentials.": "¡Cuenta creada! Ahora inicia sesión con tus credenciales.",
     "Base build-up strip": "Refuerzo superior base",
     "hinge": "bisagra", "slide pair": "par de correderas", "shelf pin": "soporte de estante", "handle": "tirador",
     "Building PDF…": "Generando PDF…", "Building shop drawings…": "Generando planos de taller…",
@@ -2797,7 +2833,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
 
 /* -------------------------------- auth screens ----------------------------- */
 
-function LoginScreen({ signupMode, setSignupMode, loginEmail, setLoginEmail, loginPassword, setLoginPassword, authError, setAuthError, handleLogin, handleSignup, loading }) {
+function LoginScreen({ signupMode, setSignupMode, loginEmail, setLoginEmail, loginPassword, setLoginPassword, authError, setAuthError, handleLogin, handleSignup, loading, t = (k) => k }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (signupMode) handleSignup();
@@ -2808,23 +2844,23 @@ function LoginScreen({ signupMode, setSignupMode, loginEmail, setLoginEmail, log
     <div style={{ minHeight: "100svh", background: getColors().paper, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'Archivo', sans-serif", boxSizing: "border-box" }}>
       <div style={{ width: "100%", maxWidth: 420, background: getColors().card, border: `1px solid ${getColors().hair}`, borderRadius: 18, padding: 36, boxShadow: "0 18px 50px rgba(0,0,0,0.1)" }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: getColors().rust, textAlign: "center" }}>
-          Private · Invite only
+          {t("Private · Invite only")}
         </div>
         <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.5px", textAlign: "center", marginTop: 3, color: getColors().ink }}>
-          {signupMode ? "Create account" : "Welcome back"}
+          {t(signupMode ? "Create account" : "Welcome back")}
         </div>
         <div style={{ fontSize: 13, color: getColors().mut, textAlign: "center", marginTop: 8, marginBottom: 26 }}>
-          {signupMode ? "Sign up for cabinet access" : "Log in to open your projects"}
+          {t(signupMode ? "Sign up for cabinet access" : "Log in to open your projects")}
         </div>
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 14 }}>
-            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>Email</label>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>{t("Email")}</label>
             <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} placeholder="you@email.com"
               style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${getColors().hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: "#111", background: "#fff" }} />
           </div>
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>Password</label>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>{t("Password")}</label>
             <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} placeholder="••••••••"
               style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${getColors().hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: "#111", background: "#fff" }} />
           </div>
@@ -2832,25 +2868,25 @@ function LoginScreen({ signupMode, setSignupMode, loginEmail, setLoginEmail, log
           {authError && <div style={{ fontSize: 13, color: getColors().rust, marginBottom: 14, textAlign: "center" }}>{authError}</div>}
 
           <button type="submit" disabled={loading} style={{ width: "100%", padding: 12, background: getColors().rust, color: "#fff", border: "none", borderRadius: 9, fontSize: 14, fontWeight: 800, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1 }}>
-            {loading ? "Please wait..." : (signupMode ? "Sign up" : "Log in")}
+            {t(loading ? "Please wait..." : (signupMode ? "Sign up" : "Log in"))}
           </button>
         </form>
 
         <div style={{ textAlign: "center", color: getColors().mut, fontSize: 13, marginTop: 20 }}>
           {signupMode ? (
             <>
-              Already have an account? <button onClick={() => { setSignupMode(false); setAuthError(""); }} style={{ background: "none", border: "none", color: "#ccc", fontWeight: 700, cursor: "pointer", fontSize: 13, textDecoration: "underline" }}>Log in</button>
+              {t("Already have an account?")} <button onClick={() => { setSignupMode(false); setAuthError(""); }} style={{ background: "none", border: "none", color: "#ccc", fontWeight: 700, cursor: "pointer", fontSize: 13, textDecoration: "underline" }}>{t("Log in")}</button>
             </>
           ) : (
             <>
-              No account? <button onClick={() => { setSignupMode(true); setAuthError(""); }} style={{ background: "none", border: "none", color: "#ccc", fontWeight: 700, cursor: "pointer", fontSize: 13, textDecoration: "underline" }}>Request access</button>
+              {t("No account?")} <button onClick={() => { setSignupMode(true); setAuthError(""); }} style={{ background: "none", border: "none", color: "#ccc", fontWeight: 700, cursor: "pointer", fontSize: 13, textDecoration: "underline" }}>{t("Request access")}</button>
             </>
           )}
         </div>
 
         {!signupMode && (
           <div style={{ marginTop: 20, background: "rgba(255,255,255,0.06)", border: `1px solid rgba(255,255,255,0.1)`, borderRadius: 10, padding: "11px 13px", fontSize: 12, color: "#9a9ba2", textAlign: "center", lineHeight: 1.5 }}>
-            New accounts are <strong style={{ color: "#ccc" }}>reviewed by the owner</strong> before access is granted.
+            {t("New accounts are")} <strong style={{ color: "#ccc" }}>{t("reviewed by the owner")}</strong> {t("before access is granted.")}
           </div>
         )}
       </div>
@@ -2858,38 +2894,38 @@ function LoginScreen({ signupMode, setSignupMode, loginEmail, setLoginEmail, log
   );
 }
 
-function RecoveryScreen({ recoveryPassword, setRecoveryPassword, recoveryConfirm, setRecoveryConfirm, recoveryError, recoveryStatus, handleRecoverySubmit }) {
+function RecoveryScreen({ recoveryPassword, setRecoveryPassword, recoveryConfirm, setRecoveryConfirm, recoveryError, recoveryStatus, handleRecoverySubmit, t = (k) => k }) {
   const handleSubmit = (e) => { e.preventDefault(); handleRecoverySubmit(); };
   return (
     <div style={{ minHeight: "100svh", background: getColors().paper, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'Archivo', sans-serif", boxSizing: "border-box" }}>
       <div style={{ width: "100%", maxWidth: 420, background: getColors().card, border: `1px solid ${getColors().hair}`, borderRadius: 18, padding: 36, boxShadow: "0 18px 50px rgba(0,0,0,0.1)" }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: getColors().rust, textAlign: "center" }}>
-          Password recovery
+          {t("Password recovery")}
         </div>
         <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.5px", textAlign: "center", marginTop: 3, color: getColors().ink }}>
-          Set a new password
+          {t("Set a new password")}
         </div>
         <div style={{ fontSize: 13, color: getColors().mut, textAlign: "center", marginTop: 8, marginBottom: 26 }}>
-          Choose a new password for your account.
+          {t("Choose a new password for your account.")}
         </div>
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 14 }}>
-            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>New password</label>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>{t("New password")}</label>
             <input type="password" value={recoveryPassword} onChange={(e) => setRecoveryPassword(e.target.value)} placeholder="••••••••"
               style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${getColors().hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: "#111", background: "#fff" }} />
           </div>
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>Confirm new password</label>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 5 }}>{t("Confirm new password")}</label>
             <input type="password" value={recoveryConfirm} onChange={(e) => setRecoveryConfirm(e.target.value)} placeholder="••••••••"
               style={{ width: "100%", padding: "11px 12px", border: `1.5px solid ${getColors().hair}`, borderRadius: 9, fontSize: 14, fontFamily: "'Archivo', sans-serif", color: "#111", background: "#fff" }} />
           </div>
 
           {recoveryError && <div style={{ fontSize: 13, color: getColors().rust, marginBottom: 14, textAlign: "center" }}>{recoveryError}</div>}
-          {recoveryStatus === "success" && <div style={{ fontSize: 13, color: "#27ae60", marginBottom: 14, textAlign: "center" }}>Password updated ✓ Redirecting...</div>}
+          {recoveryStatus === "success" && <div style={{ fontSize: 13, color: "#27ae60", marginBottom: 14, textAlign: "center" }}>{t("Password updated ✓ Redirecting...")}</div>}
 
           <button type="submit" disabled={recoveryStatus === "saving"} style={{ width: "100%", padding: 12, background: getColors().rust, color: "#fff", border: "none", borderRadius: 9, fontSize: 14, fontWeight: 800, cursor: recoveryStatus === "saving" ? "not-allowed" : "pointer", opacity: recoveryStatus === "saving" ? 0.6 : 1 }}>
-            {recoveryStatus === "saving" ? "Please wait..." : "Set new password"}
+            {t(recoveryStatus === "saving" ? "Please wait..." : "Set new password")}
           </button>
         </form>
       </div>
@@ -2897,7 +2933,7 @@ function RecoveryScreen({ recoveryPassword, setRecoveryPassword, recoveryConfirm
   );
 }
 
-function PendingScreen({ authState, handleLogout, checkAuth }) {
+function PendingScreen({ authState, handleLogout, checkAuth, t = (k) => k }) {
   const [checking, setChecking] = useState(false);
   const onCheckAgain = async () => {
     setChecking(true);
@@ -2908,29 +2944,29 @@ function PendingScreen({ authState, handleLogout, checkAuth }) {
       <div style={{ width: "100%", maxWidth: 470, background: getColors().card, border: `1px solid ${getColors().hair}`, borderRadius: 18, padding: 40, textAlign: "center", boxShadow: "0 18px 50px rgba(0,0,0,0.1)" }}>
         <div style={{ width: 66, height: 66, borderRadius: "50%", background: "#FCE7DE", margin: "0 auto 20px", lineHeight: "66px", fontSize: 30 }}>⏱</div>
         <div style={{ display: "inline-block", background: "#FCE7DE", color: getColors().rust, borderRadius: 20, padding: "6px 14px", fontSize: 12, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 26 }}>
-          Pending approval
+          {t("Pending approval")}
         </div>
         <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 12, color: getColors().ink }}>
-          You're on the list
+          {t("You're on the list")}
         </div>
         <div style={{ color: getColors().mut, fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
-          Thanks for signing up. Your account is waiting for the owner to approve access — you'll be able to log in as soon as it's approved.
+          {t("Thanks for signing up. Your account is waiting for the owner to approve access — you'll be able to log in as soon as it's approved.")}
         </div>
         <div style={{ display: "inline-block", background: "#F2F2EF", border: `1px solid ${getColors().hair}`, borderRadius: 8, padding: "7px 12px", fontSize: 13, fontWeight: 700, fontFamily: "'Courier New', monospace", marginBottom: 24 }}>
           {authState?.user?.email}
         </div><br />
         <button onClick={onCheckAgain} disabled={checking} style={{ padding: "8px 16px", border: `1.5px solid ${getColors().canvasBorder}`, background: "transparent", color: getColors().ink, borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: checking ? "not-allowed" : "pointer", marginRight: 8, opacity: checking ? 0.6 : 1 }}>
-          {checking ? "Checking..." : "Check again"}
+          {t(checking ? "Checking..." : "Check again")}
         </button>
         <button onClick={handleLogout} style={{ padding: "8px 16px", border: "none", background: "transparent", color: getColors().mut, borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-          Log out
+          {t("Log out")}
         </button>
       </div>
     </div>
   );
 }
 
-function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout, colorStyle, setColorStyleAndPersist }) {
+function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout, colorStyle, setColorStyleAndPersist, t = (k) => k }) {
   const c = getColors();
   const [allUsers, setAllUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
@@ -2960,7 +2996,7 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout, colo
   const setIsAdmin = async (userId, isAdmin) => {
     if (!supabase) return;
     if (!isAdmin && userId === authState?.user?.id) {
-      if (!window.confirm("Remove your own admin access? You will lose access to this panel.")) return;
+      if (!window.confirm(t("Remove your own admin access? You will lose access to this panel."))) return;
     }
     const { error } = await supabase.from("profiles").update({ is_admin: isAdmin }).eq("id", userId);
     if (!error) {
@@ -2985,10 +3021,10 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout, colo
   const revokeAccess = async (userId, email) => {
     if (!supabase) return;
     if (userId === authState?.user?.id) {
-      window.alert("You can't revoke your own access.");
+      window.alert(t("You can't revoke your own access."));
       return;
     }
-    if (!window.confirm(`Revoke app access for ${email}? This removes their profile so they can no longer log into the app. Their Supabase login itself is not deleted — that requires direct database access.`)) return;
+    if (!window.confirm(`${t("Revoke app access for")} ${email}? ${t("This removes their profile so they can no longer log into the app. Their Supabase login itself is not deleted — that requires direct database access.")}`)) return;
     const { error } = await supabase.from("profiles").delete().eq("id", userId);
     if (!error) {
       setAllUsers((list) => list.filter((u) => u.id !== userId));
@@ -3036,15 +3072,15 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout, colo
     <div>
       {/* header */}
       <div style={{ marginBottom: 22, paddingBottom: 14, borderBottom: `1px solid ${c.canvasBorder}` }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: c.canvasMut, textTransform: "uppercase" }}>Admin panel</div>
-        <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.02em", marginTop: 4, color: c.canvasText }}>User management</div>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: c.canvasMut, textTransform: "uppercase" }}>{t("Admin panel")}</div>
+        <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.02em", marginTop: 4, color: c.canvasText }}>{t("User management")}</div>
       </div>
 
       {/* app theme style switch */}
       <div style={{ background: c.card, borderRadius: 14, padding: "18px 16px", marginBottom: 24 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.mut, marginBottom: 12 }}>App theme style</div>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.mut, marginBottom: 12 }}>{t("App theme style")}</div>
         <div style={{ display: "inline-flex", background: c.mat, borderRadius: 10, padding: 4, gap: 4 }}>
-          {[["mono", "Monochrome"], ["glass", "Glass"]].map(([key, label]) => (
+          {[["mono", t("Monochrome")], ["glass", t("Glass")]].map(([key, label]) => (
             <button key={key} onClick={() => setColorStyleAndPersist(key)} style={{
               padding: "8px 18px", borderRadius: 8, border: "none", cursor: "pointer",
               fontWeight: 700, fontSize: 13,
@@ -3057,37 +3093,37 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout, colo
           ))}
         </div>
         <div style={{ fontSize: 11, color: c.mut, marginTop: 10 }}>
-          Monochrome: black, white, and grey only. Glass: soft lavender canvas with an indigo/purple accent. Applies in light mode; dark mode looks the same either way.
+          {t("Monochrome: black, white, and grey only. Glass: soft lavender canvas with an indigo/purple accent. Applies in light mode; dark mode looks the same either way.")}
         </div>
       </div>
 
       {/* stat cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12, marginBottom: 24 }}>
         <div style={{ background: c.card, borderRadius: 14, padding: "18px 16px" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.mut, marginBottom: 10 }}>Pending</div>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.mut, marginBottom: 10 }}>{t("Pending")}</div>
           <div style={{ fontSize: 32, fontWeight: 800, color: c.ink, fontFamily: "'JetBrains Mono', monospace" }}>{pendingUsers.length}</div>
-          <div style={{ fontSize: 11, color: c.mut, marginTop: 4 }}>awaiting approval</div>
+          <div style={{ fontSize: 11, color: c.mut, marginTop: 4 }}>{t("awaiting approval")}</div>
         </div>
         <div style={{ background: c.card, borderRadius: 14, padding: "18px 16px" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.mut, marginBottom: 10 }}>Total users</div>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.mut, marginBottom: 10 }}>{t("Total users")}</div>
           <div style={{ fontSize: 32, fontWeight: 800, color: c.ink, fontFamily: "'JetBrains Mono', monospace" }}>{allUsers.length}</div>
-          <div style={{ fontSize: 11, color: c.mut, marginTop: 4 }}>with a profile</div>
+          <div style={{ fontSize: 11, color: c.mut, marginTop: 4 }}>{t("with a profile")}</div>
         </div>
         <div style={{ background: c.canvasBtn, border: `1px solid ${c.canvasBorder}`, borderRadius: 14, padding: "18px 16px" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.canvasMut, marginBottom: 10 }}>Signed in as</div>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.canvasMut, marginBottom: 10 }}>{t("Signed in as")}</div>
           <div style={{ fontSize: 14, fontWeight: 700, color: c.canvasText, wordBreak: "break-all" }}>{authState?.user?.email || "—"}</div>
-          <div style={{ fontSize: 11, color: c.canvasMut, marginTop: 4 }}>Admin account</div>
+          <div style={{ fontSize: 11, color: c.canvasMut, marginTop: 4 }}>{t("Admin account")}</div>
         </div>
       </div>
 
       {/* pending users list */}
-      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.canvasMut, marginBottom: 12 }}>Pending signups</div>
+      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.canvasMut, marginBottom: 12 }}>{t("Pending signups")}</div>
 
       {pendingUsers.length === 0 ? (
         <div style={{ background: c.card, borderRadius: 14, padding: "24px 20px", textAlign: "center", marginBottom: 28 }}>
           <div style={{ fontSize: 24, marginBottom: 8 }}>✓</div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: c.ink }}>All clear</div>
-          <div style={{ fontSize: 12, color: c.mut, marginTop: 4 }}>No pending approvals.</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: c.ink }}>{t("All clear")}</div>
+          <div style={{ fontSize: 12, color: c.mut, marginTop: 4 }}>{t("No pending approvals.")}</div>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 28 }}>
@@ -3105,7 +3141,7 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout, colo
                 border: "none", borderRadius: 10, fontWeight: 700, fontSize: 13,
                 cursor: "pointer", whiteSpace: "nowrap", transition: "opacity .15s"
               }}>
-                Approve
+                {t("Approve")}
               </button>
             </div>
           ))}
@@ -3114,15 +3150,15 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout, colo
 
       {/* all users list */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.canvasMut }}>All users</div>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: c.canvasMut }}>{t("All users")}</div>
         <button onClick={loadAllUsers} style={{ background: "none", border: "none", color: c.canvasMut, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-          {usersLoading ? "Loading..." : "↻ Refresh"}
+          {usersLoading ? t("Loading...") : `↻ ${t("Refresh")}`}
         </button>
       </div>
 
       <div style={{ fontSize: 11, color: c.canvasMut, marginBottom: 14, lineHeight: 1.5 }}>
-        To create a new account, ask the person to sign up via "Request access" on the login screen, then approve them here.
-        To change someone's password, send them a reset link — they set the new password themselves.
+        {t("To create a new account, ask the person to sign up via \"Request access\" on the login screen, then approve them here.")}{" "}
+        {t("To change someone's password, send them a reset link — they set the new password themselves.")}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -3137,26 +3173,26 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout, colo
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: c.ink }}>{user.email}</div>
                   {user.is_admin && (
-                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 6, background: c.buttonBg, color: c.buttonText }}>Admin</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 6, background: c.buttonBg, color: c.buttonText }}>{t("Admin")}</span>
                   )}
                   {!user.approved && (
-                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 6, background: "rgba(231,76,60,0.15)", color: "#e74c3c" }}>Pending</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 6, background: "rgba(231,76,60,0.15)", color: "#e74c3c" }}>{t("Pending")}</span>
                   )}
                 </div>
-                {msg === "sent" && <div style={{ fontSize: 11, color: "#27ae60", marginTop: 4 }}>Reset email sent ✓</div>}
-                {msg === "error" && <div style={{ fontSize: 11, color: "#e74c3c", marginTop: 4 }}>Couldn't send reset email</div>}
-                {msg === "pwsuccess" && <div style={{ fontSize: 11, color: "#27ae60", marginTop: 4 }}>Password updated ✓</div>}
-                {msg === "pwerror" && <div style={{ fontSize: 11, color: "#e74c3c", marginTop: 4 }}>Couldn't set password (min. 6 characters, or Edge Function not deployed)</div>}
+                {msg === "sent" && <div style={{ fontSize: 11, color: "#27ae60", marginTop: 4 }}>{t("Reset email sent ✓")}</div>}
+                {msg === "error" && <div style={{ fontSize: 11, color: "#e74c3c", marginTop: 4 }}>{t("Couldn't send reset email")}</div>}
+                {msg === "pwsuccess" && <div style={{ fontSize: 11, color: "#27ae60", marginTop: 4 }}>{t("Password updated ✓")}</div>}
+                {msg === "pwerror" && <div style={{ fontSize: 11, color: "#e74c3c", marginTop: 4 }}>{t("Couldn't set password (min. 6 characters, or Edge Function not deployed)")}</div>}
                 {pwFieldOpen[user.id] && (
                   <div style={{ display: "flex", gap: 6, marginTop: 8, alignItems: "center" }}>
-                    <input type="password" placeholder="New password" value={pwFieldValue[user.id] || ""}
+                    <input type="password" placeholder={t("New password")} value={pwFieldValue[user.id] || ""}
                       onChange={(e) => setPwFieldValue((v) => ({ ...v, [user.id]: e.target.value }))}
                       onKeyDown={(e) => { if (e.key === "Enter") setDirectPassword(user.id); }}
                       style={{ padding: "6px 10px", borderRadius: 7, border: `1px solid ${c.hair}`, fontSize: 12, color: "#111", background: "#fff", width: 160 }} />
                     <button onClick={() => setDirectPassword(user.id)} disabled={msg === "pwsending"} style={{
                       padding: "6px 12px", background: c.buttonBg, color: c.buttonText, border: "none",
                       borderRadius: 7, fontWeight: 700, fontSize: 12, cursor: msg === "pwsending" ? "not-allowed" : "pointer", opacity: msg === "pwsending" ? 0.6 : 1 }}>
-                      {msg === "pwsending" ? "Setting..." : "Save"}
+                      {t(msg === "pwsending" ? "Setting..." : "Save")}
                     </button>
                   </div>
                 )}
@@ -3166,34 +3202,34 @@ function AdminPanel({ pendingUsers, handleApprove, authState, handleLogout, colo
                 <button onClick={() => setApproved(user.id, !user.approved)} style={{
                   padding: "7px 12px", background: "transparent", color: c.ink, border: `1px solid ${c.hair}`,
                   borderRadius: 8, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
-                  {user.approved ? "Revoke approval" : "Approve"}
+                  {t(user.approved ? "Revoke approval" : "Approve")}
                 </button>
                 <button onClick={() => setIsAdmin(user.id, !user.is_admin)} style={{
                   padding: "7px 12px", background: "transparent", color: c.ink, border: `1px solid ${c.hair}`,
                   borderRadius: 8, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
-                  {user.is_admin ? "Remove admin" : "Make admin"}
+                  {t(user.is_admin ? "Remove admin" : "Make admin")}
                 </button>
                 <button onClick={() => sendReset(user.email, user.id)} disabled={msg === "sending"} style={{
                   padding: "7px 12px", background: "transparent", color: c.ink, border: `1px solid ${c.hair}`,
                   borderRadius: 8, fontWeight: 600, fontSize: 12, cursor: msg === "sending" ? "not-allowed" : "pointer", opacity: msg === "sending" ? 0.6 : 1 }}>
-                  {msg === "sending" ? "Sending..." : "Send password reset"}
+                  {t(msg === "sending" ? "Sending..." : "Send password reset")}
                 </button>
                 <button onClick={() => setPwFieldOpen((o) => ({ ...o, [user.id]: !o[user.id] }))} style={{
                   padding: "7px 12px", background: "transparent", color: c.ink, border: `1px solid ${c.hair}`,
                   borderRadius: 8, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
-                  {pwFieldOpen[user.id] ? "Cancel" : "Set password"}
+                  {t(pwFieldOpen[user.id] ? "Cancel" : "Set password")}
                 </button>
                 <button onClick={() => revokeAccess(user.id, user.email)} style={{
                   padding: "7px 12px", background: "transparent", color: "#e74c3c", border: "1px solid rgba(231,76,60,0.3)",
                   borderRadius: 8, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
-                  Revoke access
+                  {t("Revoke access")}
                 </button>
               </div>
             </div>
           );
         })}
         {allUsers.length === 0 && !usersLoading && (
-          <div style={{ color: c.mut, fontSize: 13, textAlign: "center", padding: 20 }}>No users found.</div>
+          <div style={{ color: c.mut, fontSize: 13, textAlign: "center", padding: 20 }}>{t("No users found.")}</div>
         )}
       </div>
     </div>
@@ -4452,7 +4488,10 @@ export default function CabinetProject() {
     try { localStorage.setItem("cabinetColorStyle", style); } catch {}
   };
   
-  const [lang, setLang] = useState("en");
+  const [lang, setLang] = useState(() => {
+    try { return localStorage.getItem("cabinetLang") === "es" ? "es" : "en"; } catch { return "en"; }
+  });
+  const setLangAndPersist = (l) => { setLang(l); try { localStorage.setItem("cabinetLang", l); } catch {} };
   const t = (key) => (translations[lang] && translations[lang][key]) || key;
   const [projectName, setProjectName] = useState("Cabinet project");
   const [showSpec, setShowSpec] = useState(false);
@@ -4556,7 +4595,7 @@ export default function CabinetProject() {
   // Login handler
   const handleLogin = async () => {
     if (!supabase) {
-      setAuthError("Supabase not loaded yet");
+      setAuthError(t("Supabase not loaded yet"));
       return;
     }
     setAuthError("");
@@ -4564,7 +4603,7 @@ export default function CabinetProject() {
       const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
       
       if (error) {
-        setAuthError(error.message || "Login failed");
+        setAuthError(error.message || t("Login failed"));
         return;
       }
       
@@ -4592,7 +4631,7 @@ export default function CabinetProject() {
   // Signup handler
   const handleSignup = async () => {
     if (!supabase) {
-      setAuthError("Supabase not loaded yet");
+      setAuthError(t("Supabase not loaded yet"));
       return;
     }
     setAuthError("");
@@ -4600,7 +4639,7 @@ export default function CabinetProject() {
       const { data, error } = await supabase.auth.signUp({ email: loginEmail, password: loginPassword });
       
       if (error) {
-        setAuthError(error.message || "Signup failed");
+        setAuthError(error.message || t("Signup failed"));
         return;
       }
       
@@ -4616,7 +4655,7 @@ export default function CabinetProject() {
       });
 
       if (profileError) {
-        setAuthError(profileError.message || "Failed to create profile");
+        setAuthError(profileError.message || t("Failed to create profile"));
         return;
       }
 
@@ -4624,7 +4663,7 @@ export default function CabinetProject() {
       setLoginEmail("");
       setLoginPassword("");
       setSignupMode(false);
-      setAuthError("Account created! Now log in with your credentials.");
+      setAuthError(t("Account created! Now log in with your credentials."));
     } catch (e) {
       setAuthError(e.message);
     }
@@ -5525,7 +5564,7 @@ export default function CabinetProject() {
   if (recoveryMode) {
     return <RecoveryScreen recoveryPassword={recoveryPassword} setRecoveryPassword={setRecoveryPassword}
       recoveryConfirm={recoveryConfirm} setRecoveryConfirm={setRecoveryConfirm}
-      recoveryError={recoveryError} recoveryStatus={recoveryStatus} handleRecoverySubmit={handleRecoverySubmit} />;
+      recoveryError={recoveryError} recoveryStatus={recoveryStatus} handleRecoverySubmit={handleRecoverySubmit} t={t} />;
   }
 
   if (authLoading) {
@@ -5539,7 +5578,7 @@ export default function CabinetProject() {
   }
 
   if (!authState) {
-    return <LoginScreen signupMode={signupMode} setSignupMode={setSignupMode} loginEmail={loginEmail} setLoginEmail={setLoginEmail} loginPassword={loginPassword} setLoginPassword={setLoginPassword} authError={authError} setAuthError={setAuthError} handleLogin={handleLogin} handleSignup={handleSignup} loading={authLoading} />;
+    return <LoginScreen signupMode={signupMode} setSignupMode={setSignupMode} loginEmail={loginEmail} setLoginEmail={setLoginEmail} loginPassword={loginPassword} setLoginPassword={setLoginPassword} authError={authError} setAuthError={setAuthError} handleLogin={handleLogin} handleSignup={handleSignup} loading={authLoading} t={t} />;
   }
 
   if (!authState.approved) {
@@ -5673,7 +5712,7 @@ export default function CabinetProject() {
             </div>
             <div className="cab-noprint" style={{ display:"flex", alignItems:"center", gap:8 }}>
               <button className="cab-btn" onClick={toggleTheme} style={{ padding:"8px 14px", borderRadius:8, border:`1px solid ${getColors().canvasBorder}`, background:getColors().canvasBtn, color:getColors().canvasBtnText, cursor:"pointer", fontSize:13, fontWeight:700 }}>{theme === "dark" ? "☀️ LIGHT" : "🌙 DARK"}</button>
-              <button className="cab-btn" onClick={() => setLang(lang === "en" ? "es" : "en")} style={{ padding:"7px 11px", borderRadius:8, border:`1px solid ${getColors().canvasBorder}`, background:getColors().canvasBtn, color:getColors().canvasBtnText, cursor:"pointer", fontSize:12, fontWeight:700 }}>{lang === "en" ? "ES" : "EN"}</button>
+              <button className="cab-btn" onClick={() => setLangAndPersist(lang === "en" ? "es" : "en")} style={{ padding:"7px 11px", borderRadius:8, border:`1px solid ${getColors().canvasBorder}`, background:getColors().canvasBtn, color:getColors().canvasBtnText, cursor:"pointer", fontSize:12, fontWeight:700 }}>{lang === "en" ? "ES" : "EN"}</button>
             </div>
           </div>
         {copyBox && (
@@ -6052,7 +6091,7 @@ export default function CabinetProject() {
           )}
 
           {activeView === "admin" && authState?.isAdmin && (
-            <AdminPanel pendingUsers={pendingUsers} handleApprove={handleApprove} authState={authState} handleLogout={handleLogout} colorStyle={colorStyle} setColorStyleAndPersist={setColorStyleAndPersist} />
+            <AdminPanel pendingUsers={pendingUsers} handleApprove={handleApprove} authState={authState} handleLogout={handleLogout} colorStyle={colorStyle} setColorStyleAndPersist={setColorStyleAndPersist} t={t} />
           )}
 
           {activeView === "account" && (
