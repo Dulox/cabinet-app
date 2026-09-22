@@ -465,7 +465,8 @@ const translations = {
     "Allow parts to rotate (no grain direction)": "Permitir rotar piezas (sin veta)",
     "Back fits between sides": "El trasero encaja entre los lados",
     "Grain": "Veta",
-    "Auto": "Auto",
+    "Vertical": "Vertical",
+    "Horizontal": "Horizontal",
     "Show vetas": "Mostrar vetas",
     "Hide vetas": "Ocultar vetas",
     "Apply grain to all": "Aplicar veta a todos",
@@ -1386,15 +1387,17 @@ function vetaAxis(aLabel, bLabel, a, b) {
   return heightVal >= otherVal ? "V" : "H";
 }
 
-// Override grain direction if cabinet has manual grain preference set
+// Apply cabinet grain direction override: Vertical (auto), Horizontal (inverted), or auto
 function getVetaForCabinet(cab, aLabel, bLabel, a, b) {
-  if (cab.grainDir && (cab.grainDir === "V" || cab.grainDir === "H")) {
-    // Manual override: return it if this part type supports grain marking
-    const aIsHeight = aLabel === "height";
-    const bIsHeight = bLabel === "height";
-    return (aIsHeight || bIsHeight) ? cab.grainDir : "";
+  const autoVeta = vetaAxis(aLabel, bLabel, a, b);
+  if (!autoVeta) return "";  // Parts with no grain (no height axis) stay empty
+
+  if (cab.grainDir === "H") {
+    // Horizontal mode: invert the auto calculation
+    return autoVeta === "V" ? "H" : "V";
   }
-  return vetaAxis(aLabel, bLabel, a, b);
+  // Auto or Vertical (default): use auto calculation as-is
+  return autoVeta;
 }
 
 // The back-panel groove (ranura) is cut into Side/Bottom/Top panels near
@@ -2262,9 +2265,8 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
         <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           <span style={labelCss}>{t("Grain")}</span>
           <select value={cab.grainDir || "auto"} onChange={(e) => onChange({ grainDir: e.target.value })} style={selCss}>
-            <option value="auto">{t("Auto")}</option>
-            <option value="V">Vertical</option>
-            <option value="H">Horizontal</option>
+            <option value="auto">{t("Vertical")}</option>
+            <option value="H">{t("Horizontal")}</option>
           </select>
         </label>
 
@@ -5052,7 +5054,7 @@ export default function CabinetProject() {
   const applyGrainToAll = () => {
     setCabs((cs) => cs.map((c) => ({ ...c, grainDir: globalGrainToApply })));
   };
-  const resetAllGrainToAuto = () => {
+  const resetAllGrainToVertical = () => {
     setCabs((cs) => cs.map((c) => ({ ...c, grainDir: "auto" })));
   };
 
@@ -5598,9 +5600,8 @@ export default function CabinetProject() {
                   <select value={globalGrainToApply} onChange={(e) => setGlobalGrainToApply(e.target.value)}
                     style={{ padding: "7px 10px", border: `1.5px solid ${getColors().canvasBorder}`, borderRadius: 6, background: "#fff",
                       fontFamily: "'Archivo', sans-serif", fontWeight: 600, fontSize: 12, color: "#111" }}>
-                    <option value="auto">{t("Auto")}</option>
-                    <option value="V">Vertical</option>
-                    <option value="H">Horizontal</option>
+                    <option value="auto">{t("Vertical")}</option>
+                    <option value="H">{t("Horizontal")}</option>
                   </select>
                 </label>
                 <button onClick={applyGrainToAll} className="cab-noprint" style={{
@@ -5608,10 +5609,10 @@ export default function CabinetProject() {
                   border: "none", borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
                   {t("Apply to all cabinets")}
                 </button>
-                <button onClick={resetAllGrainToAuto} className="cab-noprint" title="Reset all cabinets to Auto (dimension-based) grain" style={{
+                <button onClick={resetAllGrainToVertical} className="cab-noprint" title="Reset all cabinets to Vertical grain" style={{
                   padding: "7px 13px", background: getColors().hair, color: getColors().ink,
                   border: `1px solid ${getColors().hair}`, borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
-                  ↺ Auto
+                  ↺ {t("Vertical")}
                 </button>
               </div>
             </div>
