@@ -68,7 +68,15 @@ hardware totals across a whole project, and export-ready cut sheets.
 - **Projects & accounts**: multi-project save/load backed by Supabase
   (email/password login, owner-approved signups, an admin panel, and a PIN
   lock for shared devices).
-- **English / Spanish** UI throughout.
+- **English / Spanish throughout**: every screen is translated — cabinet
+  workbench, all views, 3D preview, assembly guide, Desglose sheet, login /
+  admin / PIN screens, and every export (cut-list PDF, shop drawing PDF,
+  project PDF, Excel, DXF), including their file names and the fabrication
+  notes. Common Supabase auth errors are translated too; anything unknown
+  from the server is shown as-is rather than guessed at. The choice is
+  remembered, so it also applies before you log in. The Desglose keeps its
+  own EN/ES button so the shop form can differ from the app language.
+  Supplier catalogue and colour names (Innovus / Portasol) stay as printed.
 
 ## Tech stack
 
@@ -187,6 +195,14 @@ the pieces worth knowing about:
   smallest N that saves a board.
 - `buildAssemblySteps()` — turns one cabinet's cut list + hardware tally
   into an ordered build sequence (`AssemblyGuideModal` renders it).
+- Translation: `translations.es` maps English source text to Spanish and
+  `t()` falls back to the key, so English needs no table. `trNote()` handles
+  the freeform fabrication notes phrase by phrase (longest first; two
+  entries are patterns that reorder numbers), `tName()` the part names,
+  `authErrorMsg()` the Supabase auth errors. The Desglose has its own
+  `ms(en, es)` + `mTName()` pair driven by its EN/ES button, and the
+  drawings take the translator as `tr` because `t` already means panel
+  thickness inside them.
 - `evenShelfPositions()` — the default (evenly spaced) shelf Y-positions;
   `cab.shelfPositions` overrides them once a shelf's been dragged in
   `Elevation`. Drawer-front dividers reuse the existing `drawerHeights`.
