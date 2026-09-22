@@ -520,6 +520,24 @@ const translations = {
     "Revoke app access for": "¿Revocar el acceso a la app de",
     "This removes their profile so they can no longer log into the app. Their Supabase login itself is not deleted — that requires direct database access.": "Esto elimina su perfil para que ya no pueda iniciar sesión en la app. Su login de Supabase no se borra — eso requiere acceso directo a la base de datos.",
     "Supabase not loaded yet": "Supabase aún no ha cargado", "Login failed": "Error al iniciar sesión",
+    "Invalid login credentials": "Correo o contraseña incorrectos",
+    "Email not confirmed": "El correo no ha sido confirmado",
+    "User already registered": "Ese correo ya está registrado",
+    "Signup requires a valid password": "El registro requiere una contraseña válida",
+    "Password should be at least 6 characters.": "La contraseña debe tener al menos 6 caracteres.",
+    "Password should be at least 6 characters": "La contraseña debe tener al menos 6 caracteres",
+    "New password should be different from the old password.": "La contraseña nueva debe ser distinta de la anterior.",
+    "Unable to validate email address: invalid format": "Correo inválido: formato incorrecto",
+    "Email rate limit exceeded": "Demasiados correos enviados — espera un momento",
+    "Email link is invalid or has expired": "El enlace del correo es inválido o ha expirado",
+    "Token has expired or is invalid": "El enlace ha expirado o es inválido",
+    "Auth session missing!": "No hay sesión activa",
+    "User not found": "Usuario no encontrado",
+    "Failed to fetch": "Sin conexión con el servidor",
+    "For security purposes, you can only request this again in": "Por seguridad, solo puedes volver a solicitarlo en",
+    "seconds": "segundos",
+    "Password must be at least 6 characters": "La contraseña debe tener al menos 6 caracteres",
+    "Passwords do not match": "Las contraseñas no coinciden",
     "Signup failed": "Error al registrarse", "Failed to create profile": "No se pudo crear el perfil",
     "Account created! Now log in with your credentials.": "¡Cuenta creada! Ahora inicia sesión con tus credenciales.",
     "Base build-up strip": "Refuerzo superior base",
@@ -2833,6 +2851,17 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
 
 /* -------------------------------- auth screens ----------------------------- */
 
+/* Supabase returns auth errors in English from the server. Map the common
+   ones through the UI translator; anything unknown falls through unchanged
+   so we never hide a real message behind a wrong guess. */
+function authErrorMsg(msg, t) {
+  const s = String(msg || "").trim();
+  if (!s) return s;
+  const wait = s.match(/^For security purposes, you can only request this after (\d+) seconds?\.?$/i);
+  if (wait) return `${t("For security purposes, you can only request this again in")} ${wait[1]} ${t("seconds")}.`;
+  return t(s) || s;
+}
+
 function LoginScreen({ signupMode, setSignupMode, loginEmail, setLoginEmail, loginPassword, setLoginPassword, authError, setAuthError, handleLogin, handleSignup, loading, t = (k) => k }) {
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -4603,7 +4632,7 @@ export default function CabinetProject() {
       const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
       
       if (error) {
-        setAuthError(error.message || t("Login failed"));
+        setAuthError(authErrorMsg(error.message, t) || t("Login failed"));
         return;
       }
       
@@ -4624,7 +4653,7 @@ export default function CabinetProject() {
       setLoginEmail("");
       setLoginPassword("");
     } catch (e) {
-      setAuthError(e.message);
+      setAuthError(authErrorMsg(e.message, t));
     }
   };
 
@@ -4639,7 +4668,7 @@ export default function CabinetProject() {
       const { data, error } = await supabase.auth.signUp({ email: loginEmail, password: loginPassword });
       
       if (error) {
-        setAuthError(error.message || t("Signup failed"));
+        setAuthError(authErrorMsg(error.message, t) || t("Signup failed"));
         return;
       }
       
@@ -4655,7 +4684,7 @@ export default function CabinetProject() {
       });
 
       if (profileError) {
-        setAuthError(profileError.message || t("Failed to create profile"));
+        setAuthError(authErrorMsg(profileError.message, t) || t("Failed to create profile"));
         return;
       }
 
@@ -4665,7 +4694,7 @@ export default function CabinetProject() {
       setSignupMode(false);
       setAuthError(t("Account created! Now log in with your credentials."));
     } catch (e) {
-      setAuthError(e.message);
+      setAuthError(authErrorMsg(e.message, t));
     }
   };
 
@@ -4719,7 +4748,7 @@ export default function CabinetProject() {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) {
         setPwStatus("error");
-        setPwError(error.message);
+        setPwError(authErrorMsg(error.message, t));
         return;
       }
       setPwStatus("success");
@@ -4749,7 +4778,7 @@ export default function CabinetProject() {
       const { error } = await supabase.auth.updateUser({ email: newEmail });
       if (error) {
         setEmailStatus("error");
-        setEmailError(error.message);
+        setEmailError(authErrorMsg(error.message, t));
         return;
       }
       setEmailStatus("success");
@@ -4919,7 +4948,7 @@ export default function CabinetProject() {
       const { error } = await supabase.from("app_settings").upsert({ key: "unlock_pin", value: newValue, updated_at: new Date().toISOString() });
       if (error) {
         setPinStatus("error");
-        setPinError(error.message);
+        setPinError(authErrorMsg(error.message, t));
         return;
       }
       setPinStatus("");
@@ -5060,11 +5089,11 @@ export default function CabinetProject() {
   const handleRecoverySubmit = async () => {
     setRecoveryError("");
     if (!recoveryPassword || recoveryPassword.length < 6) {
-      setRecoveryError("Password must be at least 6 characters");
+      setRecoveryError(t("Password must be at least 6 characters"));
       return;
     }
     if (recoveryPassword !== recoveryConfirm) {
-      setRecoveryError("Passwords do not match");
+      setRecoveryError(t("Passwords do not match"));
       return;
     }
     if (!supabase) return;
@@ -5073,7 +5102,7 @@ export default function CabinetProject() {
       const { error } = await supabase.auth.updateUser({ password: recoveryPassword });
       if (error) {
         setRecoveryStatus("error");
-        setRecoveryError(error.message);
+        setRecoveryError(authErrorMsg(error.message, t));
         return;
       }
       setRecoveryStatus("success");
