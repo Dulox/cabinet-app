@@ -481,6 +481,9 @@ const translations = {
     "Apply grain to all": "Aplicar veta a todos",
     "Front view": "Vista frontal", "Side view": "Vista lateral", "Top view": "Vista superior",
     "opening": "abertura", "back": "atrás", "front": "frente", "front (open)": "frente (abierto)",
+    "Isometric": "Isométrica", "Every cut — dimensions": "Todos los cortes — medidas",
+    "Diagram": "Diagrama", "Part": "Pieza", "Qty": "Cant.", "Size": "Medida",
+    "all views & dimensions": "todas las vistas y medidas", "All views & dimensions": "Todas las vistas y medidas", "3D view": "Vista 3D",
     "millimetres": "milímetros",
     "Shelf pins:": "Soportes de estante:",
     "Hinges (2 per door):": "Bisagras (2 por puerta):",
@@ -1614,31 +1617,31 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 22 }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Front</div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>{t("Front view")}</div>
             <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces} shelfPositions={cab.shelfPositions} grain={cabGrain(cab)} tr={t} />
           </div>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Top</div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>{t("Top view")}</div>
             <TopView W={W} D={D} p={p} grain={showVetas ? cabGrain(cab) : null} tr={t} />
           </div>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Side</div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>{t("Side view")}</div>
             <SideView D={D} H={H} p={p} shelfQty={cab.shelfQty} faces={data.faces} shelfPositions={cab.shelfPositions}
               grain={showVetas ? cabGrain(cab) : null} tr={t} />
           </div>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Isometric</div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>{t("Isometric")}</div>
             <IsoView W={W} D={D} p={p} faces={data.faces} grain={showVetas ? cabGrain(cab) : null} />
           </div>
         </div>
 
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 10 }}>
-          Every cut — dimensions
+          {t("Every cut — dimensions")}
         </div>
         <div style={{ border: `1px solid ${getColors().hair}`, borderRadius: 10, overflow: "hidden", background: "#fff" }}>
           <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 70px 70px 110px 110px 110px", gap: 8, padding: "8px 13px",
             fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#888", borderBottom: "1px solid #eee" }}>
-            <div>Diagram</div><div>Part</div><div>Qty</div><div>Vetas</div><div>{data.parts[0]?.aLabel || "A"}</div><div>{data.parts[0]?.bLabel || "B"}</div><div>Material</div>
+            <div>{t("Diagram")}</div><div>{t("Part")}</div><div>{t("Qty")}</div><div>{t("Vetas")}</div><div style={{ gridColumn: "span 2" }}>{t("Size")}</div><div>{t("Material")}</div>
           </div>
           {data.parts.map((x, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: "60px 1fr 70px 70px 110px 110px 110px", gap: 8, padding: "9px 13px",
@@ -1647,9 +1650,9 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
               <div style={{ fontWeight: 600 }}>{tName(x.part, t)}</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", color: getColors().rust, fontWeight: 700 }}>{x.qty * (cab.qty || 1)}×</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: getColors().amber }}>{cabGrain(cab)}</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{x.a} mm</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{x.b} mm</div>
-              <div style={{ fontSize: 12, color: "#888" }}>{x.material === "hardboard" ? "hardboard" : "melamine"}</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{x.a} mm<div style={{ fontSize: 10, color: "#888" }}>{t(x.aLabel)}</div></div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{x.b} mm<div style={{ fontSize: 10, color: "#888" }}>{t(x.bLabel)}</div></div>
+              <div style={{ fontSize: 12, color: "#888" }}>{t(x.material === "hardboard" ? "hardboard" : "melamine")}</div>
             </div>
           ))}
         </div>
