@@ -1042,7 +1042,7 @@ function buildNestingDxf(items, p) {
 }
 
 /* ----------------------------- Diagram ---------------------------- */
-function Elevation({ W, p, shelfQty, faces, shelfPositions, onShelfPositionsChange, onDrawerDivider }) {
+function Elevation({ W, p, shelfQty, faces, shelfPositions, onShelfPositionsChange, onDrawerDivider, grain }) {
   const t = p.t, H = p.sideH;
   const padX = Math.max(120, W * 0.22), padTop = 60, padBot = 150;
   const vbW = W + padX * 2, vbH = H + padTop + padBot;
@@ -1157,6 +1157,16 @@ function Elevation({ W, p, shelfQty, faces, shelfPositions, onShelfPositionsChan
           {f.kind === "door" && (
             <circle cx={ox + f.x + (f.split === 2 ? f.w / 2 - 36 : f.w - 40)} cy={oy + f.y + f.h * 0.5} r={fs * 0.18} fill={getColors().amber} />
           )}
+          {grain && Array.from({ length: f.split === 2 ? 2 : 1 }, (_, k) => {
+            const pw = f.w / (f.split === 2 ? 2 : 1), horiz = grain === "H", span = horiz ? pw : f.h;
+            const cx = ox + f.x + pw * (k + 0.5), cy = oy + f.y + f.h * (horiz && f.kind === "door" ? 0.32 : 0.5);
+            const half = span * 0.25, hd = Math.min(fs * 0.4, span * 0.08);
+            const [x1, y1, x2, y2] = horiz ? [cx - half, cy, cx + half, cy] : [cx, cy - half, cx, cy + half];
+            const heads = horiz
+              ? `M${x1 + hd} ${y1 - hd} L${x1} ${y1} L${x1 + hd} ${y1 + hd} M${x2 - hd} ${y2 - hd} L${x2} ${y2} L${x2 - hd} ${y2 + hd}`
+              : `M${x1 - hd} ${y1 + hd} L${x1} ${y1} L${x1 + hd} ${y1 + hd} M${x2 - hd} ${y2 - hd} L${x2} ${y2} L${x2 + hd} ${y2 - hd}`;
+            return <path key={"g" + k} d={`M${x1} ${y1} L${x2} ${y2} ${heads}`} fill="none" stroke="#c00" strokeWidth={fs * 0.09} strokeLinecap="round" strokeLinejoin="round" style={{ pointerEvents: "none" }} />;
+          })}
         </g>
       ))}
       {dragHitAreas}
@@ -1577,7 +1587,7 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 22 }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Front</div>
-            <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces} shelfPositions={cab.shelfPositions} />
+            <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces} shelfPositions={cab.shelfPositions} grain={cabGrain(cab)} />
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Top</div>
@@ -2526,7 +2536,8 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
             <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces}
               shelfPositions={cab.shelfPositions}
               onShelfPositionsChange={(next) => onChange({ shelfPositions: next })}
-              onDrawerDivider={cab.type === "drawers" ? dragDrawerDivider : undefined} />
+              onDrawerDivider={cab.type === "drawers" ? dragDrawerDivider : undefined}
+              grain={cabGrain(cab)} />
           </div>
           <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
             <button onClick={() => setShowAllViews(true)} className="cab-noprint" style={{
