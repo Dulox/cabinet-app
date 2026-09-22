@@ -3333,8 +3333,9 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
     const map = new Map();
     // Helper: add a part to the map, merging by name+dimensions
     const emitPart = (map, name, L, A, G, qty, part, opts, cabNum) => {
-      const key = `${name}|${L}-${A}-${G}`;
       const o = opts || {};
+      const key = `${name}|${L}-${A}-${G}|${o.cabMaterial || ""}`;
+
       if (map.has(key)) {
         const existing = map.get(key);
         existing.cant += qty;
