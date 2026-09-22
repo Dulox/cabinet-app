@@ -466,6 +466,9 @@ const translations = {
     "Back fits between sides": "El trasero encaja entre los lados",
     "Grain": "Veta",
     "Auto": "Auto",
+    "Show vetas": "Mostrar vetas",
+    "Hide vetas": "Ocultar vetas",
+    "Apply grain to all": "Aplicar veta a todos",
     "millimetres": "milímetros",
     "Shelf pins:": "Soportes de estante:",
     "Hinges (2 per door):": "Bisagras (2 por puerta):",
@@ -5044,6 +5047,11 @@ export default function CabinetProject() {
     }));
   };
 
+  const [globalGrainToApply, setGlobalGrainToApply] = React.useState("auto");
+  const applyGrainToAll = () => {
+    setCabs((cs) => cs.map((c) => ({ ...c, grainDir: globalGrainToApply })));
+  };
+
   const exportProjectToPDF = async () => {
     try {
       const doc = new MiniPDF();
@@ -5572,6 +5580,31 @@ export default function CabinetProject() {
                 border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
                 {t("Apply to all cabinets")}
               </button>
+            </div>
+          )}
+          {cabs.length > 0 && (
+            <div style={{ marginTop: 12, padding: "12px 14px", background: "rgba(138,109,63,0.08)",
+              border: `1px solid ${getColors().hair}`, borderRadius: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: getColors().amber, marginBottom: 8 }}>
+                🌾 {t("Apply grain to all")}
+              </div>
+              <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: getColors().mut }}>{t("Grain")}</span>
+                  <select value={globalGrainToApply} onChange={(e) => setGlobalGrainToApply(e.target.value)}
+                    style={{ padding: "7px 10px", border: `1.5px solid ${getColors().canvasBorder}`, borderRadius: 6, background: "#fff",
+                      fontFamily: "'Archivo', sans-serif", fontWeight: 600, fontSize: 12, color: "#111" }}>
+                    <option value="auto">{t("Auto")}</option>
+                    <option value="V">Vertical</option>
+                    <option value="H">Horizontal</option>
+                  </select>
+                </label>
+                <button onClick={applyGrainToAll} className="cab-noprint" style={{
+                  padding: "7px 13px", background: getColors().buttonBg, color: getColors().buttonText,
+                  border: "none", borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  {t("Apply to all cabinets")}
+                </button>
+              </div>
             </div>
           )}
           {summary.board.boards > 0 && (
