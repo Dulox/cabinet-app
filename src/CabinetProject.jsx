@@ -325,7 +325,7 @@ MiniPDF.prototype.save = function (fname) {
    Mirrors the on-screen Elevation: carcass panels, dashed face outlines,
    hinge dots, and width / height / opening dimensions. Print-optimised
    (white ground, dark lines) for taping up at the bench. */
-function drawCabinetElevation(doc, x0, y0, boxW, boxH, W, p, shelfQty, faces, grain) {
+function drawCabinetElevation(doc, x0, y0, boxW, boxH, W, p, shelfQty, faces, grain, tr = (k) => k) {
   const t = p.t, H = p.sideH, railH = p.railH;
   const PANEL = [225, 222, 210], EDGE = [150, 142, 124], INK = [28, 30, 22];
   const DOOR = [40, 44, 34], BLIND = [246, 224, 218], DIM = [120, 86, 50];
@@ -385,8 +385,8 @@ function drawCabinetElevation(doc, x0, y0, boxW, boxH, W, p, shelfQty, faces, gr
   doc.text(`${fmt(H)}`, x0 + 1, gy + dH / 2 + 1, { align: "left" });
   // opening (top)
   doc.setFontSize(6.5); doc.setTextColor(150, 120, 90);
-  doc.text(`opening ${fmt(W - 2 * t)} mm`, gx + dW / 2, gy - 3, { align: "center" });
-  if (grain) { doc.setTextColor(200, 0, 0); doc.text(`veta: ${grain === "H" ? "horizontal" : "vertical"}`, x0 + boxW - mR, gy - 3, { align: "right" }); }
+  doc.text(`${tr("opening")} ${fmt(W - 2 * t)} mm`, gx + dW / 2, gy - 3, { align: "center" });
+  if (grain) { doc.setTextColor(200, 0, 0); doc.text(`${tr("Grain").toLowerCase()}: ${tr(grain === "H" ? "Horizontal" : "Vertical").toLowerCase()}`, x0 + boxW - mR, gy - 3, { align: "right" }); }
 }
 
 const translations = {
@@ -483,6 +483,12 @@ const translations = {
     "opening": "abertura", "back": "atrás", "front": "frente", "front (open)": "frente (abierto)",
     "Isometric": "Isométrica", "Every cut — dimensions": "Todos los cortes — medidas",
     "Diagram": "Diagrama", "Part": "Pieza", "Qty": "Cant.", "Size": "Medida",
+    "Item": "Elem", "Name": "Nombre", "Length": "Largo", "Thick.": "Grosor",
+    "Base build-up strip": "Refuerzo superior base",
+    "hinge": "bisagra", "slide pair": "par de correderas", "shelf pin": "soporte de estante", "handle": "tirador",
+    "Building PDF…": "Generando PDF…", "Building shop drawings…": "Generando planos de taller…",
+    "Couldn't generate the PDF here — use Copy text and paste it instead.": "No se pudo generar el PDF aquí — usa Copiar texto y pégalo.",
+    "Couldn't build the shop drawing — try again or use Copy text.": "No se pudo generar el plano de taller — inténtalo de nuevo o usa Copiar texto.",
     "all views & dimensions": "todas las vistas y medidas", "All views & dimensions": "Todas las vistas y medidas", "3D view": "Vista 3D",
     "3D preview — drag to rotate, scroll to zoom": "Vista 3D — arrastra para girar, rueda para acercar",
     "Loading 3D viewer…": "Cargando visor 3D…", "Could not load the 3D viewer.": "No se pudo cargar el visor 3D.",
@@ -2176,6 +2182,27 @@ function tName(name, t) {
 /* Phrase-level translator for the freeform part notes. Leaves numbers and
    symbols intact; only swaps the recurring English vocabulary. */
 const NOTE_ES = [
+  [/clears the (\S+) build-up strip by (\S+)/g, "deja $2 de holgura bajo el refuerzo de $1"],
+  [/overlaps behind front by (\S+)/g, "queda $1 detrás del frente"],
+  ["strip along top front edge", "tira en el borde superior frontal"],
+  ["fronts drop", "los frentes bajan"],
+  ["(full, no top/bottom gap)", "(completo, sin huelgo arriba/abajo)"],
+  ["(full)", "(completo)"],
+  ["sits in side grooves", "encaja en las ranuras laterales"],
+  ["sits in grooves all round", "encaja en las ranuras en todo el perímetro"],
+  ["into grooves", "dentro de las ranuras"],
+  ["sits on bottom", "apoya sobre el fondo"],
+  ["top drawer", "gaveta superior"],
+  ["lower fronts", "frentes inferiores"],
+  ["inside the box", "interior de la caja"],
+  ["box outer", "caja exterior"],
+  ["(fits between slides)", "(entre correderas)"],
+  ["opening", "abertura"],
+  ["filler piece", "pieza de relleno"],
+  ["clearance", "de holgura"],
+  ["slides", "correderas"],
+  ["front −", "frente −"],
+  ["(bottom panel)", "(panel de fondo)"],
   ["front rail", "riel frontal"],
   ["back rail", "riel trasero"],
   ["base build-up", "refuerzo base"],
@@ -2208,8 +2235,8 @@ const NOTE_ES = [
   ["top dummy drawer face", "frente de gaveta simulado superior"],
   ["covers the dead corner", "cubre la esquina muerta"],
   ["full lower panel", "panel inferior completo"],
-  ["Fixed (305mm depth)", "Fija (prof. 305mm)"],
   ["Fixed size", "Medida fija"],
+  ["Fixed (", "Fija ("],
   ["full width", "ancho completo"],
   ["removable", "removible"],
   ["easy fit", "ajuste holgado"],
@@ -2221,13 +2248,14 @@ const NOTE_ES = [
   ["gap", "huelgo"],
   ["blind", "ciego"],
   ["each", "c/u"],
+  ["groove", "ranura"],
   ["back", "espalda"],
   ["width", "ancho"], ["depth", "profundidad"], ["height", "alto"], ["length", "largo"],
 ];
 function trNote(note, lang) {
   if (lang !== "es" || !note) return note;
   let s = note;
-  for (const [en, es] of NOTE_ES) s = s.split(en).join(es);
+  for (const [en, es] of NOTE_ES) s = en instanceof RegExp ? s.replace(en, es) : s.split(en).join(es);
   return s;
 }
 
@@ -5267,13 +5295,13 @@ export default function CabinetProject() {
       const drawHeader = () => {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8);
-        doc.text("Elem", col.elem, y);
-        doc.text("Nombre", col.nombre, y);
-        doc.text("Cant", col.cant, y);
-        doc.text("Largo", col.largo, y);
-        doc.text("Ancho", col.ancho, y);
-        doc.text("Grosor", col.grosor, y);
-        doc.text("Veta", col.desc, y);
+        doc.text(t("Item"), col.elem, y);
+        doc.text(t("Name"), col.nombre, y);
+        doc.text(t("Qty"), col.cant, y);
+        doc.text(t("Length"), col.largo, y);
+        doc.text(t("Width"), col.ancho, y);
+        doc.text(t("Thick."), col.grosor, y);
+        doc.text(t("Grain"), col.desc, y);
         doc.text("L1", col.l1, y);
         doc.text("L2", col.l2, y);
         doc.text("C1", col.c1, y);
@@ -5299,7 +5327,7 @@ export default function CabinetProject() {
           doc.setFont("helvetica", "normal");
           doc.setFontSize(7);
           doc.text(String(cabIdx + 1), col.elem, y);
-          doc.text(part.part.substring(0, 28), col.nombre, y);
+          doc.text(tName(part.part, t).substring(0, 31), col.nombre, y);
           doc.text(String(part.qty), col.cant, y);
           doc.text(String(Math.round(longDim)), col.largo, y);
           doc.text(String(Math.round(shortDim)), col.ancho, y);
@@ -5339,7 +5367,7 @@ export default function CabinetProject() {
   };
 
   const downloadPDF = async () => {
-    setPdfMsg("Building PDF…");
+    setPdfMsg(t("Building PDF…"));
     try {
       const doc = new MiniPDF();
       const M = 14, right = 210 - M, bottom = 297 - M;
@@ -5412,12 +5440,12 @@ export default function CabinetProject() {
       sharePdf(blob, fname);
       setPdfMsg("");
     } catch (e) {
-      setPdfMsg("Couldn't generate the PDF here — use Copy text and paste it instead.");
+      setPdfMsg(t("Couldn't generate the PDF here — use Copy text and paste it instead."));
     }
   };
 
   const downloadShopPDF = async () => {
-    setPdfMsg("Building shop drawings…");
+    setPdfMsg(t("Building shop drawings…"));
     try {
       const doc = new MiniPDF();
       const M = 14, right = 210 - M, bottom = 297 - M;
@@ -5443,7 +5471,7 @@ export default function CabinetProject() {
         doc.setDrawColor(20); doc.setLineWidth(0.4); doc.line(M, y, right, y); y += 3;
         // elevation
         const boxY = y, boxH = 124;
-        drawCabinetElevation(doc, M, boxY, right - M, boxH, Wd, cp, c.shelfQty, d.faces, cabGrain(c));
+        drawCabinetElevation(doc, M, boxY, right - M, boxH, Wd, cp, c.shelfQty, d.faces, cabGrain(c), t);
         y = boxY + boxH + 2;
         doc.setDrawColor(185); doc.setLineWidth(0.25); doc.line(M, y, right, y); y += 5;
         // cut list
@@ -5467,10 +5495,10 @@ export default function CabinetProject() {
         // hardware
         const hw = d.hardware || {};
         const hwparts = [];
-        if (hw.hinges) hwparts.push(`${hw.hinges} ${t("hinges")}`);
-        if (hw.drawerSlides) hwparts.push(`${hw.drawerSlides} ${t("slide pairs")}`);
-        if (hw.shelfPins) hwparts.push(`${hw.shelfPins} ${t("shelf pins")}`);
-        if (hw.handles) hwparts.push(`${hw.handles} ${t("handles")}`);
+        if (hw.hinges) hwparts.push(`${hw.hinges} ${t(hw.hinges === 1 ? "hinge" : "hinges")}`);
+        if (hw.drawerSlides) hwparts.push(`${hw.drawerSlides} ${t(hw.drawerSlides === 1 ? "slide pair" : "slide pairs")}`);
+        if (hw.shelfPins) hwparts.push(`${hw.shelfPins} ${t(hw.shelfPins === 1 ? "shelf pin" : "shelf pins")}`);
+        if (hw.handles) hwparts.push(`${hw.handles} ${t(hw.handles === 1 ? "handle" : "handles")}`);
         if (hwparts.length) {
           if (y > bottom - 12) { doc.addPage(); y = M; }
           y += 1; doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(20, 23, 15);
@@ -5488,7 +5516,7 @@ export default function CabinetProject() {
       sharePdf(blob, fname);
       setPdfMsg("");
     } catch (e) {
-      setPdfMsg("Couldn't build the shop drawing — try again or use Copy text.");
+      setPdfMsg(t("Couldn't build the shop drawing — try again or use Copy text."));
     }
   };
 
