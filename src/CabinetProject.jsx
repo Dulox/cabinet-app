@@ -1398,6 +1398,16 @@ function cabGrain(cab) {
   return cab && cab.grainDir === "H" ? "H" : "V";
 }
 
+// Which Desglose edge ("L" = Largo, "A" = Ancho) a "V" grain runs along for
+// this part: its height edge, or for flat parts its depth (front-to-back) edge.
+function vAxisFor(part) {
+  const { aLabel, bLabel, a, b } = part;
+  const axis = bLabel === "height" || bLabel === "depth" ? "b" : aLabel === "height" || aLabel === "depth" ? "a" : null;
+  if (!axis) return "L";
+  const along = axis === "a" ? a : b, other = axis === "a" ? b : a;
+  return along >= other ? "L" : "A";
+}
+
 function getVetaForCabinet(cab, aLabel, bLabel) {
   if (aLabel !== "height" && bLabel !== "height") return "";
   return cabGrain(cab);
@@ -1415,6 +1425,32 @@ function ranuraSide(aLabel, bLabel, a, b) {
   const depthVal = aIsDepth ? a : b;
   const otherVal = aIsDepth ? b : a;
   return otherVal >= depthVal ? "L" : "A";
+}
+
+// Desglose thumbnail: Largo drawn horizontally, red double arrow along the grain.
+function GrainDiagram({ largo, ancho, alongLargo }) {
+  const L = Math.max(1, Number(largo) || 1), A = Math.max(1, Number(ancho) || 1);
+  const w = 40, h = Math.max(16, Math.min(26, (w * A) / L));
+  const x0 = 4, y0 = (34 - h) / 2, cx = x0 + w / 2, cy = y0 + h / 2;
+  const s = "#c00";
+  let arrow = null;
+  if (alongLargo === true) {
+    const x1 = x0 + 4, x2 = x0 + w - 4;
+    arrow = <g stroke={s} strokeWidth="1.4" fill="none"><line x1={x1} y1={cy} x2={x2} y2={cy} />
+      <polyline points={`${x1 + 4},${cy - 3} ${x1},${cy} ${x1 + 4},${cy + 3}`} />
+      <polyline points={`${x2 - 4},${cy - 3} ${x2},${cy} ${x2 - 4},${cy + 3}`} /></g>;
+  } else if (alongLargo === false) {
+    const y1 = y0 + 2, y2 = y0 + h - 2, hd = Math.min(3, (y2 - y1) / 2);
+    arrow = <g stroke={s} strokeWidth="1.4" fill="none"><line x1={cx} y1={y1} x2={cx} y2={y2} />
+      <polyline points={`${cx - 3},${y1 + hd} ${cx},${y1} ${cx + 3},${y1 + hd}`} />
+      <polyline points={`${cx - 3},${y2 - hd} ${cx},${y2} ${cx + 3},${y2 - hd}`} /></g>;
+  }
+  return (
+    <svg viewBox="0 0 48 34" width="48" height="34" style={{ display: "block", margin: "0 auto" }}>
+      <rect x={x0} y={y0} width={w} height={h} fill="#fff" stroke="#555" strokeWidth="1" />
+      {arrow}
+    </svg>
+  );
 }
 
 function PartDiagram({ a, b, size = 60 }) {
@@ -3363,6 +3399,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
           cl1: isHardboardPart ? "" : "X", cl2: isHardboardPart ? "" : "X",
           ca1: isHardboardPart ? "" : "X", ca2: isHardboardPart ? "" : "X",
           vetas: o.vetas || "",
+          vAxis: o.vAxis || "L",
           // Ranuras: back-panel groove, marked on whichever single edge (Largo or Ancho) faces the back
           rl: o.ranura === "L" ? "X" : "",
           ra: o.ranura === "A" ? "X" : "",
@@ -3420,7 +3457,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         if (part.part === "Side") {
           const totalSides = part.qty * cabQty;      // usually 2 × cabQty
           // Emit all sides as plain, no hinge marking
-          emitPart(map, "Side", L, A, G, totalSides, part, { ranura, cabMaterial, cabType: cab.type, vetas }, cabNum);
+          emitPart(map, "Side", L, A, G, totalSides, part, { ranura, cabMaterial, cabType: cab.type, vetas, vAxis: vAxisFor(part) }, cabNum);
           return;
         }
 
@@ -3429,7 +3466,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         // Bisagra drills into the door's own height edge — geometric, independent of the grain choice.
         const isDoorPart = sideLabel.includes("Door");
         const bisagra = isDoorPart ? (vetaAxis(part.aLabel, part.bLabel, part.a, part.b) === "V" ? "L" : "A") : "";
-        emitPart(map, sideLabel, L, A, G, totalQty, part, { ranura, bisagra, cabMaterial, cabType: cab.type, vetas }, cabNum);
+        emitPart(map, sideLabel, L, A, G, totalQty, part, { ranura, bisagra, cabMaterial, cabType: cab.type, vetas, vAxis: vAxisFor(part) }, cabNum);
       });
     });
     return Array.from(map.values())
@@ -3709,13 +3746,14 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                   onClick={() => toggleSort("nombre")}>
                   Nombre {sortField === "nombre" ? (sortDir === 1 ? "▲" : "▼") : "↕"}
                 </th>
-                <th style={hdrStyle({})} colSpan={5}>Despiece</th>
+                <th style={hdrStyle({})} colSpan={6}>Despiece</th>
                 <th style={hdrStyle({})} colSpan={4}>Canteado de pieza</th>
                 <th style={hdrStyle({})} colSpan={2}>Ranuras</th>
                 <th style={hdrStyle({})} colSpan={2}>Bisagras</th>
               </tr>
               <tr>
                 {/* Despiece sub-headers */}
+                <th style={hdrStyle({ width: 52 })}>Pieza</th>
                 <th style={hdrStyle({ width: 28 })}>Vetas a favor del largo</th>
                 <th style={hdrStyle({ width: 60 })}>Largo (mm)</th>
                 <th style={hdrStyle({ width: 60 })}>Ancho (mm)</th>
@@ -3757,6 +3795,10 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                   {/* Nombre */}
                   <td style={cellStyle({ textAlign: "left", minWidth: 100, fontSize: 10, color: "#555" })}>
                     {displayNombre(row)}
+                  </td>
+                  <td style={{ ...cellStyle({ width: 52 }), padding: "2px" }}>
+                    <GrainDiagram largo={row.largo} ancho={row.ancho}
+                      alongLargo={row.vetas ? (row.vetas === "V") === ((row.vAxis || "L") === "L") : null} />
                   </td>
                   {/* Vetas */}
                   <td style={{ ...cellStyle({ width: 34 }), padding: 0 }}>
@@ -3820,9 +3862,9 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               ))}
               {/* Total row */}
               <tr style={{ background: "#e8e8e8", fontWeight: 700 }}>
-                <td style={cellStyle()} colSpan={7}>Total</td>
+                <td style={cellStyle()} colSpan={10}>Total</td>
                 <td style={cellStyle({ fontWeight: 700 })}>{totalCant}</td>
-                <td style={cellStyle()} colSpan={7}></td>
+                <td style={cellStyle()} colSpan={8}></td>
               </tr>
             </tbody>
           </table>
