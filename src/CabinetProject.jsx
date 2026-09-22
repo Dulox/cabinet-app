@@ -1448,6 +1448,11 @@ function grainAlongLargo(row) {
   return row.vetas ? (row.vetas === "V") === ((row.vAxis || "L") === "L") : null;
 }
 
+// Grain arrow for PartDiagram, which draws "a" across and "b" up/down.
+function partGrainAlongA(cab, x) {
+  return grainAlongLargo({ vetas: cabGrain(cab), vAxis: vAxisFor(x) }) === (x.a >= x.b);
+}
+
 // MiniPDF version of GrainDiagram: part outline (Largo horizontal) + red grain arrow.
 function pdfGrainGlyph(doc, x, yTop, part, cab, w = 8, hMin = 2.6, hMax = 5) {
   const L = Math.max(part.a, part.b), A = Math.min(part.a, part.b);
@@ -1592,7 +1597,7 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
           {data.parts.map((x, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: "60px 1fr 70px 70px 110px 110px 110px", gap: 8, padding: "9px 13px",
               fontSize: 13, borderTop: i ? "1px solid #f0f0f0" : "none", color: "#222", alignItems: "center" }}>
-              <PartDiagram a={x.a} b={x.b} grainAlongA={grainAlongLargo({ vetas: cabGrain(cab), vAxis: vAxisFor(x) }) === (x.a >= x.b)} />
+              <PartDiagram a={x.a} b={x.b} grainAlongA={partGrainAlongA(cab, x)} />
               <div style={{ fontWeight: 600 }}>{tName(x.part, t)}</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", color: getColors().rust, fontWeight: 700 }}>{x.qty * (cab.qty || 1)}×</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: getColors().amber }}>{cabGrain(cab)}</div>
@@ -2539,8 +2544,9 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
           <div style={{ border: `1px solid ${getColors().hair}`, borderRadius: 10, overflow: "hidden", background: "#fff" }}>
             {data.parts.map((x, i) => (
               <div key={i} className="cab-row" style={{ padding: "10px 13px", borderTop: i ? `1px solid ${getColors().hair}` : "none",
-                display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}>
-                <div style={{ minWidth: 0 }}>
+                display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+                <PartDiagram a={x.a} b={x.b} size={52} grainAlongA={partGrainAlongA(cab, x)} />
+                <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ fontWeight: 700, fontSize: 14.5 }}>
                     <span style={{ color: getColors().rust, fontFamily: "'JetBrains Mono', monospace" }}>{x.qty * (cab.qty || 1)}×</span> {tName(x.part, t)}
                   </div>

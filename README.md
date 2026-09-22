@@ -21,7 +21,8 @@ hardware totals across a whole project, and export-ready cut sheets.
   way. Flat parts (bottom, shelves) run front-to-back for Vertical and
   left-to-right for Horizontal. An "Apply grain to all" control sets the
   whole project at once. The choice shows up everywhere: a "Grain:" line
-  under each part in the cabinet card, the All-views table, grain lines in
+  and a part diagram with grain arrow on each part in the cabinet card, the
+  All-views table and its part diagrams, grain lines in
   the isometric view and 3D preview (each with a Show/Hide vetas toggle),
   the Desglose, every export, and board nesting.
 - **Material & hardware totals**: combined sheet area, piece counts, a
