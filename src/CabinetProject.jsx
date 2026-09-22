@@ -1505,7 +1505,7 @@ function PartDiagram({ a, b, size = 60, grainAlongA }) {
   const w = isWide ? boxLong : boxShort;
   const h = isWide ? boxShort : boxLong;
   const vb = size;
-  const ox = (vb - w) / 2, oy = (vb - h) / 2 - 3;
+  const ox = Math.max(16, (vb - w) / 2), oy = Math.max(16, (vb - h) / 2 - 3);
   const fs = 8.5;
   return (
     <svg viewBox={`0 0 ${vb} ${vb + 14}`} width={vb} height={vb + 14} style={{ display: "block", flexShrink: 0 }}>
