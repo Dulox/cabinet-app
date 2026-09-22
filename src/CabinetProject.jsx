@@ -479,6 +479,7 @@ const translations = {
     "Show vetas": "Mostrar vetas",
     "Hide vetas": "Ocultar vetas",
     "Apply grain to all": "Aplicar veta a todos",
+    "Front view": "Vista frontal", "Side view": "Vista lateral", "Top view": "Vista superior",
     "millimetres": "milímetros",
     "Shelf pins:": "Soportes de estante:",
     "Hinges (2 per door):": "Bisagras (2 por puerta):",
@@ -1186,8 +1187,8 @@ function Elevation({ W, p, shelfQty, faces, shelfPositions, onShelfPositionsChan
       <text x={ox - 70 - fs * 0.7} y={oy + H / 2} fill={getColors().amber} fontSize={fs} textAnchor="middle"
         transform={`rotate(-90 ${ox - 70 - fs * 0.7} ${oy + H / 2})`}
         style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{H} mm</text>
-      <line x1={ox + t} y1={oy - 34} x2={ox + W - t} y2={oy - 34} stroke="#EDEDE6" strokeWidth={fs * 0.045} opacity="0.65" />
-      <text x={ox + W / 2} y={oy - 44} fill="#EDEDE6" fontSize={fs * 0.78} textAnchor="middle" opacity="0.75"
+      <line x1={ox + t} y1={oy - 34} x2={ox + W - t} y2={oy - 34} stroke={getColors().mut} strokeWidth={fs * 0.045} opacity="0.65" />
+      <text x={ox + W / 2} y={oy - 44} fill={getColors().mut} fontSize={fs * 0.78} textAnchor="middle"
         style={{ fontFamily: "'JetBrains Mono', monospace" }}>opening {W - 2 * t}</text>
     </svg>
 
@@ -1235,9 +1236,9 @@ function TopView({ W, D, p, grain = null }) {
       <rect x={ox + W - t} y={oy} width={t} height={D} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
       {/* back panel band */}
       <rect x={ox + t} y={oy} width={W - 2 * t} height={t} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
-      <text x={ox + W / 2} y={oy - 14} fill="#EDEDE6" fontSize={fs * 0.72} textAnchor="middle" opacity="0.7"
+      <text x={ox + W / 2} y={oy - 14} fill={getColors().mut} fontSize={fs * 0.72} textAnchor="middle"
         style={{ fontFamily: "'JetBrains Mono', monospace" }}>back</text>
-      <text x={ox + W / 2} y={oy + D + fs * 1.1} fill="#EDEDE6" fontSize={fs * 0.72} textAnchor="middle" opacity="0.7"
+      <text x={ox + W / 2} y={oy + D + fs * 1.1} fill={getColors().mut} fontSize={fs * 0.72} textAnchor="middle"
         style={{ fontFamily: "'JetBrains Mono', monospace" }}>front (open)</text>
 
       {/* width dim */}
@@ -1316,7 +1317,7 @@ function SideView({ D, H, p, shelfQty, faces, shelfPositions, grain = null }) {
       <rect x={ox} y={oy + H - t} width={D} height={t} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
       {partitions}
       {shelves}
-      <text x={ox + D / 2} y={oy - 14} fill="#EDEDE6" fontSize={fs * 0.72} textAnchor="middle" opacity="0.7"
+      <text x={ox + D / 2} y={oy - 14} fill={getColors().mut} fontSize={fs * 0.72} textAnchor="middle"
         style={{ fontFamily: "'JetBrains Mono', monospace" }}>back ← → front</text>
 
       {/* depth dim */}
@@ -2287,6 +2288,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
   }, [effectiveDoorH]);
 
   const [cabPickerOpen, setCabPickerOpen] = React.useState(false);
+  const viewTitleCss = { fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 4 };
 
   return (
     <div className="cab-card" style={{ background: getColors().card, border: `1px solid ${getColors().hair}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
@@ -2553,6 +2555,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
         <>
           <div className="cab-noprint" style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start", marginBottom: 8 }}>
             <div className="cab-mat" style={{ flex: "1 1 200px", maxWidth: 380, minWidth: 0, overflow: "hidden" }}>
+              <div style={viewTitleCss}>{t("Front view")}</div>
               <Elevation W={W} p={p} shelfQty={cab.shelfQty} faces={data.faces}
                 shelfPositions={cab.shelfPositions}
                 onShelfPositionsChange={(next) => onChange({ shelfPositions: next })}
@@ -2560,10 +2563,12 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
                 grain={cabGrain(cab)} />
             </div>
             <div className="cab-mat" style={{ flex: "1 1 200px", maxWidth: 380, minWidth: 0, overflow: "hidden" }}>
+              <div style={viewTitleCss}>{t("Side view")}</div>
               <SideView D={p.sideD} H={p.sideH} p={p} shelfQty={cab.shelfQty} faces={data.faces}
                 shelfPositions={cab.shelfPositions} grain={cabGrain(cab)} />
             </div>
             <div className="cab-mat" style={{ flex: "1 1 200px", maxWidth: 380, minWidth: 0, overflow: "hidden" }}>
+              <div style={viewTitleCss}>{t("Top view")}</div>
               <TopView W={W} D={p.sideD} p={p} grain={cabGrain(cab)} />
             </div>
           </div>
