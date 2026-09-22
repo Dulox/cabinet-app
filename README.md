@@ -22,7 +22,8 @@ hardware totals across a whole project, and export-ready cut sheets.
   left-to-right for Horizontal. An "Apply grain to all" control sets the
   whole project at once. The choice shows up everywhere: a "Grain:" line
   under each part in the cabinet card, the All-views table, grain lines in
-  the isometric view and 3D preview (each with a Show/Hide vetas toggle), the Desglose, every export, and board nesting.
+  the isometric view and 3D preview (each with a Show/Hide vetas toggle),
+  the Desglose, every export, and board nesting.
 - **Material & hardware totals**: combined sheet area, piece counts, a
   grain-aware board-count estimate, and hardware tallies (shelf pins,
   hinges, drawer slides, handles). Board grain is taken to run along the
