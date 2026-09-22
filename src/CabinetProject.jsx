@@ -942,7 +942,7 @@ function itemsForCabsWithDepthDelta(cabs, deltaMm) {
     const d = buildCutList(W, p, c);
     d.parts.forEach((x) => {
       if (x.material === "hardboard") return;
-      const locked = getVetaForCabinet(c, x.aLabel, x.bLabel, x.a, x.b) !== "";
+      const locked = getVetaForCabinet(c, x.aLabel, x.bLabel) !== "";
       for (let i = 0; i < x.qty * cabQty; i++) items.push({ w: x.a, h: x.b, locked });
     });
   });
@@ -1365,14 +1365,6 @@ function IsoView({ W, D, p, faces }) {
 /* Small dimensioned rectangle for a single cut part — used as a thumbnail
    in the full parts table so every individual piece (drawer sides, rails,
    back panel, build-up strips, etc.) has its own labeled diagram. */
-/* Grain direction always runs along the longer edge of a part: if the
-   "a" dimension is the larger one, grain reads horizontal (H); if "b" is
-   larger, grain reads vertical (V). Matches the orientation already used
-   to draw PartDiagram, so the label and the little drawing always agree. */
-function vetasFor(a, b) {
-  return a >= b ? "V" : "H";
-}
-
 // Grain always runs along the physically wider/longer edge of a panel —
 // but that edge can be either the cabinet's vertical (height) axis or one
 // of its horizontal axes (width/depth/length), so the resulting label
@@ -1387,20 +1379,15 @@ function vetaAxis(aLabel, bLabel, a, b) {
   return heightVal >= otherVal ? "V" : "H";
 }
 
-// Apply cabinet grain direction override: Vertical (auto), Horizontal (inverted), or auto
-function getVetaForCabinet(cab, aLabel, bLabel, a, b) {
-  // Only grain-able parts (those with a height axis)
-  const aIsHeight = aLabel === "height";
-  const bIsHeight = bLabel === "height";
-  if (!aIsHeight && !bIsHeight) return "";
+// Cabinet-wide grain as seen from the front: every part with a height axis
+// gets the same direction. Anything other than "H" (incl. legacy "auto") is V.
+function cabGrain(cab) {
+  return cab && cab.grainDir === "H" ? "H" : "V";
+}
 
-  // Manual override: use literal value for all parts (ensures consistency across cabinet)
-  if (cab.grainDir === "V" || cab.grainDir === "H") {
-    return cab.grainDir;
-  }
-
-  // Auto (default): dimension-based calculation per part
-  return vetaAxis(aLabel, bLabel, a, b);
+function getVetaForCabinet(cab, aLabel, bLabel) {
+  if (aLabel !== "height" && bLabel !== "height") return "";
+  return cabGrain(cab);
 }
 
 // The back-panel groove (ranura) is cut into Side/Bottom/Top panels near
@@ -1493,7 +1480,7 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
               <PartDiagram a={x.a} b={x.b} />
               <div style={{ fontWeight: 600 }}>{tName(x.part, t)}</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", color: getColors().rust, fontWeight: 700 }}>{x.qty * (cab.qty || 1)}×</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: getColors().amber }}>{vetasFor(x.a, x.b)}</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: getColors().amber }}>{cabGrain(cab)}</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{x.a} mm</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{x.b} mm</div>
               <div style={{ fontSize: 12, color: "#888" }}>{x.material === "hardboard" ? "hardboard" : "melamine"}</div>
@@ -1660,7 +1647,7 @@ function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
       // Sides
       box(-W / 2 + mt / 2, H / 2, 0, mt, H, D, panelMat);
       box(W / 2 - mt / 2, H / 2, 0, mt, H, D, panelMat);
-      const sideAxis = getVetaForCabinet(cab, "depth", "height", D, H);
+      const sideAxis = cabGrain(cab);
       addGrainX(-W / 2 - GRAIN_EPS, H / 2, 0, H, D, sideAxis);
       addGrainX(W / 2 + GRAIN_EPS, H / 2, 0, H, D, sideAxis);
       // Bottom
@@ -1668,11 +1655,11 @@ function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
       addGrainY(mt + GRAIN_EPS, 0, 0, innerW, D, innerW >= D ? "X" : "Z");
       // Back (thin strip near the back edge)
       box(0, H / 2, -D / 2 + mt / 2, innerW, H - mt, mt, panelMat);
-      addGrainZ(-D / 2 + mt + GRAIN_EPS, 0, H / 2, innerW, H - mt, getVetaForCabinet(cab, "width", "height", innerW, H - mt));
+      addGrainZ(-D / 2 + mt + GRAIN_EPS, 0, H / 2, innerW, H - mt, cabGrain(cab));
       // Top rail (front stretcher)
       const railH = p.railH || 100;
       box(0, H - railH / 2, D / 2 - mt / 2, innerW, railH, mt, panelMat);
-      addGrainZ(D / 2 + GRAIN_EPS, 0, H - railH / 2, innerW, railH, getVetaForCabinet(cab, "length", "height", innerW, railH));
+      addGrainZ(D / 2 + GRAIN_EPS, 0, H - railH / 2, innerW, railH, cabGrain(cab));
 
       // Door / drawer fronts from the same faces data as the 2D elevation
       (data.faces || []).forEach((f) => {
@@ -1681,7 +1668,7 @@ function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
         const cy = H - f.y - fh / 2;
         const cz = D / 2 + doorT / 2;
         box(cx, cy, cz, fw, fh, doorT, f.kind === "blind" ? blindMat : doorMat);
-        addGrainZ(cz + doorT / 2 + GRAIN_EPS, cx, cy, fw, fh, getVetaForCabinet(cab, "width", "height", fw, fh));
+        addGrainZ(cz + doorT / 2 + GRAIN_EPS, cx, cy, fw, fh, cabGrain(cab));
       });
 
       group.position.y = 0;
@@ -1721,7 +1708,7 @@ function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
       // and threw "node is not a child of this node".
       if (renderer) renderer.dispose();
     };
-  }, [cab.grainDir, W, p, data]);
+  }, [cab.grainDir]);
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2100,
@@ -2266,8 +2253,8 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
 
         <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           <span style={labelCss}>{t("Grain")}</span>
-          <select value={cab.grainDir || "auto"} onChange={(e) => onChange({ grainDir: e.target.value })} style={selCss}>
-            <option value="auto">{t("Vertical")}</option>
+          <select value={cabGrain(cab)} onChange={(e) => onChange({ grainDir: e.target.value })} style={selCss}>
+            <option value="V">{t("Vertical")}</option>
             <option value="H">{t("Horizontal")}</option>
           </select>
         </label>
@@ -2443,6 +2430,9 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
                     <span style={{ color: getColors().rust, fontFamily: "'JetBrains Mono', monospace" }}>{x.qty * (cab.qty || 1)}×</span> {tName(x.part, t)}
                   </div>
                   <div style={{ fontSize: 11, color: getColors().mut, marginTop: 2 }}>{trNote(x.note, lang)}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: getColors().amber, marginTop: 2 }}>
+                    {t("Grain")}: {cabGrain(cab) === "H" ? `${t("Horizontal")} ↔` : `${t("Vertical")} ↕`}
+                  </div>
                 </div>
                 <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                   <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 15.5 }}>{fmt(x.a)} × {fmt(x.b)}</div>
@@ -3338,7 +3328,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
     // Helper: add a part to the map, merging by name+dimensions
     const emitPart = (map, name, L, A, G, qty, part, opts, cabNum) => {
       const o = opts || {};
-      const key = `${name}|${L}-${A}-${G}|${o.cabMaterial || ""}`;
+      const key = `${name}|${L}-${A}-${G}|${o.cabMaterial || ""}|${o.vetas || ""}`;
 
       if (map.has(key)) {
         const existing = map.get(key);
@@ -3396,11 +3386,6 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
       if (isNaN(W) || W <= 2 * p.t + 10) return;
       const d = buildCutList(W, p, cab);
       const cabMaterial = cab.material || "";
-      // Reference grain direction for this cabinet (from the Side panels' own
-      // height vs. depth) — flat parts with no height axis of their own
-      // (Bottom, Top, ...) follow this so the whole cabinet's grain runs the
-      // same way, instead of being left unmarked.
-      const cabVetas = getVetaForCabinet(cab, "depth", "height", p.sideD, p.sideH);
       d.parts.forEach((part) => {
         const L = Math.round(Math.max(part.a, part.b));
         const A = Math.round(Math.min(part.a, part.b));
@@ -3417,7 +3402,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
 
         // Side panels: all sides are plain (no "with doors" variant).
         // Doors will be marked with X in HB-L/HB-A to show they're fixed to the side.
-        const vetas = getVetaForCabinet(cab, part.aLabel, part.bLabel, part.a, part.b) || cabVetas;
+        const vetas = cabGrain(cab);
 
         if (part.part === "Side") {
           const totalSides = part.qty * cabQty;      // usually 2 × cabQty
@@ -3428,10 +3413,9 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
 
         const sideLabel = part.part;
         const totalQty = part.qty * cabQty;
-        // Mark door parts: bisagra drills into the door's own height edge (vetas already
-        // tells us whether that edge became Largo ("V") or Ancho ("H") for this part)
+        // Bisagra drills into the door's own height edge — geometric, independent of the grain choice.
         const isDoorPart = sideLabel.includes("Door");
-        const bisagra = isDoorPart ? (vetas === "V" ? "L" : "A") : "";
+        const bisagra = isDoorPart ? (vetaAxis(part.aLabel, part.bLabel, part.a, part.b) === "V" ? "L" : "A") : "";
         emitPart(map, sideLabel, L, A, G, totalQty, part, { ranura, bisagra, cabMaterial, cabType: cab.type, vetas }, cabNum);
       });
     });
@@ -5014,7 +4998,7 @@ export default function CabinetProject() {
         if (x.material === "hardboard") return;
         // Same rule the Desglose sheet uses to mark vetas: a part with a height
         // axis has directional grain and can't be rotated 90° when nesting.
-        const locked = getVetaForCabinet(c, x.aLabel, x.bLabel, x.a, x.b) !== "";
+        const locked = getVetaForCabinet(c, x.aLabel, x.bLabel) !== "";
         for (let i = 0; i < x.qty * cabQty; i++)
           items.push({ w: x.a, h: x.b, locked, label: x.part, isSide: x.part === "Side", sideH: p.sideH });
       });
@@ -5052,12 +5036,12 @@ export default function CabinetProject() {
     }));
   };
 
-  const [globalGrainToApply, setGlobalGrainToApply] = React.useState("auto");
+  const [globalGrainToApply, setGlobalGrainToApply] = React.useState("V");
   const applyGrainToAll = () => {
     setCabs((cs) => cs.map((c) => ({ ...c, grainDir: globalGrainToApply })));
   };
   const resetAllGrainToVertical = () => {
-    setCabs((cs) => cs.map((c) => ({ ...c, grainDir: "auto" })));
+    setCabs((cs) => cs.map((c) => ({ ...c, grainDir: "V" })));
   };
 
   const exportProjectToPDF = async () => {
@@ -5602,7 +5586,7 @@ export default function CabinetProject() {
                   <select value={globalGrainToApply} onChange={(e) => setGlobalGrainToApply(e.target.value)}
                     style={{ padding: "7px 10px", border: `1.5px solid ${getColors().canvasBorder}`, borderRadius: 6, background: "#fff",
                       fontFamily: "'Archivo', sans-serif", fontWeight: 600, fontSize: 12, color: "#111" }}>
-                    <option value="auto">{t("Vertical")}</option>
+                    <option value="V">{t("Vertical")}</option>
                     <option value="H">{t("Horizontal")}</option>
                   </select>
                 </label>
