@@ -476,8 +476,8 @@ const translations = {
     "Grain": "Veta",
     "Vertical": "Vertical",
     "Horizontal": "Horizontal",
-    "Show vetas": "Mostrar vetas",
-    "Hide vetas": "Ocultar vetas",
+    "Show grain": "Mostrar vetas",
+    "Hide grain": "Ocultar vetas",
     "Apply grain to all": "Aplicar veta a todos",
     "Front view": "Vista frontal", "Side view": "Vista lateral", "Top view": "Vista superior",
     "opening": "abertura", "back": "atrás", "front": "frente", "front (open)": "frente (abierto)",
@@ -487,6 +487,10 @@ const translations = {
     "Board": "Tablero", "nesting": "anidado",
     "Shared project": "Proyecto compartido", "shared": "compartido", "copy": "copia",
     "Account": "Cuenta", "Workbench": "Mesa de trabajo", "Specs": "Especificaciones", "Download": "Descargas",
+    "Material selector": "Selector de Material", "Catalogue": "Catálogo",
+    "Search by name or code...": "Buscar por nombre o código...", "Recent Innovus": "Innovus recientes",
+    "Recent Portasol": "Portasol recientes", "My materials": "Mis Materiales", "No favourites": "Sin favoritos",
+    "Favourites": "Favoritos",
     "Material": "Material", "Depth": "Profundidad", "Height": "Alto", "Open": "Abrir", "Vetas": "Vetas",
     "Saving...": "Guardando...", "No projects yet": "Aún no hay proyectos", "Lock": "Bloquear", "Unlock": "Desbloquear",
     "Duplicate": "Duplicar", "Delete": "Borrar", "Menu": "Menú", "Loading...": "Cargando...",
@@ -1696,7 +1700,7 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
             marginLeft: "auto", marginRight: 12, padding: "5px 10px", borderRadius: 7, fontWeight: 700, fontSize: 12, cursor: "pointer",
             border: `1px solid ${showVetas ? "#8a6d3f" : getColors().hair}`,
             background: showVetas ? "#8a6d3f" : "transparent", color: showVetas ? "#fff" : getColors().ink }}>
-            🌾 {showVetas ? t("Hide vetas") : t("Show vetas")}
+            🌾 {showVetas ? t("Hide grain") : t("Show grain")}
           </button>
           <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 26, cursor: "pointer", color: getColors().mut, lineHeight: 1 }}>×</button>
         </div>
@@ -1727,7 +1731,7 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
         <div style={{ border: `1px solid ${getColors().hair}`, borderRadius: 10, overflow: "hidden", background: "#fff" }}>
           <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 70px 70px 110px 110px 110px", gap: 8, padding: "8px 13px",
             fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#888", borderBottom: "1px solid #eee" }}>
-            <div>{t("Diagram")}</div><div>{t("Part")}</div><div>{t("Qty")}</div><div>{t("Vetas")}</div><div style={{ gridColumn: "span 2" }}>{t("Size")}</div><div>{t("Material")}</div>
+            <div>{t("Diagram")}</div><div>{t("Part")}</div><div>{t("Qty")}</div><div>{t("Grain")}</div><div style={{ gridColumn: "span 2" }}>{t("Size")}</div><div>{t("Material")}</div>
           </div>
           {data.parts.map((x, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: "60px 1fr 70px 70px 110px 110px 110px", gap: 8, padding: "9px 13px",
@@ -1982,7 +1986,7 @@ function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
               padding: "6px 12px", borderRadius: 7, fontWeight: 700, fontSize: 12, cursor: "pointer",
               border: showVetas ? "1px solid #8a6d3f" : "1px solid #3a3b42",
               background: showVetas ? "#8a6d3f" : "transparent", color: "#fff" }}>
-              🌾 {showVetas ? tr("Hide vetas") : tr("Show vetas")}
+              🌾 {showVetas ? tr("Hide grain") : tr("Show grain")}
             </button>
             <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#9a9ba2", lineHeight: 1 }}>×</button>
           </div>
@@ -2460,6 +2464,7 @@ function CabinetCard({ cab, index, t, lang, onChange, onRemove, canRemove, proje
       </div>
       {cabPickerOpen && (
         <MaterialPicker
+          tr={t}
           customMaterials={(() => { try { return JSON.parse(localStorage.getItem("customMaterials") || "[]"); } catch { return []; } })()}
           onClose={() => setCabPickerOpen(false)}
           onSelect={(val) => { onChange({ material: val }); setCabPickerOpen(false); }}
@@ -3450,7 +3455,7 @@ const INNOVUS_MATERIALS = {
 };
 
 /* ── MATERIAL PICKER MODAL ────────────────────────────────────────── */
-function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
+function MaterialPicker({ onSelect, onClose, customMaterials = [], tr = (k) => k }) {
   const [activeCatalogue, setActiveCatalogue] = React.useState("favorites");
   const [activeTab, setActiveTab] = React.useState("recent");
   const [search, setSearch] = React.useState("");
@@ -3469,13 +3474,13 @@ function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
   const recentPortasol = recentMaterials.filter(m => m.source === "portasol");
 
   const FAVORITES_DATA = {};
-  if (recentInnovus.length > 0) FAVORITES_DATA.recentInnovus = { label: "Innovus recientes", items: recentInnovus };
-  if (recentPortasol.length > 0) FAVORITES_DATA.recentPortasol = { label: "Portasol recientes", items: recentPortasol };
-  if (customMaterials.length > 0) FAVORITES_DATA.mis = { label: "Mis Materiales", items: customMaterials.map(m => ({ ...m, texture: "", grain: false })) };
-  if (Object.keys(FAVORITES_DATA).length === 0) FAVORITES_DATA.empty = { label: "Sin favoritos", items: [] };
+  if (recentInnovus.length > 0) FAVORITES_DATA.recentInnovus = { label: tr("Recent Innovus"), items: recentInnovus };
+  if (recentPortasol.length > 0) FAVORITES_DATA.recentPortasol = { label: tr("Recent Portasol"), items: recentPortasol };
+  if (customMaterials.length > 0) FAVORITES_DATA.mis = { label: tr("My materials"), items: customMaterials.map(m => ({ ...m, texture: "", grain: false })) };
+  if (Object.keys(FAVORITES_DATA).length === 0) FAVORITES_DATA.empty = { label: tr("No favourites"), items: [] };
 
   const CATALOGUES = {
-    favorites: { label: "⭐ Favoritos", data: FAVORITES_DATA },
+    favorites: { label: `⭐ ${tr("Favourites")}`, data: FAVORITES_DATA },
     innovus: { label: "Innovus", data: INNOVUS_MATERIALS },
     portasol: { label: "Portasol", data: PORTASOL_MATERIALS },
   };
@@ -3518,8 +3523,8 @@ function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
         <div style={{ padding: "16px 20px 0", borderBottom: "1px solid #eee" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div>
-              <div style={{ fontWeight: 800, fontSize: 16 }}>Innovus® — Selector de Material</div>
-              <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>Catálogo Matching our nature · Sonae Arauco</div>
+              <div style={{ fontWeight: 800, fontSize: 16 }}>Innovus® — {tr("Material selector")}</div>
+              <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>{tr("Catalogue")} Matching our nature · Sonae Arauco</div>
             </div>
             <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#888" }}>×</button>
           </div>
@@ -3538,7 +3543,7 @@ function MaterialPicker({ onSelect, onClose, customMaterials = [] }) {
           </div>
           <input
             value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar por nombre o código..."
+            placeholder={tr("Search by name or code...")}
             style={{ width: "100%", padding: "8px 12px", border: "1.5px solid #ddd", borderRadius: 8,
               fontSize: 13, marginBottom: 10, outline: "none", boxSizing: "border-box" }}
           />
@@ -3626,7 +3631,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
     }
     if (window.confirm(ms("Save your sheet before closing?", "¿Guardar la hoja antes de cerrar?"))) {
       // User clicked OK — save the sheet then close
-      const name = saveSheetName && saveSheetName !== "__new__" ? saveSheetName : (projectName || "Hoja sin nombre");
+      const name = saveSheetName && saveSheetName !== "__new__" ? saveSheetName : (projectName || ms("Untitled sheet", "Hoja sin nombre"));
       const now = new Date();
       const date = now.toLocaleDateString("es-DO") + " " + now.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" });
       const sheet = { name, date, rows, globalMaterial, factura, nombre, telefono };
@@ -3885,7 +3890,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
   };
 
   const saveSheet = () => {
-    const name = saveSheetName.trim() || projectName || "Hoja sin nombre";
+    const name = saveSheetName.trim() || projectName || ms("Untitled sheet", "Hoja sin nombre");
     const now = new Date();
     const date = now.toLocaleDateString("es-DO") + " " + now.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" });
     const sheet = { name, date, rows, globalMaterial, factura, nombre, telefono };
@@ -4236,6 +4241,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         {/* Material Picker */}
         {pickerOpen && (
           <MaterialPicker
+            tr={(k) => (mLang === "es" ? (translations.es[k] || k) : k)}
             customMaterials={customMaterials}
             onClose={() => setPickerOpen(null)}
             onSelect={(val) => {
@@ -4270,7 +4276,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
             </select>
             <button onClick={(e) => {
               e.stopPropagation();  // prevent click from bubbling to overlay
-              const name = saveSheetName && saveSheetName !== "__new__" ? saveSheetName : (projectName || "Hoja sin nombre");
+              const name = saveSheetName && saveSheetName !== "__new__" ? saveSheetName : (projectName || ms("Untitled sheet", "Hoja sin nombre"));
               const now = new Date();
               const date = now.toLocaleDateString("es-DO") + " " + now.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" });
               const sheet = { name, date, rows, globalMaterial, factura, nombre, telefono };
