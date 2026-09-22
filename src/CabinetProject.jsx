@@ -1721,8 +1721,7 @@ function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
       // and threw "node is not a child of this node".
       if (renderer) renderer.dispose();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [cab.grainDir, W, p, data]);
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2100,
