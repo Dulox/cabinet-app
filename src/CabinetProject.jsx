@@ -485,6 +485,7 @@ const translations = {
     "Diagram": "Diagrama", "Part": "Pieza", "Qty": "Cant.", "Size": "Medida",
     "Item": "Elem", "Name": "Nombre", "Length": "Largo", "Thick.": "Grosor",
     "Board": "Tablero", "nesting": "anidado",
+    "Shared project": "Proyecto compartido", "shared": "compartido", "copy": "copia",
     "Base build-up strip": "Refuerzo superior base",
     "hinge": "bisagra", "slide pair": "par de correderas", "shelf pin": "soporte de estante", "handle": "tirador",
     "Building PDF…": "Generando PDF…", "Building shop drawings…": "Generando planos de taller…",
@@ -4965,7 +4966,7 @@ export default function CabinetProject() {
 
   const duplicateProject = async (proj) => {
     if (!supabase) return;
-    const newName = proj.name + " (copy)";
+    const newName = proj.name + ` (${t("copy")})`;
     try {
       const { data, error } = await supabase
         .from("cabinet_projects")
@@ -5115,7 +5116,7 @@ export default function CabinetProject() {
     }
     (async () => {
       const newProjectId = crypto.randomUUID();
-      const newName = `${decoded.name || "Shared project"} (shared)`;
+      const newName = decoded.name ? `${decoded.name} (${t("shared")})` : t("Shared project");
       setCurrentProjectId(newProjectId);
       setCurrentProjectName(newName);
       resetCabs(decoded.cabs);
