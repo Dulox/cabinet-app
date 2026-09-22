@@ -15,16 +15,33 @@ hardware totals across a whole project, and export-ready cut sheets.
 - **Drawings**: front elevation, top view, side view, a true 30° isometric
   SVG, and a rotatable/zoomable 3D preview (Three.js, loaded on demand) with
   a grain-direction overlay toggle — all pure SVG/WebGL, no drawing library.
+- **Grain direction (vetas)**: each cabinet is set to **Vertical** or
+  **Horizontal** grain as seen from the front, and every part of that
+  cabinet follows it — sides, doors, back, rails and strips all run the same
+  way. Flat parts (bottom, shelves) run front-to-back for Vertical and
+  left-to-right for Horizontal. An "Apply grain to all" control sets the
+  whole project at once. The choice shows up everywhere: a "Grain:" line
+  under each part in the cabinet card, the All-views table, grain lines in
+  the 3D preview, the Desglose, every export, and board nesting.
 - **Material & hardware totals**: combined sheet area, piece counts, a
-  grain-aware board-count estimate (locked-grain parts are never rotated to
-  fit), and hardware tallies (shelf pins, hinges, drawer slides, handles).
+  grain-aware board-count estimate, and hardware tallies (shelf pins,
+  hinges, drawer slides, handles). Board grain is taken to run along the
+  board's first dimension ("Board width", 2800 mm by default): Vertical-grain
+  parts are laid with their height along it, Horizontal-grain parts turned
+  90°, and grain-locked parts are never rotated to fit.
 - **Desglose sheet**: an editable shop cut-and-edge-band form per project —
-  material, grain direction (vetas), back-panel groove (ranura), hinge
-  boring (bisagra), and edge banding, auto-marked from the cut list and
-  hand-adjustable per row. Saveable/loadable, multiple sheets per browser.
-- **Exports**: PDF cut sheet, Excel (a "full" copy and a "production" copy
-  with the internal-only columns dropped), and a DXF nesting layout for
-  CNC/CAM software (part outlines + shelf-pin holes on real 32mm spacing).
+  material, grain direction (vetas) with a "Pieza" diagram showing a red
+  arrow along the grain, back-panel groove (ranura), hinge boring (bisagra),
+  and edge banding, auto-marked from the cut list and hand-adjustable per
+  row (the arrow follows hand-edited V/H). Rows are only merged when size,
+  material and grain all match. Saveable/loadable, multiple sheets per
+  browser.
+- **Exports**: PDF cut sheet, shop drawing PDF and project PDF (each with a
+  small part outline + grain arrow per part), Excel (a "full" copy and a
+  "production" copy with the internal-only columns dropped; a "Pieza"
+  column shows ↔ for grain along the Largo, ↕ across it), and a DXF nesting
+  layout for CNC/CAM software (part outlines + shelf-pin holes on real 32mm
+  spacing, rotated with the part).
 - **Material-saving suggestions**: a depth-comparison card tries small
   uniform depth cuts (5-30mm) across every cabinet and shows a before/after
   board count and utilization % whenever one would save a whole board, with
@@ -146,6 +163,15 @@ the pieces worth knowing about:
 - `Cabinet3DModal` — the Three.js 3D preview.
 - `DesgloseSheet` — the editable cut-and-edge-band sheet, its Excel export,
   and the vetas/ranura/bisagra auto-marking logic (`vetaAxis`, `ranuraSide`).
+- Grain helpers: `cabGrain(cab)` is the single source of a cabinet's grain
+  ("V"/"H"; older saved values like "auto" read as V). `vAxisFor(part)`
+  says which Desglose edge (Largo/Ancho) a V grain runs along for a part,
+  and `grainAlongLargo(row)` turns that into the arrow direction used by
+  `GrainDiagram` (Desglose), the Excel "Pieza" column and `pdfGrainGlyph`
+  (PDFs). Bisagra deliberately uses the geometric `vetaAxis()` — the hinge
+  edge is the door's height edge whatever the grain choice.
+- `nestItem()` — a part's board footprint for nesting, turned according to
+  the cabinet's grain.
 - `estimateBoards()` / `packBoardsWithLayout()` — the board-count estimate
   and the layout-tracking version that feeds the DXF export.
 - `buildNestingDxf()` — the DXF writer.
@@ -174,9 +200,12 @@ Edit, commit, push — a Pages/Vercel/Netlify deploy rebuilds on its own.
   artifact/preview environment (e.g. an AI tool's iframe preview) because
   that sandbox blocks the download — not a bug in the app itself.
 - **Board-count and DXF nesting are estimates**, not a true optimal nester.
-  Both use the same simple shelf-packing heuristic; the app itself flags
+  Both use the same MaxRects bin-packing heuristic; the app itself flags
   this ("Layout estimate — real nesting varies. Buy at least one spare
   board for offcuts and mistakes.").
+- **Board grain is assumed to run along "Board width"** (the first board
+  dimension). If you enter a board whose grain runs along the other side,
+  swap the two numbers or Vertical/Horizontal parts will nest the wrong way.
 - **DXF export has no hinge or cam-lock hole boring**, only part outlines
   and shelf-pin holes. The app doesn't commit to exact hinge-system specs
   (cup diameter, edge inset) anywhere else, so it doesn't guess at them for
