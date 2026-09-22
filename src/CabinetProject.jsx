@@ -1306,7 +1306,7 @@ function SideView({ D, H, p, shelfQty, faces, shelfPositions }) {
    "near" face is z=D, not z=0 — the front/door faces must be placed at
    z=D (not z=0), otherwise the front face's polygon area overlaps the
    top face's instead of sharing just an edge with it. */
-function IsoView({ W, D, p, faces, grain = "V" }) {
+function IsoView({ W, D, p, faces, grain = null }) {
   const H = p.sideH;
   const ANGLE = Math.PI / 6; // 30°
   const cosA = Math.cos(ANGLE), sinA = Math.sin(ANGLE);
@@ -1335,6 +1335,7 @@ function IsoView({ W, D, p, faces, grain = "V" }) {
   const toPts = (quad) => quad.map((pt) => `${pt.px + ox},${pt.py + oy}`).join(" ");
   // Grain lines on a face from origin o spanned by U (the "V" direction: height, or depth for the top) and V.
   const faceGrain = (o, U, Vv) => {
+    if (!grain) return null;
     const [along, across] = grain === "V" ? [U, Vv] : [Vv, U];
     const len = Math.hypot(...across), n = Math.max(3, Math.min(12, Math.round(len / 70)));
     return Array.from({ length: n }, (_, i) => {
@@ -1524,6 +1525,7 @@ function PartDiagram({ a, b, size = 60 }) {
 
 function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
   const D = p.sideD, H = p.sideH;
+  const [showVetas, setShowVetas] = useState(false);
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 2000,
       display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
@@ -1552,8 +1554,16 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
             <SideView D={D} H={H} p={p} shelfQty={cab.shelfQty} faces={data.faces} shelfPositions={cab.shelfPositions} />
           </div>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Isometric</div>
-            <IsoView W={W} D={D} p={p} faces={data.faces} grain={cabGrain(cab)} />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut }}>Isometric</div>
+              <button onClick={() => setShowVetas((v) => !v)} style={{
+                padding: "3px 8px", borderRadius: 6, fontWeight: 700, fontSize: 11, cursor: "pointer",
+                border: `1px solid ${showVetas ? "#8a6d3f" : getColors().hair}`,
+                background: showVetas ? "#8a6d3f" : "transparent", color: showVetas ? "#fff" : getColors().ink }}>
+                🌾 {showVetas ? t("Hide vetas") : t("Show vetas")}
+              </button>
+            </div>
+            <IsoView W={W} D={D} p={p} faces={data.faces} grain={showVetas ? cabGrain(cab) : null} />
           </div>
         </div>
 
