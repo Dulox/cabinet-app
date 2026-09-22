@@ -1195,7 +1195,7 @@ function Elevation({ W, p, shelfQty, faces, shelfPositions, onShelfPositionsChan
 }
 
 /* Plan (top-down) view: shows width × depth footprint */
-function TopView({ W, D, p }) {
+function TopView({ W, D, p, grain = null }) {
   const t = p.t;
   const pad = Math.max(90, Math.max(W, D) * 0.18);
   const vbW = W + pad * 2, vbH = D + pad * 2;
@@ -1219,6 +1219,17 @@ function TopView({ W, D, p }) {
       <rect x="0" y="0" width={vbW} height={vbH} fill="url(#gTop)" />
       {/* footprint outline */}
       <rect x={ox} y={oy} width={W} height={D} fill="none" stroke={getColors().amber} strokeWidth={fs * 0.09} strokeDasharray={dash} />
+      {grain && (() => {
+        // Bottom panel seen from above: V runs front-to-back, H left-to-right.
+        const x0 = ox + t, y0 = oy + t, bw = W - 2 * t, bd = D - t;
+        const vert = grain === "V", across = vert ? bw : bd, n = Math.max(3, Math.min(12, Math.round(across / 70)));
+        return Array.from({ length: n }, (_, i) => {
+          const s = across * (i + 0.5) / n;
+          return vert
+            ? <line key={"g" + i} x1={x0 + s} y1={y0} x2={x0 + s} y2={y0 + bd} stroke="#8a6d3f" strokeWidth={fs * 0.05} opacity="0.55" />
+            : <line key={"g" + i} x1={x0} y1={y0 + s} x2={x0 + bw} y2={y0 + s} stroke="#8a6d3f" strokeWidth={fs * 0.05} opacity="0.55" />;
+        });
+      })()}
       {/* side panels (left/right, full depth) */}
       <rect x={ox} y={oy} width={t} height={D} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
       <rect x={ox + W - t} y={oy} width={t} height={D} fill={getColors().panel} stroke={getColors().panelEdge} strokeWidth="1.5" />
@@ -1606,7 +1617,7 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Top</div>
-            <TopView W={W} D={D} p={p} />
+            <TopView W={W} D={D} p={p} grain={showVetas ? cabGrain(cab) : null} />
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: getColors().mut, marginBottom: 6 }}>Side</div>
