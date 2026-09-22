@@ -1437,6 +1437,7 @@ function pdfGrainGlyph(doc, x, yTop, part, cab, w = 8, hMin = 2.6, hMax = 5) {
   const L = Math.max(part.a, part.b), A = Math.min(part.a, part.b);
   const along = grainAlongLargo({ vetas: cabGrain(cab), vAxis: vAxisFor(part) });
   const h = along ? Math.max(hMin, Math.min(hMax, (w * A) / L)) : hMax;
+  yTop += (hMax - h) / 2;
   doc.rect(x, yTop, w, h, { stroke: [85, 85, 85], lineWidth: 0.2 });
   const red = { color: [200, 0, 0], lineWidth: 0.3 };
   const cx = x + w / 2, cy = yTop + h / 2, hd = Math.min(0.9, h / 3);
@@ -5129,9 +5130,9 @@ export default function CabinetProject() {
   const exportProjectToPDF = async () => {
     try {
       const doc = new MiniPDF();
-      const pageW = 297, pageH = 210, M = 8;
+      const pageW = 210, pageH = 297, M = 8;
       let y = M;
-      const col = { elem: M, nombre: M + 10, cant: M + 60, largo: M + 68, ancho: M + 76, grosor: M + 84, desc: M + 96, l1: M + 125, l2: M + 135, c1: M + 145, c2: M + 155 };
+      const col = { elem: M, nombre: M + 10, cant: M + 58, largo: M + 67, ancho: M + 79, grosor: M + 91, desc: M + 105, l1: M + 125, l2: M + 135, c1: M + 145, c2: M + 155 };
       const drawHeader = () => {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8);
@@ -5221,9 +5222,10 @@ export default function CabinetProject() {
 
       cabs.forEach((c, ci) => {
         const Wd = parseFloat(c.width);
-        if (isNaN(Wd) || Wd <= 2 * p.t + 10) return;
+        const cp = c.params || DEFAULTS;
+        if (isNaN(Wd) || Wd <= 2 * cp.t + 10) return;
         const cabQty = c.qty || 1;
-        const d = buildCutList(Wd, p, c);
+        const d = buildCutList(Wd, cp, c);
         need(20);
         doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(20, 23, 15);
         doc.text(cabLabel(c, ci, t), M, y); y += 5;
@@ -5288,7 +5290,7 @@ export default function CabinetProject() {
     try {
       const doc = new MiniPDF();
       const M = 14, right = 210 - M, bottom = 297 - M;
-      const valid = cabs.filter((c) => { const W = parseFloat(c.width); return !isNaN(W) && W > 2 * p.t + 10; });
+      const valid = cabs.filter((c) => { const W = parseFloat(c.width); return !isNaN(W) && W > 2 * (c.params || DEFAULTS).t + 10; });
       if (valid.length === 0) {
         doc.setFont("courier", "normal"); doc.setFontSize(12); doc.setTextColor(40, 40, 40);
         doc.text(t("No valid cabinets to draw."), M, M + 10);
@@ -5297,7 +5299,8 @@ export default function CabinetProject() {
         if (idx > 0) doc.addPage();
         const Wd = parseFloat(c.width);
         const cabQty = c.qty || 1;
-        const d = buildCutList(Wd, p, c);
+        const cp = c.params || DEFAULTS;
+        const d = buildCutList(Wd, cp, c);
         let y = M;
         // header
         doc.setFont("courier", "normal"); doc.setFontSize(9); doc.setTextColor(120, 124, 112);
@@ -5305,11 +5308,11 @@ export default function CabinetProject() {
         doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.setTextColor(20, 23, 15);
         doc.text(cabLabel(c, cabs.indexOf(c), t), M, y); y += 5.5;
         doc.setFont("courier", "normal"); doc.setFontSize(9.5); doc.setTextColor(90, 94, 82);
-        doc.text(`${t(TYPES[c.type].label)} · ${Wd} mm · ${p.t}mm ${t("board")}`, M, y); y += 3;
+        doc.text(`${t(TYPES[c.type].label)} · ${Wd} mm · ${cp.t}mm ${t("board")}`, M, y); y += 3;
         doc.setDrawColor(20); doc.setLineWidth(0.4); doc.line(M, y, right, y); y += 3;
         // elevation
         const boxY = y, boxH = 124;
-        drawCabinetElevation(doc, M, boxY, right - M, boxH, Wd, p, c.shelfQty, d.faces);
+        drawCabinetElevation(doc, M, boxY, right - M, boxH, Wd, cp, c.shelfQty, d.faces);
         y = boxY + boxH + 2;
         doc.setDrawColor(185); doc.setLineWidth(0.25); doc.line(M, y, right, y); y += 5;
         // cut list
