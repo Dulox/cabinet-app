@@ -1910,9 +1910,11 @@ function Cabinet3DModal({ cab, W, p, data, t, onClose }) {
       const sideAxis = cabGrain(cab);
       addGrainX(-W / 2 - GRAIN_EPS, H / 2, 0, H, D, sideAxis);
       addGrainX(W / 2 + GRAIN_EPS, H / 2, 0, H, D, sideAxis);
+      addGrainX(-W / 2 + mt + GRAIN_EPS, H / 2, 0, H, D, sideAxis);
+      addGrainX(W / 2 - mt - GRAIN_EPS, H / 2, 0, H, D, sideAxis);
       // Bottom
       box(0, mt / 2, 0, innerW, mt, D, panelMat);
-      addGrainY(mt + GRAIN_EPS, 0, 0, innerW, D, innerW >= D ? "X" : "Z");
+      addGrainY(mt + GRAIN_EPS, 0, 0, innerW, D, cabGrain(cab) === "V" ? "Z" : "X");
       // Back (thin strip near the back edge)
       box(0, H / 2, -D / 2 + mt / 2, innerW, H - mt, mt, panelMat);
       addGrainZ(-D / 2 + mt + GRAIN_EPS, 0, H / 2, innerW, H - mt, cabGrain(cab));
