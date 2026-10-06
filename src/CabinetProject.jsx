@@ -1746,7 +1746,7 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
               <PartDiagram a={x.a} b={x.b} grainAlongA={partGrainAlongA(cab, x)} />
               <div style={{ fontWeight: 600 }}>{tName(x.part, t)}</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", color: getColors().rust, fontWeight: 700 }}>{x.qty * (cab.qty || 1)}×</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: getColors().amber }}>{grainAlongLargoFor(cab, x) ? "H" : "V"}</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: getColors().amber }}>{cabGrain(cab)}</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{x.a} mm<div style={{ fontSize: 10, color: "#888" }}>{t(x.aLabel)}</div></div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{x.b} mm<div style={{ fontSize: 10, color: "#888" }}>{t(x.bLabel)}</div></div>
               <div style={{ fontSize: 12, color: "#888" }}>{t(x.material === "hardboard" ? "hardboard" : "melamine")}</div>
