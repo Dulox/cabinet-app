@@ -1577,20 +1577,27 @@ function ranuraSide(aLabel, bLabel, a, b) {
   return otherVal >= depthVal ? "L" : "A";
 }
 
-// true = grain along Largo, false = along Ancho, null = no veta marked.
+// Does this part's grain run along its Largo (long edge)? Combines the
+// cabinet-wide direction with which edge of the part faces that way.
+function grainAlongLargoFor(cab, part) {
+  return (cabGrain(cab) === "V") === (vAxisFor(part) === "L");
+}
+
+// The Desglose letter describes the piece as cut, matching its own diagram:
+// H = grain along the Largo (↔), V = across it (↕). Hand-edits drive the arrow.
 function grainAlongLargo(row) {
-  return row.vetas ? (row.vetas === "V") === ((row.vAxis || "L") === "L") : null;
+  return row.vetas ? row.vetas === "H" : null;
 }
 
 // Grain arrow for PartDiagram, which draws "a" across and "b" up/down.
 function partGrainAlongA(cab, x) {
-  return grainAlongLargo({ vetas: cabGrain(cab), vAxis: vAxisFor(x) }) === (x.a >= x.b);
+  return grainAlongLargoFor(cab, x) === (x.a >= x.b);
 }
 
 // MiniPDF version of GrainDiagram: part outline (Largo horizontal) + red grain arrow.
 function pdfGrainGlyph(doc, x, yTop, part, cab, w = 8, hMin = 2.6, hMax = 5) {
   const L = Math.max(part.a, part.b), A = Math.min(part.a, part.b);
-  const along = grainAlongLargo({ vetas: cabGrain(cab), vAxis: vAxisFor(part) });
+  const along = grainAlongLargoFor(cab, part);
   const h = along ? Math.max(hMin, Math.min(hMax, (w * A) / L)) : hMax;
   yTop += (hMax - h) / 2;
   doc.rect(x, yTop, w, h, { stroke: [85, 85, 85], lineWidth: 0.2 });
@@ -1739,7 +1746,7 @@ function AllViewsModal({ cab, W, p, data, t, idx, onClose }) {
               <PartDiagram a={x.a} b={x.b} grainAlongA={partGrainAlongA(cab, x)} />
               <div style={{ fontWeight: 600 }}>{tName(x.part, t)}</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", color: getColors().rust, fontWeight: 700 }}>{x.qty * (cab.qty || 1)}×</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: getColors().amber }}>{cabGrain(cab)}</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: getColors().amber }}>{grainAlongLargoFor(cab, x) ? "H" : "V"}</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{x.a} mm<div style={{ fontSize: 10, color: "#888" }}>{t(x.aLabel)}</div></div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{x.b} mm<div style={{ fontSize: 10, color: "#888" }}>{t(x.bLabel)}</div></div>
               <div style={{ fontSize: 12, color: "#888" }}>{t(x.material === "hardboard" ? "hardboard" : "melamine")}</div>
@@ -3680,7 +3687,6 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
           cl1: isHardboardPart ? "" : "X", cl2: isHardboardPart ? "" : "X",
           ca1: isHardboardPart ? "" : "X", ca2: isHardboardPart ? "" : "X",
           vetas: o.vetas || "",
-          vAxis: o.vAxis || "L",
           // Ranuras: back-panel groove, marked on whichever single edge (Largo or Ancho) faces the back
           rl: o.ranura === "L" ? "X" : "",
           ra: o.ranura === "A" ? "X" : "",
@@ -3733,12 +3739,12 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
 
         // Side panels: all sides are plain (no "with doors" variant).
         // Doors will be marked with X in HB-L/HB-A to show they're fixed to the side.
-        const vetas = cabGrain(cab);
+        const vetas = grainAlongLargoFor(cab, part) ? "H" : "V";
 
         if (part.part === "Side") {
           const totalSides = part.qty * cabQty;      // usually 2 × cabQty
           // Emit all sides as plain, no hinge marking
-          emitPart(map, "Side", L, A, G, totalSides, part, { ranura, cabMaterial, cabType: cab.type, vetas, vAxis: vAxisFor(part) }, cabNum);
+          emitPart(map, "Side", L, A, G, totalSides, part, { ranura, cabMaterial, cabType: cab.type, vetas }, cabNum);
           return;
         }
 
@@ -3747,7 +3753,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
         // Bisagra drills into the door's own height edge — geometric, independent of the grain choice.
         const isDoorPart = sideLabel.includes("Door");
         const bisagra = isDoorPart ? (vetaAxis(part.aLabel, part.bLabel, part.a, part.b) === "V" ? "L" : "A") : "";
-        emitPart(map, sideLabel, L, A, G, totalQty, part, { ranura, bisagra, cabMaterial, cabType: cab.type, vetas, vAxis: vAxisFor(part) }, cabNum);
+        emitPart(map, sideLabel, L, A, G, totalQty, part, { ranura, bisagra, cabMaterial, cabType: cab.type, vetas }, cabNum);
       });
     });
     return Array.from(map.values())
