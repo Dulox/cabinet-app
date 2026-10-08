@@ -38,7 +38,12 @@ hardware totals across a whole project, and export-ready cut sheets.
   material, grain direction (vetas) with a "Pieza" diagram showing a red
   arrow along the grain, back-panel groove (ranura), hinge boring (bisagra),
   and edge banding, auto-marked from the cut list and hand-adjustable per
-  row (the arrow follows hand-edited V/H). Rows are only merged when size,
+  row (the arrow follows hand-edited V/H). The form always prints the long
+  side in the Largo column, so the vetas letter is read against that column,
+  Madesol-style: **V = grain along the Largo, H = grain along the Ancho**. A
+  piece whose dimensions are swapped to put the long side first therefore
+  flips V↔H relative to the Mesa de trabajo — that flip is what keeps its
+  physical grain direction unchanged. Rows are only merged when size,
   material and grain all match. Saveable/loadable, multiple sheets per
   browser.
 - **Exports**: PDF cut sheet, shop drawing PDF and project PDF (each with a
@@ -181,9 +186,11 @@ the pieces worth knowing about:
 - Grain helpers: `cabGrain(cab)` is the single source of a cabinet's grain
   ("V"/"H"; older saved values like "auto" read as V). `vAxisFor(part)`
   says which Desglose edge (Largo/Ancho) a V grain runs along for a part,
-  and `grainAlongLargo(row)` turns that into the arrow direction used by
-  `GrainDiagram` (Desglose), the Excel "Pieza" column and `pdfGrainGlyph`
-  (PDFs). Bisagra deliberately uses the geometric `vetaAxis()` — the hinge
+  and `grainAlongLargoFor(cab, part)` combines the two into the one fact the
+  sheet needs: does this piece's grain run along its long edge? That drives
+  both the letter (`true` → "V", since Largo always holds the long side) and,
+  via `grainAlongLargo(row)`, the arrow direction used by `GrainDiagram`
+  (Desglose), the Excel "Pieza" column and `pdfGrainGlyph` (PDFs). Bisagra deliberately uses the geometric `vetaAxis()` — the hinge
   edge is the door's height edge whatever the grain choice.
 - `nestItem()` — a part's board footprint for nesting, turned according to
   the cabinet's grain.

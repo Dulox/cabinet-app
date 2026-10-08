@@ -1583,10 +1583,14 @@ function grainAlongLargoFor(cab, part) {
   return (cabGrain(cab) === "V") === (vAxisFor(part) === "L");
 }
 
-// The Desglose letter describes the piece as cut, matching its own diagram:
-// H = grain along the Largo (↔), V = across it (↕). Hand-edits drive the arrow.
+// The Desglose letter follows the Madesol form, which always prints the long
+// side in the Largo column: V = grain along the Largo (↔), H = across it (↕).
+// So the letter is derived from which column the grain ended up in, never
+// copied from the cabinet — a piece whose dimensions get swapped to put the
+// long side first flips V↔H, which is exactly what keeps its physical grain
+// identical to the Mesa de trabajo. Hand-edits drive the arrow.
 function grainAlongLargo(row) {
-  return row.vetas ? row.vetas === "H" : null;
+  return row.vetas ? row.vetas === "V" : null;
 }
 
 // Grain arrow for PartDiagram, which draws "a" across and "b" up/down.
@@ -3739,7 +3743,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
 
         // Side panels: all sides are plain (no "with doors" variant).
         // Doors will be marked with X in HB-L/HB-A to show they're fixed to the side.
-        const vetas = grainAlongLargoFor(cab, part) ? "H" : "V";
+        const vetas = grainAlongLargoFor(cab, part) ? "V" : "H";
 
         if (part.part === "Side") {
           const totalSides = part.qty * cabQty;      // usually 2 × cabQty
