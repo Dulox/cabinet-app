@@ -4384,6 +4384,18 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
                   if (inp.style.textAlign === 'left') sp.className = 'left';
                   inp.parentNode.replaceChild(sp, inp);
                 });
+                // Vetas is a <select>, and a clone does not carry the current
+                // selection (React sets it as a property, not an attribute), so
+                // serialising the clone would print every cell as the first
+                // option - the "·" placeholder. Read each letter off the live
+                // table instead and drop it in as plain text.
+                var liveSelects = tbl.querySelectorAll('select');
+                clone.querySelectorAll('select').forEach(function(sel, i) {
+                  var sp = document.createElement('span');
+                  var live = liveSelects[i];
+                  sp.textContent = live ? live.value : '';
+                  sel.parentNode.replaceChild(sp, sel);
+                });
                 clone.querySelectorAll('button,.desglose-noprint').forEach(function(b) { b.remove(); });
                 // Remove any inline styles that would override our print CSS
                 clone.querySelectorAll('td,th').forEach(function(cell) {
