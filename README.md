@@ -38,7 +38,9 @@ hardware totals across a whole project, and export-ready cut sheets.
   material, grain direction (vetas) with a "Pieza" diagram showing a red
   arrow along the grain, back-panel groove (ranura), hinge boring (bisagra),
   and edge banding, auto-marked from the cut list and hand-adjustable per
-  row (the arrow follows hand-edited V/H). The form always prints the long
+  row (the arrow follows hand-edited V/H; a by-hand vetas edit is flagged
+  `_vetasOverride` and survives "Rebuild", while untouched letters are
+  re-derived so a rebuild picks up a changed cabinet grain). The form always prints the long
   side in the Largo column, so the vetas letter is read against that column,
   Madesol-style: **V = grain along the Largo, H = grain along the Ancho**. A
   piece whose dimensions are swapped to put the long side first therefore

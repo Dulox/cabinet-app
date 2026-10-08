@@ -3876,6 +3876,7 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
       if (r.id !== id) return r;
       const updated = { ...r, [field]: val };
       if (field === "material") updated._matOverride = true;
+      if (field === "vetas") updated._vetasOverride = true;
       return updated;
     }));
   };
@@ -4310,14 +4311,20 @@ function DesgloseSheet({ cabs, projectName, onClose, initialLang = "en", allProj
               💾 {ms("Save sheet", "Guardar hoja")}
             </button>
             <button onClick={() => {
-              if (window.confirm(ms("Rebuild? Your X marks, material, and client info will be kept.", "¿Reconstruir? Se conservarán tus marcas X, el material y los datos del cliente."))) {
+              if (window.confirm(ms("Rebuild? Your X marks, material, client info and any vetas you set by hand will be kept. Vetas you did not touch are recalculated from the cabinets.", "¿Reconstruir? Se conservarán tus marcas X, el material, los datos del cliente y las vetas que hayas puesto a mano. Las vetas que no tocaste se recalculan desde los gabinetes."))) {
                 const fresh = buildRows(activeCabs);
                 setRows(fresh.map(newRow => {
                   const existing = rows.find(r => r.nombre === newRow.nombre && r.largo === newRow.largo && r.ancho === newRow.ancho);
                   if (!existing) return newRow;
                   return {
                     ...newRow,
-                    vetas: existing.vetas,
+                    // Vetas is derived from the cabinet's grain and the part's
+                    // geometry, so a rebuild re-derives it — that is how a
+                    // sheet picks up a changed grain direction, and how one
+                    // saved under an older letter convention gets corrected.
+                    // Only a by-hand edit survives.
+                    vetas: existing._vetasOverride ? existing.vetas : newRow.vetas,
+                    _vetasOverride: existing._vetasOverride,
                     cl1: existing.cl1, cl2: existing.cl2, ca1: existing.ca1, ca2: existing.ca2,
                     rl: existing.rl, ra: existing.ra, hbl: existing.hbl, hba: existing.hba,
                     material: existing._matOverride ? existing.material : newRow.material,
